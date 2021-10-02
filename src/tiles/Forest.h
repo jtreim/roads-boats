@@ -4,25 +4,25 @@
 #include <memory>
 #include <set>
 
-#include <tiles/Land.h>
+#include <tiles/Tile.h>
 
 namespace tile
 {
-  class Forest : public Land
-  {
-    public:
-      Forest();
+class Forest : public Tile
+{
+public:
+  Forest();
 
-      Forest(std::set<Direction> p_river_points);
+  Forest(std::set<Direction> p_river_points);
 
-      ~Forest();
+  ~Forest();
 
-      bool add_neighbor(std::shared_ptr<Land> neighbor, Direction direction);
+  bool add_neighbor(std::shared_ptr<Tile> neighbor, Direction direction);
 
-      bool add_neighbor(std::shared_ptr<Land> neighbor);
+  bool add_neighbor(std::shared_ptr<Tile> neighbor);
 
-    protected:
-    private:
-  };
-}
+protected:
+private:
+};
+} // namespace tile
 #endif // end FOREST_H

@@ -31,7 +31,8 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
-# Ignore debug build
+# Ignore build
+[Bb]uild/
 rb.exe
 
 # Visual Studio 2015/2017 cache/options directory

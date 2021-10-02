@@ -3,7 +3,7 @@
 
 namespace portable
 {
-  class Resource;
+class Resource;
 }
 
 #endif // end RESOURCE_H

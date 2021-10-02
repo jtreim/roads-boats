@@ -3,20 +3,19 @@
 
 namespace portable
 {
-  enum Transporter_type
-  {
-    donkey,
-    wagon,
-    truck,
-    raft,
-    rowboat,
-    steamer
-  };
+enum Transporter_type
+{
+  donkey,
+  wagon,
+  truck,
+  raft,
+  rowboat,
+  steamer
+};
 
-  class Transporter
-  {
-    
-  };
-}
+class Transporter
+{
+};
+} // namespace portable
 
 #endif // end TRANSPORTER_H
