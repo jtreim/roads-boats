@@ -17,5 +17,4 @@ class Transporter
 {
 };
 } // namespace portable
-
 #endif // end TRANSPORTER_H

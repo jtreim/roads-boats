@@ -3,7 +3,7 @@
 
 #include <buildings/Building.h>
 #include <players/Player.h>
-#include <portables/resources/Resource.h>
+#include <portables/Resource.h>
 #include <portables/transporters/Transporter.h>
 
 #include <map>
@@ -11,8 +11,6 @@
 #include <set>
 #include <vector>
 
-namespace base
-{
 namespace tile
 {
 enum Direction
@@ -76,5 +74,4 @@ private:
 };
 
 } // namespace tile
-} // namespace base
 #endif // end Tile_H
