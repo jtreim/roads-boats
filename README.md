@@ -4,7 +4,7 @@ The goal: make a working executable of the Splotter board game **Roads and Boats
 See references for [condensed rules](https://github.com/jtreim/roads-boats/blob/main/Roads_-_Rules_Condensed.pdf), [full rulebook](https://github.com/jtreim/roads-boats/blob/main/RB3Erules.pdf), and [player aids](https://github.com/jtreim/roads-boats/blob/main/RB_PlayerAid_Color_ENG_V4_0.pdf) for more info about the game.
 
 ## Milestones
-### Setup
+### Base functionality
 - [ ] A valid map with land and sea tiles can be defined.
   - [ ] Rivers flow naturally across land and into sea tiles.
   - [ ] Tiles can be organized into a map structure.
@@ -22,3 +22,15 @@ See references for [condensed rules](https://github.com/jtreim/roads-boats/blob/
   - [ ] Transporters can use nearby resources to construct a valid building.
   - [ ] Transporters can feed resources they are carrying to buildings.
   - [ ] Transporters can be printed as JSON inside a map's JSON structure.
+
+### Gameplay
+- [ ] Game states transition as expected
+  - [ ] Player lobby -> Game start
+  - [ ] Game start -> Map setup
+  - [ ] Map setup -> Gameplay
+    - [ ] Movement phase -> Build phase
+    - [ ] Build phase -> Wonder brick phase
+    - [ ] Wonder brick phasae -> Production phase
+    - [ ] Production phase -> Movement phase
+  - [ ] Gameplay -> End game
+  - [ ] End game -> Player lobby
