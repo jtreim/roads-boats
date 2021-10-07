@@ -3,7 +3,9 @@ The goal: make a working executable of the Splotter board game **Roads and Boats
 
 Code formatting should follow the .clang-format rules found in the repo.
 
-See references for [condensed rules](https://github.com/jtreim/roads-boats/blob/main/Roads_-_Rules_Condensed.pdf), [full rulebook](https://github.com/jtreim/roads-boats/blob/main/RB3Erules.pdf), and [player aids](https://github.com/jtreim/roads-boats/blob/main/RB_PlayerAid_Color_ENG_V4_0.pdf) for more info about the game.
+See references for [condensed rules](https://github.com/jtreim/roads-boats/blob/main/rules_condensed.pdf), [full rulebook](https://github.com/jtreim/roads-boats/blob/main/rules.pdf), and [player aids](https://github.com/jtreim/roads-boats/blob/main/player_aid.pdf) for more info about the game.
+
+See [expansion rules](https://github.com/jtreim/roads-boats/blob/main/etcetera.pdf) for any additional rules not in the base game.
 
 ## Milestones
 ### Base functionality
@@ -27,12 +29,12 @@ See references for [condensed rules](https://github.com/jtreim/roads-boats/blob/
 
 ### Gameplay
 - [ ] Game states transition as expected
-  - [ ] Player lobby -> Game start
-  - [ ] Game start -> Map setup
-  - [ ] Map setup -> Gameplay
-    - [ ] Movement phase -> Build phase
-    - [ ] Build phase -> Wonder brick phase
-    - [ ] Wonder brick phasae -> Production phase
-    - [ ] Production phase -> Movement phase
-  - [ ] Gameplay -> End game
-  - [ ] End game -> Player lobby
+  - [ ] Player lobby: Player count is determined, colors are decided, game is ready to start.
+  - [ ] Game start: Assets are loaded.
+  - [ ] Map setup: Players either select a premade map, or create a valid map of their own.
+  - [ ] Gameplay: Players given interact as defined by the rulebook.
+    - [ ] Movement phase: Players simultaneously move their transporters.
+    - [ ] Build phase: Players place buildings using their transporters and resources available.
+    - [ ] Wonder brick phasae: Players contribute wonder bricks using resources from their home.
+    - [ ] Production phase: Resources/livestock added to the map.
+  - [ ] End game: Game is finished as defined by the rules. A winner is declared and players return to the lobby.
