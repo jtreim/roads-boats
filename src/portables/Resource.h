@@ -5,5 +5,4 @@ namespace portable
 {
 class Resource;
 }
-
 #endif // end RESOURCE_H

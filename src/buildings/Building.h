@@ -27,5 +27,4 @@ enum Building_type
 
 class Building;
 } // namespace building
-
 #endif // end BUILDING_H
