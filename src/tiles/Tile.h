@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include <include/nlohmann_json.hpp>
+
 #include <buildings/Building.h>
 #include <players/Player.h>
 #include <portables/Resource.h>
@@ -35,6 +37,7 @@ public:
   virtual bool add_neighbor(std::shared_ptr<Tile> neighbor,
                             Direction direction) = 0;
   virtual bool add_neighbor(std::shared_ptr<Tile> neighbor) = 0;
+  virtual nlohmann::json json() = 0;
 
   // getters
   std::shared_ptr<Tile> get_neighbor(Direction direction) const;
@@ -53,7 +56,6 @@ public:
 
   // Helpers
   friend std::ostream &operator<<(std::ostream &os, const Tile &tile);
-  std::string json();
 
   // static
   static Direction get_opposite_direction(Direction direction);
