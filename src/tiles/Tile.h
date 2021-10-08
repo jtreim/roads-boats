@@ -1,15 +1,16 @@
 #ifndef TILE_H
 #define TILE_H
 
-#include <buildings/Building.h>
-#include <players/Player.h>
-#include <portables/Resource.h>
-#include <portables/transporters/Transporter.h>
-
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
 #include <vector>
+
+#include "buildings/Building.h"
+#include "players/Player.h"
+#include "portables/Resource.h"
+#include "portables/transporters/Transporter.h"
 
 namespace tile
 {

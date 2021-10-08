@@ -1,6 +1,7 @@
-#include <buildings/Building.h>
 #include <iostream>
-#include <tiles/Sea.h>
+
+#include "buildings/Building.h"
+#include "tiles/Sea.h"
 
 int main(void)
 {
