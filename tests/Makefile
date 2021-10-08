@@ -17,17 +17,17 @@
 GTEST_DIR=googletest/googletest
 
 # Where to find user code.
-TEST_DIR			  := ./src
+TEST_DIR        := ./src
 TEST_BUILD_DIR  := ./build
 TEST_BUILD_OBJS := ./build/objs
 
-MODULES   		  := a e windows
-SRC_DIR   		  := $(addprefix ../src/,$(MODULES)) # Searches src/* for .h/.cpp files
-BUILD_DIR 		  := $(addprefix ../build/,$(MODULES)) # Recreates build dir to match src
+MODULES         := 
+SRC_DIR         := $(addprefix ../src/,$(MODULES)) # Searches src/* for .h/.cpp files
+BUILD_DIR       := $(addprefix ../build/,$(MODULES)) # Recreates build dir to match src
 
-SRC       		  := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
-OBJ       		  := $(patsubst ../src/%.cpp,build/%.o,$(SRC))
-INCLUDES  		  := $(addprefix -I,../src)
+SRC             := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
+OBJ             := $(patsubst ../src/%.cpp,build/%.o,$(SRC))
+INCLUDES        := $(addprefix -I,../src)
 
 # Flags passed to the preprocessor.
 # Set Google Test's header directory as a system directory, such that

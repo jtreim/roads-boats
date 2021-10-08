@@ -1,17 +1,17 @@
-CC    		    := g++
-LD		        := g++
+CC        := g++
+LD        := g++
 
-FLAGS					:= -g -Wall -Wextra -pthread
+FLAGS     := -g -Wall -Wextra -pthread
 
-MODULES   		:= buildings common players portables tiles windows
-SRC_DIR   		:= $(addprefix src/,$(MODULES)) # Searches src/* for .h/.cpp files
-BUILD_DIR 		:= $(addprefix build/,$(MODULES)) # Recreates build dir to match src
+MODULES   := buildings common players portables tiles windows
+SRC_DIR   := $(addprefix src/,$(MODULES)) # Searches src/* for .h/.cpp files
+BUILD_DIR := $(addprefix build/,$(MODULES)) # Recreates build dir to match src
 
-SRC       		:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
-OBJ       		:= $(patsubst src/%.cpp,build/%.o,$(SRC))
-INCLUDES  		:= $(addprefix -I,src)
+SRC       := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
+OBJ       := $(patsubst src/%.cpp,build/%.o,$(SRC))
+INCLUDES  := $(addprefix -I,src)
 
-OUT						:= rb.exe
+OUT       := rb.exe
 
 vpath %.cpp $(SRC_DIR) $(TEST_DIR)
 
