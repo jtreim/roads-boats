@@ -3,11 +3,11 @@
 #include <string>
 #include <vector>
 
-#include "buildings/Building.h"
-#include "players/Player.h"
-#include "portables/Resource.h"
-#include "portables/transporters/Transporter.h"
-#include "tiles/Tile.h"
+#include <buildings/Building.h>
+#include <players/Player.h>
+#include <portables/Resource.h>
+#include <portables/transporters/Transporter.h>
+#include <tiles/Tile.h>
 
 using namespace tile;
 
