@@ -82,7 +82,7 @@ gtest_main.a : gtest-all.o gtest_main.o
 # function.
 
 base_test.o : $(TEST_DIR)/base_test.cpp $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(TEST_DIR)/base_test.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(SRC) $(INCLUDES) $(TEST_DIR)/base_test.cpp
 
 base_test : base_test.o gtest_main.a
 	@mkdir -p $(TEST_BUILD_DIR)

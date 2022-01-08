@@ -3,7 +3,8 @@
 
 namespace common
 {
-static const enum Error {
+enum Error
+{
   ERR_NONE = 0,
   ERR_FAIL = -1,
   ERR_INVALID = -2,
