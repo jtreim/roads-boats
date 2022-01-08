@@ -4,8 +4,9 @@ LD        := g++
 FLAGS     := -g -Wall -Wextra -pthread
 
 MODULES   := buildings common players portables tiles windows
-SRC_DIR   := $(addprefix src/,$(MODULES)) # Searches src/* for .h/.cpp files
+SRC_DIR   := $(addprefix src/,$(MODULES))   # Searches src/* for .h/.cpp files
 BUILD_DIR := $(addprefix build/,$(MODULES)) # Recreates build dir to match src
+TEST_DIR  := tests
 
 SRC       := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
 OBJ       := $(patsubst src/%.cpp,build/%.o,$(SRC))
@@ -21,12 +22,13 @@ $1/%.o: %.cpp
 endef
 
 # Commands:
-# make all 			 - Build everything into one executable.
+# make all       - Build everything into one executable.
 # make checkdirs - Rebuild build directory to match src directory structure.
-# make clean		 - Clear build directory.
+# make clean     - Clear build directory.
+# make test      - Build and run unit tests.
 
 
-.PHONY: all checkdirs clean
+.PHONY: all checkdirs clean test
 
 all: checkdirs build/rb.exe
 
@@ -37,6 +39,9 @@ checkdirs: $(BUILD_DIR)
 
 $(BUILD_DIR):
 	@mkdir -p $@
+
+test:
+	$(MAKE) -C tests
 
 # Clean target
 clean :
