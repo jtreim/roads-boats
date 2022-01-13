@@ -1,4 +1,4 @@
-#include <include/nlohmann_json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <common/Errors.h>
 #include <portables/Resource.h>
@@ -12,8 +12,13 @@ static const std::string RESOURCE_NAMES[] = {
 static const size_t RESOURCE_NAMES_SIZE =
     sizeof RESOURCE_NAMES / sizeof RESOURCE_NAMES[0];
 
+// Key used in JSON data objects
+static const std::string KEY = "resource";
+
 Resource::Resource(const Resource &other) : m_p_type(other.get_type()) {}
 Resource::Resource(const Type &r) { m_p_type = r; }
+
+Resource::~Resource() {}
 
 common::Error Resource::get_name(std::string &name) const
 {
@@ -32,7 +37,7 @@ common::Error Resource::to_json(nlohmann::json &j) const
   common::Error err = get_name(name);
   if (common::ERR_NONE == err)
   {
-    j = {{"resource", name}};
+    j[KEY] = name;
   }
   return err;
 }

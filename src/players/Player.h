@@ -13,7 +13,6 @@ class Tile;
 
 /// Possible Player colors
 ///
-///
 enum Color
 {
   BLACK,
@@ -25,7 +24,6 @@ enum Color
 };
 
 /// Base Player class
-///
 ///
 class Player
 {

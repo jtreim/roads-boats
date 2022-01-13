@@ -28,6 +28,7 @@ BUILD_DIR       := $(addprefix ../build/,$(MODULES)) # Recreates build dir to ma
 SRC             := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
 OBJ             := $(patsubst ../src/%.cpp,build/%.o,$(SRC))
 INCLUDES        := $(addprefix -I,../src)
+LIBS            := $(addprefix -I,../include)
 
 # Flags passed to the preprocessor.
 # Set Google Test's header directory as a system directory, such that
@@ -82,7 +83,7 @@ gtest_main.a : gtest-all.o gtest_main.o
 # function.
 
 base_test.o : $(TEST_DIR)/base_test.cpp $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(SRC) $(INCLUDES) $(TEST_DIR)/base_test.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(SRC) $(INCLUDES) $(LIBS) $(TEST_DIR)/base_test.cpp
 
 base_test : base_test.o gtest_main.a
 	@mkdir -p $(TEST_BUILD_DIR)

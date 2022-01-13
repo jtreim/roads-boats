@@ -1,7 +1,7 @@
 #ifndef RESOURCE_H
 #define RESOURCE_H
 
-#include <include/nlohmann_json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <common/Errors.h>
 #include <portables/Portable.h>
