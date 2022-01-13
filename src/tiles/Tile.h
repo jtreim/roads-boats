@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include <include/nlohmann_json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <buildings/Building.h>
 #include <players/Player.h>

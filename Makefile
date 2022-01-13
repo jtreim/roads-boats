@@ -11,6 +11,7 @@ TEST_DIR  := tests
 SRC       := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
 OBJ       := $(patsubst src/%.cpp,build/%.o,$(SRC))
 INCLUDES  := $(addprefix -I,src)
+LIBS      := $(addprefix -I,include)
 
 OUT       := rb.exe
 
@@ -18,7 +19,7 @@ vpath %.cpp $(SRC_DIR) $(TEST_DIR)
 
 define make-goal
 $1/%.o: %.cpp
-	$(CC) $(FLAGS) $(INCLUDES) -c $$< -o $$@
+	$(CC) $(FLAGS) $(INCLUDES) $(LIBS) -c $$< -o $$@
 endef
 
 # Commands:
@@ -47,5 +48,7 @@ test:
 clean :
 	@rm -rf $(BUILD_DIR)
 	@rm -f build/rb.exe
+	@rm -rf tests/build
+	
 
 $(foreach bdir,$(BUILD_DIR),$(eval $(call make-goal,$(bdir))))
