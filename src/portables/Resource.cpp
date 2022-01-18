@@ -16,7 +16,7 @@ static const size_t RESOURCE_NAMES_SIZE =
 static const std::string KEY = "resource";
 
 Resource::Resource(const Resource &other) : m_p_type(other.get_type()) {}
-Resource::Resource(const Type &r) { m_p_type = r; }
+Resource::Resource(const Type &type) : m_p_type(type) {}
 
 Resource::~Resource() {}
 

@@ -36,12 +36,12 @@ public:
   };
 
   Resource(const Resource &other);
-  Resource(const Type &r);
+  Resource(const Type &type);
   ~Resource();
 
   inline Type get_type() const { return m_p_type; };
-
   inline common::Error get_name(std::string &name) const;
+
   common::Error to_json(nlohmann::json &j) const;
 
   Resource operator=(const Resource &other);

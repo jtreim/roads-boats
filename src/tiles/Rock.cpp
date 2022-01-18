@@ -14,10 +14,3 @@ Rock::Rock(std::set<Direction> p_river_points)
 }
 
 Rock::~Rock() {}
-
-bool Rock::add_neighbor(std::shared_ptr<Tile> neighbor, Direction direction)
-{
-  return false;
-}
-
-bool Rock::add_neighbor(std::shared_ptr<Tile> neighbor) { return false; }

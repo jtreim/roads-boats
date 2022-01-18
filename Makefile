@@ -15,7 +15,7 @@ LIBS      := $(addprefix -I,include)
 
 OUT       := rb.exe
 
-vpath %.cpp $(SRC_DIR) $(TEST_DIR)
+vpath %.cpp $(SRC_DIR)
 
 define make-goal
 $1/%.o: %.cpp
@@ -48,7 +48,7 @@ test:
 clean :
 	@rm -rf $(BUILD_DIR)
 	@rm -f build/rb.exe
-	@rm -rf tests/build
+	@rm -rf tests/build/*.o tests/build/*.a
 	
 
 $(foreach bdir,$(BUILD_DIR),$(eval $(call make-goal,$(bdir))))
