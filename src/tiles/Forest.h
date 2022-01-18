@@ -17,10 +17,6 @@ public:
 
   ~Forest();
 
-  bool add_neighbor(std::shared_ptr<Tile> neighbor, Direction direction);
-
-  bool add_neighbor(std::shared_ptr<Tile> neighbor);
-
 protected:
 private:
 };

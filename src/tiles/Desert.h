@@ -17,9 +17,7 @@ public:
 
   ~Desert();
 
-  bool add_neighbor(std::shared_ptr<Tile> neighbor, Direction direction);
-
-  bool add_neighbor(std::shared_ptr<Tile> neighbor);
+  // nlohmann::json to_json();
 
 protected:
 private:

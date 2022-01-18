@@ -14,10 +14,3 @@ Mountain::Mountain(std::set<Direction> p_river_points)
 }
 
 Mountain::~Mountain() {}
-
-bool Mountain::add_neighbor(std::shared_ptr<Tile> neighbor, Direction direction)
-{
-  return false;
-}
-
-bool Mountain::add_neighbor(std::shared_ptr<Tile> neighbor) { return false; }

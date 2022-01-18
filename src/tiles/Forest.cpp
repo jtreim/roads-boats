@@ -14,10 +14,3 @@ Forest::Forest(std::set<Direction> p_river_points)
 }
 
 Forest::~Forest() {}
-
-bool Forest::add_neighbor(std::shared_ptr<Tile> neighbor, Direction direction)
-{
-  return false;
-}
-
-bool Forest::add_neighbor(std::shared_ptr<Tile> neighbor) { return false; }

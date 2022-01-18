@@ -15,9 +15,7 @@ Desert::Desert(std::set<Direction> p_river_points)
 
 Desert::~Desert() {}
 
-bool Desert::add_neighbor(std::shared_ptr<Tile> neighbor, Direction direction)
-{
-  return false;
-}
+// nlohmann::json Desert::to_json()
+// {
 
-bool Desert::add_neighbor(std::shared_ptr<Tile> neighbor) { return false; }
+// }

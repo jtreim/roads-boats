@@ -2,6 +2,8 @@
 #include <memory>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #include <buildings/Building.h>
 #include <players/Player.h>
 #include <portables/Resource.h>
@@ -10,7 +12,9 @@
 
 using namespace tile;
 
-Tile::Tile() {}
+uint8_t Tile::unique_tile_id = 1;
+
+Tile::Tile() : id(unique_tile_id) { unique_tile_id++; }
 
 Tile::Tile(std::set<Direction> p_river_points)
     : m_p_river_points(p_river_points)
@@ -36,9 +40,6 @@ std::shared_ptr<Tile> Tile::get_neighbor(Direction direction) const
 
 std::shared_ptr<Tile> *Tile::get_neighbors() { return m_p_neighbors; }
 
-/// Checks whether tile has a river that flows through the direction
-/// @param[in] direction
-///
 bool Tile::river_has_point(Direction direction) const
 {
   return (m_p_river_points.end() != m_p_river_points.find(direction));
@@ -65,12 +66,44 @@ bool Tile::is_shore() const
   return (!m_p_river_points.empty() || is_neighboring_sea());
 }
 
+common::Error Tile::add_neighbor(std::shared_ptr<Tile> neighbor,
+                                 Direction direction)
+{
+  common::Error err = can_add_neighbor(neighbor, direction);
+  if (common::ERR_NONE == err)
+  {
+    m_p_neighbors[direction] = neighbor;
+  }
+  return err;
+}
+
+common::Error Tile::remove_neighbor(Direction direction)
+{
+  common::Error err = common::ERR_NONE;
+  if (!is_valid_direction(direction))
+  {
+    err = common::ERR_INVALID;
+  }
+  else if (!m_p_neighbors[direction])
+  {
+    err = common::ERR_FAIL;
+  }
+  else
+  {
+    m_p_neighbors[direction].reset();
+    m_p_neighbors[direction] = 0;
+  }
+
+  return err;
+}
+
 std::shared_ptr<building::Building> Tile::get_building() const
 {
   return m_p_building;
 }
 
-std::vector<std::shared_ptr<portable::Resource>> Tile::get_resources() const
+std::map<std::string, std::pair<portable::Resource, uint8_t>>
+Tile::get_resources() const
 {
   return m_p_resources;
 }
@@ -98,24 +131,71 @@ Direction Tile::get_opposite_direction(Direction direction)
                                 m_max_directions);
 }
 
-/// Checks whether neighbor can be placed at the direction relative to the tile.
-/// @param[in] neighbor  Tile to be placed
-/// @param[in] direction  Direction neighbor would be to the tile
-/// @return
-///    - true if a neighbor can be added in the given direction
-///    - false otherwise
-bool Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor, Direction direction)
+common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
+                                     Direction direction)
 {
-  bool is_allowed = true;
-  if (m_p_neighbors[direction])
+  common::Error err = common::ERR_NONE;
+  // Check that input is valid, and that we don't already have a neighbor in
+  // that direction.
+  if ((nullptr == neighbor) || (!is_valid_direction(direction)))
   {
-    is_allowed = false;
+    err = common::ERR_INVALID;
+  }
+  else if ((m_p_neighbors[direction]))
+  {
+    err = common::ERR_FAIL;
   }
 
-  Direction opposite = get_opposite_direction(direction);
-  if (!neighbor->river_has_point(opposite))
+  if (common::ERR_NONE == err)
   {
-    is_allowed = false;
+    bool contains_river = river_has_point(direction);
+
+    // From the neighbor's perspective, the matching border is the opposite
+    // direction of the border we're checking.
+    Direction opposite = get_opposite_direction(direction);
+
+    // Both this tile and the neighbor we're testing should match having a
+    // river/no river on the adjoining sides.
+    if (neighbor->river_has_point(opposite) != contains_river)
+    {
+      err = common::ERR_FAIL;
+    }
   }
-  return is_allowed;
+  return err;
+}
+
+nlohmann::json Tile::to_json() const
+{
+  nlohmann::json result;
+  result["id"] = id;
+
+  // Add immediate neighbor's IDs
+  std::vector<uint16_t> neighbor_ids;
+  for (auto neighbor : m_p_neighbors)
+  {
+    if (nullptr == neighbor)
+    {
+      neighbor_ids.push_back(0);
+    }
+    else
+    {
+      neighbor_ids.push_back(neighbor->id);
+    }
+  }
+  result["neighbors"] = neighbor_ids;
+
+  // Add river points
+  std::vector<uint8_t> river_points;
+  river_points.reserve(6);
+  std::copy(m_p_river_points.begin(), m_p_river_points.end(),
+            std::back_inserter(river_points));
+  result["river_points"] = river_points;
+
+  // TODO: Add building
+
+  // TODO: Add resource counts
+
+  // TODO: Add transporters
+
+  return result;
 }
