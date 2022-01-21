@@ -10,7 +10,7 @@ See [expansion rules](https://github.com/jtreim/roads-boats/blob/main/etcetera.p
 ## Milestones
 ### Base functionality
 - [ ] A valid map with land and sea tiles can be defined.
-  - [ ] Rivers flow naturally across land and into sea tiles.
+  - [x] Rivers flow naturally across land and into sea tiles.
   - [ ] Tiles can be organized into a map structure.
   - [ ] A map can be printed as a JSON structure.
 - [ ] Resources can exist on a map.
