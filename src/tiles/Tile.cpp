@@ -33,6 +33,8 @@ Tile::~Tile()
   m_p_transporters.clear();
 }
 
+bool Tile::operator==(Tile const &other) const { return id == other.get_id(); }
+
 std::shared_ptr<Tile> Tile::get_neighbor(Direction direction) const
 {
   return m_p_neighbors[direction];
@@ -52,7 +54,7 @@ bool Tile::is_neighboring_sea() const
   bool retval = false;
   for (auto neighbor : m_p_neighbors)
   {
-    if (neighbor->get_river_points().size() == m_max_directions)
+    if (neighbor->is_sea())
     {
       retval = true;
       break;
@@ -135,18 +137,31 @@ common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
                                      Direction direction)
 {
   common::Error err = common::ERR_NONE;
-  // Check that input is valid, and that we don't already have a neighbor in
-  // that direction.
+  // Check that input is valid, that we don't already have a neighbor in
+  // that direction, and that we're not already neighbors with the new neighbor.
   if ((nullptr == neighbor) || (!is_valid_direction(direction)))
   {
     err = common::ERR_INVALID;
   }
-  else if ((m_p_neighbors[direction]))
+  else if ((m_p_neighbors[direction]) || (*this == *neighbor))
   {
     err = common::ERR_FAIL;
   }
+  else
+  {
+    for (int d = 0; d < m_max_directions; d++)
+    {
+      if ((m_p_neighbors[d]) && (*(m_p_neighbors[d]) == *neighbor))
+      {
+        err = common::ERR_FAIL;
+        break;
+      }
+    }
+  }
 
-  if (common::ERR_NONE == err)
+  // Check for river points on the borders. Each tile's border should match
+  // (adding a Sea tile neighbor should skip this step).
+  if ((common::ERR_NONE == err) && (!neighbor->is_sea()))
   {
     bool contains_river = river_has_point(direction);
 
@@ -159,6 +174,27 @@ common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
     if (neighbor->river_has_point(opposite) != contains_river)
     {
       err = common::ERR_FAIL;
+    }
+  }
+  return err;
+}
+
+common::Error Tile::clear_neighbors()
+{
+  common::Error err = common::ERR_NONE;
+  for (int d = 0; d < m_max_directions; d++)
+  {
+    if (m_p_neighbors[d])
+    {
+      m_p_neighbors[d].reset();
+      m_p_neighbors[d] = 0;
+    }
+
+    // If we somehow fail to remove the neighbor, report error.
+    if (m_p_neighbors[d])
+    {
+      err = common::ERR_FAIL;
+      break;
     }
   }
   return err;

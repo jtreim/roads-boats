@@ -19,7 +19,7 @@ namespace tile
 {
 enum Direction
 {
-  north_east,
+  north_east = 0,
   east,
   south_east,
   south_west,
@@ -33,6 +33,8 @@ public:
   Tile();
   Tile(std::set<Direction> p_river_points);
   ~Tile();
+
+  bool operator==(Tile const &other) const;
 
   // Abstract calls
   virtual nlohmann::json to_json() const;
@@ -67,7 +69,8 @@ public:
   ///    - false otherwise
   bool river_has_point(Direction direction) const;
   bool is_neighboring_sea() const;
-  bool is_shore() const;
+  virtual bool is_shore() const;
+  virtual inline bool is_sea() const { return false; }
 
   /// Add a tile as a neighbor in the input direction.
   /// @param[in] neighbor The tile to be placed next to this one.
@@ -92,6 +95,12 @@ public:
   ///    - common::Error::ERR_NONE on success.
   virtual common::Error remove_neighbor(Direction direction);
 
+  /// Removes all neighbors from the tile
+  /// @return
+  ///    - common::Error::ERR_NONE on success
+  ///    - common::Error::ERR_FAIL on fail
+  common::Error clear_neighbors();
+
   // Helpers
   // friend std::ostream &operator<<(std::ostream &os, const Tile &tile);
   inline static bool is_valid_direction(Direction direction)
@@ -113,8 +122,9 @@ protected:
   ///    - common::Error::ERR_INVALID if either param is an invalid format
   ///    (null, nonexistant direction).
   ///    - common::Error::ERR_FAIL if there's already a neighbor in the given
-  ///    direction, or the neighbor's river points doesn't allow being added
-  ///    there.
+  ///    direction, the neighbor's river points doesn't allow being added
+  ///    there, or if the new neighbor matches ourselves or a neighbor we
+  ///    already have.
   ///    - common::Error::ERR_NONE on valid placement.
   virtual common::Error can_add_neighbor(std::shared_ptr<Tile> neighbor,
                                          Direction direction);
