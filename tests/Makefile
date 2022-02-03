@@ -26,7 +26,7 @@ SRC_DIR         := ../src
 BUILD_DIR       := ../build
 
 INCLUDES        := $(addprefix -I,../src)
-LIBS            := $(addprefix -I,../include)
+LIBS            := $(addprefix -I,../libs)
 
 # Flags passed to the preprocessor.
 # Set Google Test's header directory as a system directory, such that
@@ -34,7 +34,7 @@ LIBS            := $(addprefix -I,../include)
 CPPFLAGS += -isystem $(GTEST_DIR)/include
 
 # Flags passed to the C++ compiler.
-CXXFLAGS += -g -Wall -Wextra -pthread
+CXXFLAGS += -g -Wall -Wextra -pthread -std=c++20
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
@@ -95,5 +95,5 @@ base_test : $(TEST_BUILD_DIR)/base_test.o $(TEST_BUILD_DIR)/gtest_main.a
 
 tile_test : $(TEST_BUILD_DIR)/tile_test.o $(TEST_BUILD_DIR)/gtest_main.a
 	$(MAKE) -C ../
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $(BUILD_DIR)/tiles/Tile.o $(BUILD_DIR)/portables/Resource.o $(BUILD_DIR)/tiles/Sea.o $^ -o $(TEST_BUILD_DIR)/$@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $(BUILD_DIR)/tiles/Tile.o $(BUILD_DIR)/portables/Resource.o $(BUILD_DIR)/tiles/Desert.o $(BUILD_DIR)/tiles/Forest.o $(BUILD_DIR)/tiles/Mountain.o $(BUILD_DIR)/tiles/Plains.o $(BUILD_DIR)/tiles/Rock.o $(BUILD_DIR)/tiles/Sea.o $^ -o $(TEST_BUILD_DIR)/$@
 	$(TEST_BUILD_DIR)/$@.exe

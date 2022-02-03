@@ -10,7 +10,7 @@ See [expansion rules](https://github.com/jtreim/roads-boats/blob/main/etcetera.p
 ## Milestones
 ### Base functionality
 - [ ] A valid map with land and sea tiles can be defined.
-  - [ ] Rivers flow naturally across land and into sea tiles.
+  - [x] Rivers flow naturally across land and into sea tiles.
   - [ ] Tiles can be organized into a map structure.
   - [ ] A map can be printed as a JSON structure.
 - [ ] Resources can exist on a map.
@@ -38,3 +38,12 @@ See [expansion rules](https://github.com/jtreim/roads-boats/blob/main/etcetera.p
     - [ ] Wonder brick phasae: Players contribute wonder bricks using resources from their home.
     - [ ] Production phase: Resources/livestock added to the map.
   - [ ] End game: Game is finished as defined by the rules. A winner is declared and players return to the lobby.
+
+## Required software for development
+- git
+- g++
+- make
+- Boost uuids uses one of the following, depending on the platform:
+  - OpenBSD: arc4random(3)
+  - Linux 3.17+: getrandom(2)
+  - Windows: BCrypt if available, otherwise Wincrypt

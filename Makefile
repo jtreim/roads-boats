@@ -1,9 +1,9 @@
 CC        := g++
 LD        := g++
 
-FLAGS     := -g -Wall -Wextra -pthread
+FLAGS     := -g -Wall -Wextra -pthread -std=c++20
 
-MODULES   := buildings common players portables tiles windows
+MODULES   := buildings common players portables tiles utils windows
 SRC_DIR   := $(addprefix src/,$(MODULES))   # Searches src/* for .h/.cpp files
 BUILD_DIR := $(addprefix build/,$(MODULES)) # Recreates build dir to match src
 TEST_DIR  := tests
@@ -11,7 +11,7 @@ TEST_DIR  := tests
 SRC       := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
 OBJ       := $(patsubst src/%.cpp,build/%.o,$(SRC))
 INCLUDES  := $(addprefix -I,src)
-LIBS      := $(addprefix -I,include)
+LIBS      := $(addprefix -I,libs)
 
 OUT       := rb.exe
 

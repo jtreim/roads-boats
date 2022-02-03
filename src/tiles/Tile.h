@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <nlohmann/json.hpp>
+#include <stduuid/include/uuid.h>
 
 #include <buildings/Building.h>
 #include <common/Errors.h>
@@ -40,20 +41,20 @@ public:
   virtual nlohmann::json to_json() const;
 
   // getters
-  uint8_t get_id() const { return id; };
+  uuids::uuid get_id() const { return id; };
 
   /// Gets the first adjacent tile in the input direction
   /// @return
-  ///    - pointer to the first adjacent tile
-  ///    - nullptr if no tile is in the given direction
+  ///   - pointer to the first adjacent tile
+  ///   - nullptr if no tile is in the given direction
   std::shared_ptr<Tile> get_neighbor(Direction direction) const;
   std::shared_ptr<Tile> *get_neighbors();
   std::set<Direction> get_river_points() const;
 
   /// Gets the building (if any) currently on this tile
   /// @return
-  ///    - pointer to the structure built on this tile
-  ///    - nullptr if no structure has been built here
+  ///   - pointer to the structure built on this tile
+  ///   - nullptr if no structure has been built here
   std::shared_ptr<building::Building> get_building() const;
   std::map<std::string, std::pair<portable::Resource, uint8_t>>
   get_resources() const;
@@ -65,10 +66,9 @@ public:
   /// Checks whether tile has a river that flows through the input direction
   /// @param[in] direction
   /// @return
-  ///    - true if the tile has a river flowing through the input direction
-  ///    - false otherwise
+  ///   - true if the tile has a river flowing through the input direction
+  ///   - false otherwise
   bool river_has_point(Direction direction) const;
-  bool is_neighboring_sea() const;
   virtual bool is_shore() const;
   virtual inline bool is_sea() const { return false; }
 
@@ -77,29 +77,37 @@ public:
   /// @param[in] direction The direction the tile should be placed from first
   /// tile's perspective.
   /// @return
-  ///    - common::Error::ERR_INVALID if either param is an invalid format
-  ///    (null, nonexistant direction).
-  ///    - common::Error::ERR_FAIL if there's already a neighbor in the given
-  ///    direction, or the neighbor's river points doesn't allow being added
-  ///    there.
-  ///    - common::Error::ERR_NONE on success.
+  ///   - common::Error::ERR_INVALID if either param is an invalid format
+  ///   (null, nonexistant direction).
+  ///   - common::Error::ERR_FAIL if there's already a neighbor in the given
+  ///   direction, or the neighbor's river points doesn't allow being added
+  ///   there.
+  ///   - common::Error::ERR_NONE on success.
   virtual common::Error add_neighbor(std::shared_ptr<Tile> neighbor,
                                      Direction direction);
 
   /// Remove the neighbor from the input direction
   /// @param[in] neighbor The direction of the neighbor to be removed.
   /// @return
-  ///    - common::Error::ERR_INVALID if the direction is invalid.
-  ///    - common::Error::ERR_MISSING if there is no neighbor in the input
-  ///    direction.
-  ///    - common::Error::ERR_NONE on success.
+  ///   - common::Error::ERR_INVALID if the direction is invalid.
+  ///   - common::Error::ERR_MISSING if there is no neighbor in the input
+  ///   direction.
+  ///   - common::Error::ERR_NONE on success.
   virtual common::Error remove_neighbor(Direction direction);
 
   /// Removes all neighbors from the tile
   /// @return
-  ///    - common::Error::ERR_NONE on success
-  ///    - common::Error::ERR_FAIL on fail
+  ///   - common::Error::ERR_NONE on success
+  ///   - common::Error::ERR_FAIL on fail
   common::Error clear_neighbors();
+
+  /// Rotates the tile clockwise the number of rotations.
+  /// @param[in] rotations The number of clockwise rotations to perform. A
+  /// negative value rotates counter-clockwise.
+  /// @return
+  ///   - common::Error::ERR_NONE on success
+  ///   - common::Error::ERR_FAIL on fail
+  common::Error rotate(int8_t rotations);
 
   // Helpers
   // friend std::ostream &operator<<(std::ostream &os, const Tile &tile);
@@ -111,25 +119,25 @@ public:
   static Direction get_opposite_direction(Direction direction);
   static const uint8_t m_max_directions = 6;
 
-  static uint8_t unique_tile_id;
-
 protected:
   /// Checks whether neighbor can be placed at the direction relative to the
   /// tile.
   /// @param[in] neighbor  Tile to be placed
   /// @param[in] direction  Direction neighbor would be to the tile
   /// @return
-  ///    - common::Error::ERR_INVALID if either param is an invalid format
-  ///    (null, nonexistant direction).
-  ///    - common::Error::ERR_FAIL if there's already a neighbor in the given
-  ///    direction, the neighbor's river points doesn't allow being added
-  ///    there, or if the new neighbor matches ourselves or a neighbor we
-  ///    already have.
-  ///    - common::Error::ERR_NONE on valid placement.
+  ///   - common::Error::ERR_INVALID if either param is an invalid format
+  ///   (null, nonexistant direction).
+  ///   - common::Error::ERR_FAIL if there's already a neighbor in the given
+  ///   direction, the neighbor's river points doesn't allow being added
+  ///   there, or if the new neighbor matches ourselves or a neighbor we
+  ///   already have.
+  ///   - common::Error::ERR_NONE on valid placement.
   virtual common::Error can_add_neighbor(std::shared_ptr<Tile> neighbor,
                                          Direction direction);
 
-  uint8_t id;
+  bool is_neighboring_sea() const;
+
+  uuids::uuid id;
   std::shared_ptr<Tile> m_p_neighbors[6];
   std::set<Direction> m_p_river_points;
   std::shared_ptr<building::Building> m_p_building;
