@@ -204,20 +204,16 @@ common::Error Tile::clear_neighbors()
 
 common::Error Tile::rotate(int8_t rotations)
 {
-  std::cout << "in rotate..." << std::endl;
   // Making 0 rotations doesn't do anything...
   if (0 != rotations)
   {
-    std::cout << "rotating!" << std::endl;
-    bool is_clockwise = (0 > rotations);
+    bool is_clockwise = (0 < rotations);
     rotations = abs(rotations) % m_max_directions;
     rotations = (is_clockwise ? rotations : (m_max_directions - rotations));
 
     // Rotate all river points
-    std::vector<Direction> tmp_rp;
-    std::cout << "copying to tmp_rp..." << std::endl;
+    std::vector<Direction> tmp_rp(m_p_river_points.size());
     std::copy(m_p_river_points.begin(), m_p_river_points.end(), tmp_rp.begin());
-    std::cout << "tmp_rp.size(): " << tmp_rp.size() << std::endl;
     m_p_river_points.clear();
     for (auto direction : tmp_rp)
     {
@@ -225,7 +221,6 @@ common::Error Tile::rotate(int8_t rotations)
           static_cast<Direction>((direction + rotations) % m_max_directions);
       m_p_river_points.insert(new_dir);
     }
-    std::cout << "new r_p.size(): " << m_p_river_points.size() << std::endl;
 
     std::shared_ptr<Tile> tmp_t[m_max_directions];
     std::copy(std::begin(m_p_neighbors), std::end(m_p_neighbors),

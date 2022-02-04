@@ -176,16 +176,12 @@ TEST(tile_test, rotate_test)
   std::shared_ptr<Tile> test = std::make_shared<Tile>(rp);
   std::shared_ptr<Tile> neighbor = std::make_shared<Tile>();
   std::shared_ptr<Tile> river_neighbor = std::make_shared<Tile>(rp);
-  std::cout << "made all the test/neighbors" << std::endl;
   EXPECT_EQ(common::ERR_NONE,
             test->add_neighbor(river_neighbor, Direction::north_east));
-  std::cout << "added river neighbor" << std::endl;
   EXPECT_EQ(common::ERR_NONE, test->add_neighbor(neighbor, Direction::east));
-  std::cout << "added other neighbor" << std::endl;
 
   // When rotating 0, nothing should actually move.
   EXPECT_EQ(common::ERR_NONE, test->rotate(0));
-  std::cout << "----- rotated test 0 -----" << std::endl;
   auto river_points = test->get_river_points();
 
   EXPECT_EQ(3, river_points.size());
@@ -197,30 +193,22 @@ TEST(tile_test, rotate_test)
   {
     if (Direction::north_east == d)
     {
-      std::cout << "testing north east direction" << std::endl;
       EXPECT_TRUE(*river_neighbor ==
                   *(test->get_neighbor(static_cast<Direction>(d))));
-      std::cout << "passed" << std::endl;
     }
     else if (Direction::east == d)
     {
-      std::cout << "testing east direction" << std::endl;
       EXPECT_TRUE(*neighbor ==
                   *(test->get_neighbor(static_cast<Direction>(d))));
-      std::cout << "passed" << std::endl;
     }
     else
     {
-      std::cout << "testing empty direction" << std::endl;
       EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
-      std::cout << "passed" << std::endl;
     }
   }
 
-  std::cout << "is test null: " << (test ? "false" : "true") << std::endl;
   // When rotating 1, everything should move clockwise 1 step
   EXPECT_EQ(common::ERR_NONE, test->rotate(1));
-  std::cout << "----- rotated test 1 -----" << std::endl;
   river_points = test->get_river_points();
 
   EXPECT_EQ(3, river_points.size());
@@ -232,29 +220,22 @@ TEST(tile_test, rotate_test)
   {
     if (Direction::east == d)
     {
-      std::cout << "testing east direction" << std::endl;
       EXPECT_TRUE(*river_neighbor ==
                   *(test->get_neighbor(static_cast<Direction>(d))));
-      std::cout << "passed" << std::endl;
     }
     else if (Direction::south_east == d)
     {
-      std::cout << "testing south east direction" << std::endl;
       EXPECT_TRUE(*neighbor ==
                   *(test->get_neighbor(static_cast<Direction>(d))));
-      std::cout << "passed" << std::endl;
     }
     else
     {
-      std::cout << "testing empty direction" << std::endl;
       EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
-      std::cout << "passed" << std::endl;
     }
   }
 
   // When rotating -1, everything should move counter-clockwise 1 step
   EXPECT_EQ(common::ERR_NONE, test->rotate(-1));
-  std::cout << "----- rotated test -1 -----" << std::endl;
   river_points = test->get_river_points();
 
   EXPECT_EQ(3, river_points.size());
@@ -266,23 +247,17 @@ TEST(tile_test, rotate_test)
   {
     if (Direction::north_east == d)
     {
-      std::cout << "testing north east direction" << std::endl;
       EXPECT_TRUE(*river_neighbor ==
                   *(test->get_neighbor(static_cast<Direction>(d))));
-      std::cout << "passed" << std::endl;
     }
     else if (Direction::east == d)
     {
-      std::cout << "testing east direction" << std::endl;
       EXPECT_TRUE(*neighbor ==
                   *(test->get_neighbor(static_cast<Direction>(d))));
-      std::cout << "passed" << std::endl;
     }
     else
     {
-      std::cout << "testing empty direction" << std::endl;
       EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
-      std::cout << "passed" << std::endl;
     }
   }
 
