@@ -8,14 +8,14 @@
 
 namespace tile
 {
-class Plain : public Tile
+class Plains : public Tile
 {
 public:
-  Plain();
+  Plains();
 
-  Plain(std::set<Direction> p_river_points);
+  Plains(std::set<Direction> p_river_points);
 
-  ~Plain();
+  ~Plains();
 
 protected:
 private:

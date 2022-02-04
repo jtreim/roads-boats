@@ -1,23 +1,25 @@
+#include <algorithm>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <vector>
 
 #include <nlohmann/json.hpp>
+#include <stduuid/include/uuid.h>
 
 #include <buildings/Building.h>
 #include <players/Player.h>
 #include <portables/Resource.h>
 #include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
+#include <utils/id_utils.h>
 
 using namespace tile;
 
-uint8_t Tile::unique_tile_id = 1;
-
-Tile::Tile() : id(unique_tile_id) { unique_tile_id++; }
+Tile::Tile() : id(utils::gen_uuid()) {}
 
 Tile::Tile(std::set<Direction> p_river_points)
-    : m_p_river_points(p_river_points)
+    : id(utils::gen_uuid()), m_p_river_points(p_river_points)
 {
 }
 
@@ -200,13 +202,46 @@ common::Error Tile::clear_neighbors()
   return err;
 }
 
+common::Error Tile::rotate(int8_t rotations)
+{
+  // Making 0 rotations doesn't do anything...
+  if (0 != rotations)
+  {
+    bool is_clockwise = (0 < rotations);
+    rotations = abs(rotations) % m_max_directions;
+    rotations = (is_clockwise ? rotations : (m_max_directions - rotations));
+
+    // Rotate all river points
+    std::vector<Direction> tmp_rp(m_p_river_points.size());
+    std::copy(m_p_river_points.begin(), m_p_river_points.end(), tmp_rp.begin());
+    m_p_river_points.clear();
+    for (auto direction : tmp_rp)
+    {
+      Direction new_dir =
+          static_cast<Direction>((direction + rotations) % m_max_directions);
+      m_p_river_points.insert(new_dir);
+    }
+
+    std::shared_ptr<Tile> tmp_t[m_max_directions];
+    std::copy(std::begin(m_p_neighbors), std::end(m_p_neighbors),
+              std::begin(tmp_t));
+    for (int i = 0; i < m_max_directions; i++)
+    {
+      int idx = (rotations + i) % m_max_directions;
+      m_p_neighbors[idx] = tmp_t[i];
+    }
+  }
+
+  return common::ERR_NONE;
+}
+
 nlohmann::json Tile::to_json() const
 {
   nlohmann::json result;
-  result["id"] = id;
+  result["id"] = uuids::to_string(id);
 
   // Add immediate neighbor's IDs
-  std::vector<uint16_t> neighbor_ids;
+  std::vector<std::string> neighbor_ids;
   for (auto neighbor : m_p_neighbors)
   {
     if (nullptr == neighbor)
@@ -215,7 +250,7 @@ nlohmann::json Tile::to_json() const
     }
     else
     {
-      neighbor_ids.push_back(neighbor->id);
+      neighbor_ids.push_back(uuids::to_string(neighbor->get_id()));
     }
   }
   result["neighbors"] = neighbor_ids;

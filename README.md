@@ -38,3 +38,12 @@ See [expansion rules](https://github.com/jtreim/roads-boats/blob/main/etcetera.p
     - [ ] Wonder brick phasae: Players contribute wonder bricks using resources from their home.
     - [ ] Production phase: Resources/livestock added to the map.
   - [ ] End game: Game is finished as defined by the rules. A winner is declared and players return to the lobby.
+
+## Required software for development
+- git
+- g++
+- make
+- Boost uuids uses one of the following, depending on the platform:
+  - OpenBSD: arc4random(3)
+  - Linux 3.17+: getrandom(2)
+  - Windows: BCrypt if available, otherwise Wincrypt

@@ -2,15 +2,15 @@
 #include <set>
 #include <vector>
 
-#include <tiles/Plain.h>
+#include <tiles/Plains.h>
 
 using namespace tile;
 
-Plain::Plain() {}
+Plains::Plains() {}
 
-Plain::Plain(std::set<Direction> p_river_points)
+Plains::Plains(std::set<Direction> p_river_points)
 {
   m_p_river_points = p_river_points;
 }
 
-Plain::~Plain() {}
+Plains::~Plains() {}

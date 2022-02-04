@@ -1,7 +1,15 @@
-#include <gtest/gtest.h>
+#include <iostream>
 #include <set>
 
+#include <gtest/gtest.h>
+#include <stduuid/include/uuid.h>
+
 #include <common/Errors.h>
+#include <tiles/Desert.h>
+#include <tiles/Forest.h>
+#include <tiles/Mountain.h>
+#include <tiles/Plains.h>
+#include <tiles/Rock.h>
 #include <tiles/Sea.h>
 #include <tiles/Tile.h>
 
@@ -10,22 +18,44 @@ using namespace tile;
 TEST(tile_test, create_tile_test)
 {
   // When creating tiles, a unique ID should be added for each tile.
-  // This is implemented as a count for each tile, starting at 1 and
-  // incrementing by 1 for each additional tile created.
+  // This is implemented as a UUID for each tile.
+  // This should not matter what type of Tile, or how many river points it is
+  // initialized with.
+  std::set<uuids::uuid> ids;
+  Desert desert = Desert();
 
-  uint8_t count = 1;
-  EXPECT_EQ(count, Tile::unique_tile_id);
+  // New ID should not be empty, and should follow the expected uuid format.
+  uuids::uuid id = desert.get_id();
+  ASSERT_TRUE(!id.is_nil());
+  ASSERT_EQ(16, id.as_bytes().size());
+  ASSERT_EQ(uuids::uuid_version::random_number_based, id.version());
+  ASSERT_EQ(uuids::uuid_variant::rfc, id.variant());
 
-  // Check that tile id increments with each new tile
-  std::unique_ptr<Tile> t = std::make_unique<Tile>();
-  EXPECT_EQ(count, t->get_id());
-  count++;
-  EXPECT_EQ(count, Tile::unique_tile_id);
+  ids.insert(desert.get_id());
 
-  t = std::make_unique<Tile>();
-  EXPECT_EQ(count, t->get_id());
-  count++;
-  EXPECT_EQ(count, Tile::unique_tile_id);
+  Forest forest = Forest();
+  ASSERT_EQ(ids.end(), ids.find(forest.get_id()));
+  ids.insert(forest.get_id());
+
+  Mountain mountain = Mountain();
+  ASSERT_EQ(ids.end(), ids.find(mountain.get_id()));
+  ids.insert(mountain.get_id());
+
+  Plains plains = Plains();
+  ASSERT_EQ(ids.end(), ids.find(plains.get_id()));
+  ids.insert(plains.get_id());
+
+  Rock rock = Rock();
+  ASSERT_EQ(ids.end(), ids.find(rock.get_id()));
+  ids.insert(rock.get_id());
+
+  Sea sea = Sea();
+  ASSERT_EQ(ids.end(), ids.find(sea.get_id()));
+  ids.insert(sea.get_id());
+
+  Tile tile = Tile();
+  ASSERT_EQ(ids.end(), ids.find(tile.get_id()));
+  ids.insert(tile.get_id());
 }
 
 TEST(tile_test, add_neighbor_test)
@@ -131,4 +161,158 @@ TEST(tile_test, add_neighbor_test)
   added = sea_neighbor->get_neighbor(Direction::east);
   EXPECT_NE(nullptr, added);
   EXPECT_EQ(added->get_id(), test->get_id());
+}
+
+TEST(tile_test, rotate_test)
+{
+  // Rotating a tile should be clockwise. If the input value is negative, then
+  // rotation is counter-clockwise.
+  // This should rotate all of the Tile's river points and neighbors
+  // accordingly.
+  std::set<Direction> rp;
+  rp.insert(Direction::north_east);
+  rp.insert(Direction::south_west);
+  rp.insert(Direction::west);
+  std::shared_ptr<Tile> test = std::make_shared<Tile>(rp);
+  std::shared_ptr<Tile> neighbor = std::make_shared<Tile>();
+  std::shared_ptr<Tile> river_neighbor = std::make_shared<Tile>(rp);
+  EXPECT_EQ(common::ERR_NONE,
+            test->add_neighbor(river_neighbor, Direction::north_east));
+  EXPECT_EQ(common::ERR_NONE, test->add_neighbor(neighbor, Direction::east));
+
+  // When rotating 0, nothing should actually move.
+  EXPECT_EQ(common::ERR_NONE, test->rotate(0));
+  auto river_points = test->get_river_points();
+
+  EXPECT_EQ(3, river_points.size());
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::north_east));
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::south_west));
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::west));
+
+  for (int d = 0; d < 6; d++)
+  {
+    if (Direction::north_east == d)
+    {
+      EXPECT_TRUE(*river_neighbor ==
+                  *(test->get_neighbor(static_cast<Direction>(d))));
+    }
+    else if (Direction::east == d)
+    {
+      EXPECT_TRUE(*neighbor ==
+                  *(test->get_neighbor(static_cast<Direction>(d))));
+    }
+    else
+    {
+      EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
+    }
+  }
+
+  // When rotating 1, everything should move clockwise 1 step
+  EXPECT_EQ(common::ERR_NONE, test->rotate(1));
+  river_points = test->get_river_points();
+
+  EXPECT_EQ(3, river_points.size());
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::east));
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::west));
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::north_west));
+
+  for (int d = 0; d < 6; d++)
+  {
+    if (Direction::east == d)
+    {
+      EXPECT_TRUE(*river_neighbor ==
+                  *(test->get_neighbor(static_cast<Direction>(d))));
+    }
+    else if (Direction::south_east == d)
+    {
+      EXPECT_TRUE(*neighbor ==
+                  *(test->get_neighbor(static_cast<Direction>(d))));
+    }
+    else
+    {
+      EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
+    }
+  }
+
+  // When rotating -1, everything should move counter-clockwise 1 step
+  EXPECT_EQ(common::ERR_NONE, test->rotate(-1));
+  river_points = test->get_river_points();
+
+  EXPECT_EQ(3, river_points.size());
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::north_east));
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::south_west));
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::west));
+
+  for (int d = 0; d < 6; d++)
+  {
+    if (Direction::north_east == d)
+    {
+      EXPECT_TRUE(*river_neighbor ==
+                  *(test->get_neighbor(static_cast<Direction>(d))));
+    }
+    else if (Direction::east == d)
+    {
+      EXPECT_TRUE(*neighbor ==
+                  *(test->get_neighbor(static_cast<Direction>(d))));
+    }
+    else
+    {
+      EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
+    }
+  }
+
+  // When rotating 8, everything should effectively move 2 steps clockwise
+  EXPECT_EQ(common::ERR_NONE, test->rotate(8));
+  river_points = test->get_river_points();
+
+  EXPECT_EQ(3, river_points.size());
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::south_east));
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::north_west));
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::north_east));
+
+  for (int d = 0; d < 6; d++)
+  {
+    if (Direction::south_east == d)
+    {
+      EXPECT_TRUE(*river_neighbor ==
+                  *(test->get_neighbor(static_cast<Direction>(d))));
+    }
+    else if (Direction::south_west == d)
+    {
+      EXPECT_TRUE(*neighbor ==
+                  *(test->get_neighbor(static_cast<Direction>(d))));
+    }
+    else
+    {
+      EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
+    }
+  }
+
+  // When rotating -15, everything should effectively move 3 steps
+  // counter-clockwise
+  EXPECT_EQ(common::ERR_NONE, test->rotate(-15));
+  river_points = test->get_river_points();
+
+  EXPECT_EQ(3, river_points.size());
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::north_west));
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::south_east));
+  EXPECT_TRUE(river_points.end() != river_points.find(Direction::south_west));
+
+  for (int d = 0; d < 6; d++)
+  {
+    if (Direction::north_west == d)
+    {
+      EXPECT_TRUE(*river_neighbor ==
+                  *(test->get_neighbor(static_cast<Direction>(d))));
+    }
+    else if (Direction::north_east == d)
+    {
+      EXPECT_TRUE(*neighbor ==
+                  *(test->get_neighbor(static_cast<Direction>(d))));
+    }
+    else
+    {
+      EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
+    }
+  }
 }
