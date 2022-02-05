@@ -95,5 +95,5 @@ base_test : $(TEST_BUILD_DIR)/base_test.o $(TEST_BUILD_DIR)/gtest_main.a
 
 tile_test : $(TEST_BUILD_DIR)/tile_test.o $(TEST_BUILD_DIR)/gtest_main.a
 	$(MAKE) -C ../
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $(BUILD_DIR)/tiles/Tile.o $(BUILD_DIR)/portables/Resource.o $(BUILD_DIR)/tiles/Desert.o $(BUILD_DIR)/tiles/Forest.o $(BUILD_DIR)/tiles/Mountain.o $(BUILD_DIR)/tiles/Plains.o $(BUILD_DIR)/tiles/Rock.o $(BUILD_DIR)/tiles/Sea.o $^ -o $(TEST_BUILD_DIR)/$@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $(BUILD_DIR)/tiles/Hex.o $(BUILD_DIR)/tiles/Tile.o $(BUILD_DIR)/portables/Resource.o $(BUILD_DIR)/tiles/Desert.o $(BUILD_DIR)/tiles/Forest.o $(BUILD_DIR)/tiles/Mountain.o $(BUILD_DIR)/tiles/Plains.o $(BUILD_DIR)/tiles/Rock.o $(BUILD_DIR)/tiles/Sea.o $^ -o $(TEST_BUILD_DIR)/$@
 	$(TEST_BUILD_DIR)/$@.exe

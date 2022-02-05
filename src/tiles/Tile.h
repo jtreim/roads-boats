@@ -15,17 +15,18 @@
 #include <players/Player.h>
 #include <portables/Resource.h>
 #include <portables/transporters/Transporter.h>
+#include <tiles/Hex.h>
 
 namespace tile
 {
 enum Direction
 {
-  north_east = 0,
+  north_west = 0,
+  north_east,
   east,
   south_east,
   south_west,
-  west,
-  north_west
+  west
 };
 
 class Tile : public std::enable_shared_from_this<Tile>
@@ -36,14 +37,15 @@ public:
   ~Tile();
 
   bool operator==(Tile const &other) const;
+  bool operator!=(Tile const &other) const;
 
-  // Abstract calls
   virtual nlohmann::json to_json() const;
 
   // getters
   uuids::uuid get_id() const { return id; };
 
   /// Gets the first adjacent tile in the input direction
+  /// @param direction Side of the tile to check for a neighbor
   /// @return
   ///   - pointer to the first adjacent tile
   ///   - nullptr if no tile is in the given direction
@@ -138,6 +140,7 @@ protected:
   bool is_neighboring_sea() const;
 
   uuids::uuid id;
+  hex_point m_p_coordinates;
   std::shared_ptr<Tile> m_p_neighbors[6];
   std::set<Direction> m_p_river_points;
   std::shared_ptr<building::Building> m_p_building;

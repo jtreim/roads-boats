@@ -36,6 +36,7 @@ Tile::~Tile()
 }
 
 bool Tile::operator==(Tile const &other) const { return id == other.get_id(); }
+bool Tile::operator!=(Tile const &other) const { return id != other.get_id(); }
 
 std::shared_ptr<Tile> Tile::get_neighbor(Direction direction) const
 {
