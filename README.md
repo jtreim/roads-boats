@@ -43,7 +43,3 @@ See [expansion rules](https://github.com/jtreim/roads-boats/blob/main/etcetera.p
 - git
 - g++
 - make
-- Boost uuids uses one of the following, depending on the platform:
-  - OpenBSD: arc4random(3)
-  - Linux 3.17+: getrandom(2)
-  - Windows: BCrypt if available, otherwise Wincrypt
