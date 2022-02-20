@@ -12,15 +12,14 @@
 
 using namespace tile;
 
-River::River(const std::set<Direction> river_points,
-             const std::set<std::shared_ptr<Area>> areas)
-    : m_p_id(utils::gen_uuid()), m_p_points(river_points), m_p_areas(areas)
+River::River(const std::set<Direction> river_points)
+    : m_p_id(utils::gen_uuid()), m_p_points(river_points)
 {
 }
 
 River::River(const River &other)
     : m_p_id(other.m_p_id), m_p_points(other.m_p_points),
-      m_p_areas(other.m_p_areas), m_p_bridges(other.m_p_bridges)
+      m_p_bridges(other.m_p_bridges)
 {
   std::copy(other.m_p_transporters.begin(), other.m_p_transporters.end(),
             m_p_transporters.begin());
@@ -39,7 +38,21 @@ bool River::operator!=(River const &other) const { return !(*this == other); }
 
 bool River::operator!=(River &other) { return !(*this == other); }
 
-std::vector<std::shared_ptr<Area>> River::get_accessible_areas() {}
+common::Error River::build_bridge(const Direction d)
+{
+  common::Error err = common::ERR_FAIL;
+  if (!is_valid(d))
+  {
+    err = common::ERR_INVALID;
+  }
+  else if (can_build_bridge(d))
+  {
+    m_p_bridges.insert(d);
+    err = common::ERR_NONE;
+  }
+
+  return err;
+}
 
 void River::rotate(int8_t rotations)
 {
@@ -102,10 +115,6 @@ nlohmann::json River::to_json() const
     std::vector<Border> borders = borders_from_direction(bridge);
     name = to_string(borders[0]) + "-" + to_string(borders[1]);
     j[name]["borders"] = borders;
-    // j[name]["areas"].push_back(
-    //     uuids::to_string(m_p_parent->get_area(borders[0])->get_id()));
-    // j[name]["areas"].push_back(
-    //     uuids::to_string(m_p_parent->get_area(borders[1])->get_id()));
     bridges.push_back(j);
   }
   retval["bridges"] = bridges;

@@ -1,11 +1,11 @@
-#include <iostream>
-#include <set>
+#include <memory>
 
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 #include <stduuid/include/uuid.h>
 
 #include <common/Errors.h>
+#include <tiles/components/Border.h>
 #include <tiles/components/Hex_point.h>
 
 using namespace tile;
@@ -166,6 +166,7 @@ TEST(hex_point_test, neighboring_points_test)
   ASSERT_EQ(5, neighbor.r());
   ASSERT_EQ(0, neighbor.s());
 
+  // Chaining neighbor calls should lead to the expected result.
   ASSERT_EQ(
       test_object.neighbor(Direction::north_west),
       test_object.neighbor(Direction::west).neighbor(Direction::north_east));

@@ -15,7 +15,7 @@ using namespace tile;
 
 TEST(tile_test, create_tile_test)
 {
-  // // When creating tiles, a unique ID should be added for each tile.
+  // // When creating tiles, an unique ID should be added for each tile.
   // // This is implemented as a UUID for each tile.
   // // This should not matter what type of Tile, or how many river points it is
   // // initialized with.

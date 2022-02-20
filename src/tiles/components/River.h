@@ -8,7 +8,6 @@
 #include <stduuid/include/uuid.h>
 
 #include <portables/Transporter.h>
-#include <tiles/components/Area.h>
 #include <tiles/components/Border.h>
 
 namespace tile
@@ -18,26 +17,21 @@ class Area;
 class River : public std::enable_shared_from_this<River>
 {
 public:
-  River(const std::set<Direction> river_points,
-        const std::set<std::shared_ptr<Area>> areas);
+  River(const std::set<Direction> river_points);
   River(const River &other);
   virtual ~River();
 
-  River operator=(const River &other) { return River(other); }
+  inline uuids::uuid get_id() { return m_p_id; }
+
   bool operator==(River const &other) const;
   bool operator==(River &other);
   bool operator!=(River const &other) const;
   bool operator!=(River &other);
 
-  /// Retrieves all areas a water transporter has access to from this river.
-  /// This is any adjacent areas, and any areas accessible via bridges.
-  /// @return All accessible areas.
-  std::vector<std::shared_ptr<Area>> get_accessible_areas();
-
   bool inline can_build_bridge(Direction d)
   {
     // TODO: This still allows building another bridge between the same two
-    // areas at the other end of a river.
+    // areas at another point of a river.
     return ((m_p_points.contains(d)) && !(m_p_bridges.contains(d)));
   }
 
@@ -50,6 +44,14 @@ public:
   {
     return m_p_points.contains(d);
   }
+
+  /// Builds a bridge over the point at the input direction.
+  /// @param[in] d
+  /// @return
+  ///   - common::ERR_NONE on success
+  ///   - common::ERR_FAIL when unable to build bridge at input direction.
+  ///   - common::ERR_INVALID on invalid direction.
+  common::Error build_bridge(const Direction d);
 
   /// Rotates the river clockwise the number of rotations.
   /// @param[in] rotations The number of clockwise rotations to perform. A
@@ -64,7 +66,6 @@ private:
   std::set<Direction> m_p_points;
   std::set<Direction> m_p_bridges;
   std::vector<std::shared_ptr<portable::Transporter>> m_p_transporters;
-  std::set<std::shared_ptr<Area>> m_p_areas;
 };
 
 /// Create a River object using the input json.
