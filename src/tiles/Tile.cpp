@@ -10,33 +10,69 @@
 #include <buildings/Building.h>
 #include <players/Player.h>
 #include <portables/Resource.h>
-#include <portables/transporters/Transporter.h>
+#include <portables/Transporter.h>
 #include <tiles/Tile.h>
+#include <tiles/components/Area.h>
+#include <tiles/components/Border.h>
+#include <tiles/components/Hex_point.h>
+#include <tiles/components/River.h>
 #include <utils/id_utils.h>
 
 using namespace tile;
 
-Tile::Tile() : id(utils::gen_uuid()) {}
+Tile::Tile(const Terrain t) : m_p_id(utils::gen_uuid()), m_p_terrain(t)
+{
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    m_p_neighbors[i].reset();
+    m_p_walls[i] =
+        std::make_pair<player::Color, uint8_t>(player::Color::neutral, 0);
+  }
+  std::set<Border> all_borders;
+  for (uint8_t b = 0; b < MAX_BORDERS; b++)
+  {
+    all_borders.insert(static_cast<Border>(b));
+  }
+  m_p_areas.insert(Area(all_borders));
+}
 
-Tile::Tile(std::set<Direction> p_river_points)
-    : id(utils::gen_uuid()), m_p_river_points(p_river_points)
+Tile::Tile(const Terrain t, const hex_point hp)
+    : m_p_id(utils::gen_uuid()), m_p_terrain(t), m_p_hex_point(hp)
+{
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    m_p_neighbors[i].reset();
+    m_p_walls[i] =
+        std::make_pair<player::Color, uint8_t>(player::Color::neutral, 0);
+  }
+  std::set<Border> all_borders;
+  for (uint8_t b = 0; b < MAX_BORDERS; b++)
+  {
+    all_borders.insert(static_cast<Border>(b));
+  }
+  m_p_areas.insert(Area(all_borders));
+}
+
+Tile::Tile(const Tile &other)
+    : m_p_id(other.m_p_id), m_p_terrain(other.m_p_terrain)
 {
 }
 
 Tile::~Tile()
 {
-  for (uint8_t i = 0; i < m_max_directions; i++)
+  m_p_hex_point = hex_point(0, 0);
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
     m_p_neighbors[i].reset();
+    m_p_walls[i] =
+        std::make_pair<player::Color, uint8_t>(player::Color::neutral, 0);
   }
-  m_p_river_points.clear();
-  m_p_building.reset();
-  m_p_resources.clear();
-  m_p_transporters.clear();
+  m_p_rivers.clear();
+  m_p_areas.clear();
 }
 
-bool Tile::operator==(Tile const &other) const { return id == other.get_id(); }
-bool Tile::operator!=(Tile const &other) const { return id != other.get_id(); }
+bool Tile::operator==(Tile &other) const { return m_p_id == other.m_p_id; }
+bool Tile::operator!=(Tile &other) const { return m_p_id != other.m_p_id; }
 
 std::shared_ptr<Tile> Tile::get_neighbor(Direction direction) const
 {
@@ -45,19 +81,23 @@ std::shared_ptr<Tile> Tile::get_neighbor(Direction direction) const
 
 std::shared_ptr<Tile> *Tile::get_neighbors() { return m_p_neighbors; }
 
-bool Tile::river_has_point(Direction direction) const
+std::set<Direction> Tile::get_all_river_points() const
 {
-  return (m_p_river_points.end() != m_p_river_points.find(direction));
-}
+  std::set<Direction> retval;
+  for (auto river : m_p_rivers)
+  {
+    retval.insert(river.get_points().begin(), river.get_points().end());
+  }
 
-std::set<Direction> Tile::get_river_points() const { return m_p_river_points; }
+  return retval;
+}
 
 bool Tile::is_neighboring_sea() const
 {
   bool retval = false;
   for (auto neighbor : m_p_neighbors)
   {
-    if (neighbor->is_sea())
+    if ((neighbor) && (Terrain::sea == neighbor->m_p_terrain))
     {
       retval = true;
       break;
@@ -68,7 +108,8 @@ bool Tile::is_neighboring_sea() const
 
 bool Tile::is_shore() const
 {
-  return (!m_p_river_points.empty() || is_neighboring_sea());
+  return ((!m_p_rivers.empty() || is_neighboring_sea()) &&
+          (Terrain::sea != m_p_terrain));
 }
 
 common::Error Tile::add_neighbor(std::shared_ptr<Tile> neighbor,
@@ -85,7 +126,7 @@ common::Error Tile::add_neighbor(std::shared_ptr<Tile> neighbor,
 common::Error Tile::remove_neighbor(Direction direction)
 {
   common::Error err = common::ERR_NONE;
-  if (!is_valid_direction(direction))
+  if (!is_valid(direction))
   {
     err = common::ERR_INVALID;
   }
@@ -104,36 +145,53 @@ common::Error Tile::remove_neighbor(Direction direction)
 
 std::shared_ptr<building::Building> Tile::get_building() const
 {
-  return m_p_building;
+  std::shared_ptr<building::Building> retval;
+  for (auto area : m_p_areas)
+  {
+    if (area.get_building())
+    {
+      retval = area.get_building();
+      break;
+    }
+  }
+  return retval;
 }
 
 std::map<std::string, std::pair<portable::Resource, uint8_t>>
-Tile::get_resources() const
+Tile::get_all_resources() const
 {
-  return m_p_resources;
+  // TODO: query all areas, return all resources found in each area (if any)
+  return std::map<std::string, std::pair<portable::Resource, uint8_t>>();
 }
 
 std::map<player::Color, std::vector<std::shared_ptr<portable::Transporter>>>
-Tile::get_transporters() const
+Tile::get_all_transporters() const
 {
-  return m_p_transporters;
+  // TODO: query all areas and rivers, return all transporters found (if any)
+  return std::map<player::Color,
+                  std::vector<std::shared_ptr<portable::Transporter>>>();
 }
 
 std::vector<std::shared_ptr<portable::Transporter>>
-Tile::get_player_transporters(player::Color color) const
+Tile::get_all_player_transporters(player::Color color) const
 {
+  // TODO: query all areas/rivers, return all transporters for input player.
   std::vector<std::shared_ptr<portable::Transporter>> transporters;
-  if (m_p_transporters.end() != m_p_transporters.find(color))
-  {
-    transporters = m_p_transporters.at(color);
-  }
   return transporters;
 }
 
-Direction Tile::get_opposite_direction(Direction direction)
+bool Tile::has_river_point(const Direction direction) const
 {
-  return static_cast<Direction>((direction + m_max_directions / 2) %
-                                m_max_directions);
+  bool retval = false;
+  for (auto river : m_p_rivers)
+  {
+    if (river.has_point(direction))
+    {
+      retval = true;
+      break;
+    }
+  }
+  return retval;
 }
 
 common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
@@ -142,7 +200,7 @@ common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
   common::Error err = common::ERR_NONE;
   // Check that input is valid, that we don't already have a neighbor in
   // that direction, and that we're not already neighbors with the new neighbor.
-  if ((nullptr == neighbor) || (!is_valid_direction(direction)))
+  if ((nullptr == neighbor) || (!is_valid(direction)))
   {
     err = common::ERR_INVALID;
   }
@@ -152,7 +210,7 @@ common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
   }
   else
   {
-    for (int d = 0; d < m_max_directions; d++)
+    for (int d = 0; d < MAX_DIRECTIONS; d++)
     {
       if ((m_p_neighbors[d]) && (*(m_p_neighbors[d]) == *neighbor))
       {
@@ -164,17 +222,13 @@ common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
 
   // Check for river points on the borders. Each tile's border should match
   // (adding a Sea tile neighbor should skip this step).
-  if ((common::ERR_NONE == err) && (!neighbor->is_sea()))
+  if ((common::ERR_NONE == err) && (Terrain::sea != neighbor->m_p_terrain))
   {
-    bool contains_river = river_has_point(direction);
-
-    // From the neighbor's perspective, the matching border is the opposite
-    // direction of the border we're checking.
-    Direction opposite = get_opposite_direction(direction);
-
-    // Both this tile and the neighbor we're testing should match having a
-    // river/no river on the adjoining sides.
-    if (neighbor->river_has_point(opposite) != contains_river)
+    // From the neighbor's perspective, the matching side is the opposite
+    // direction of the side we're checking. This tile and the neighbor we're
+    // testing should match having a river/no river on the adjoining sides.
+    Direction opposite = !direction;
+    if (has_river_point(direction) != neighbor->has_river_point(opposite))
     {
       err = common::ERR_FAIL;
     }
@@ -185,7 +239,7 @@ common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
 common::Error Tile::clear_neighbors()
 {
   common::Error err = common::ERR_NONE;
-  for (int d = 0; d < m_max_directions; d++)
+  for (int d = 0; d < MAX_DIRECTIONS; d++)
   {
     if (m_p_neighbors[d])
     {
@@ -203,43 +257,37 @@ common::Error Tile::clear_neighbors()
   return err;
 }
 
-common::Error Tile::rotate(int8_t rotations)
+void Tile::rotate(int8_t rotations)
 {
   // Making 0 rotations doesn't do anything...
   if (0 != rotations)
   {
     bool is_clockwise = (0 < rotations);
-    rotations = abs(rotations) % m_max_directions;
-    rotations = (is_clockwise ? rotations : (m_max_directions - rotations));
+    rotations = abs(rotations) % MAX_DIRECTIONS;
+    rotations = (is_clockwise ? rotations : (MAX_DIRECTIONS - rotations));
 
-    // Rotate all river points
-    std::vector<Direction> tmp_rp(m_p_river_points.size());
-    std::copy(m_p_river_points.begin(), m_p_river_points.end(), tmp_rp.begin());
-    m_p_river_points.clear();
-    for (auto direction : tmp_rp)
+    for (auto river : m_p_rivers)
     {
-      Direction new_dir =
-          static_cast<Direction>((direction + rotations) % m_max_directions);
-      m_p_river_points.insert(new_dir);
+      river.rotate(rotations);
     }
 
-    std::shared_ptr<Tile> tmp_t[m_max_directions];
+    std::shared_ptr<Tile> tmp_t[MAX_DIRECTIONS];
     std::copy(std::begin(m_p_neighbors), std::end(m_p_neighbors),
               std::begin(tmp_t));
-    for (int i = 0; i < m_max_directions; i++)
+    for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
     {
-      int idx = (rotations + i) % m_max_directions;
+      int idx = (rotations + i) % MAX_DIRECTIONS;
       m_p_neighbors[idx] = tmp_t[i];
     }
   }
-
-  return common::ERR_NONE;
 }
 
 nlohmann::json Tile::to_json() const
 {
   nlohmann::json result;
-  result["id"] = uuids::to_string(id);
+  result["id"] = uuids::to_string(m_p_id);
+
+  result["hex_coord"] = m_p_hex_point.to_json();
 
   // Add immediate neighbor's IDs
   std::vector<std::string> neighbor_ids;
@@ -247,7 +295,7 @@ nlohmann::json Tile::to_json() const
   {
     if (nullptr == neighbor)
     {
-      neighbor_ids.push_back(0);
+      neighbor_ids.push_back("empty");
     }
     else
     {
@@ -256,18 +304,30 @@ nlohmann::json Tile::to_json() const
   }
   result["neighbors"] = neighbor_ids;
 
-  // Add river points
-  std::vector<uint8_t> river_points;
-  river_points.reserve(6);
-  std::copy(m_p_river_points.begin(), m_p_river_points.end(),
-            std::back_inserter(river_points));
-  result["river_points"] = river_points;
+  for (auto river : m_p_rivers)
+  {
+    result["rivers"].push_back(river.to_json());
+  }
 
-  // TODO: Add building
+  for (auto area : m_p_areas)
+  {
+    result["areas"].push_back(area.to_json());
+  }
 
-  // TODO: Add resource counts
+  for (auto road : m_p_roads)
+  {
+    result["roads"].push_back(to_string(road));
+  }
 
-  // TODO: Add transporters
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    std::pair<player::Color, uint8_t> wall = m_p_walls[i];
+    Direction d = static_cast<Direction>(1 + i);
+    result["walls"][to_string(d)]["color"] = to_string(wall.first);
+    result["walls"][to_string(d)]["thickness"] = wall.second;
+  }
 
   return result;
 }
+
+// TODO: implement from_json

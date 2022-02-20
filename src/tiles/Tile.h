@@ -14,35 +14,40 @@
 #include <common/Errors.h>
 #include <players/Player.h>
 #include <portables/Resource.h>
-#include <portables/transporters/Transporter.h>
-#include <tiles/Hex.h>
+#include <portables/Transporter.h>
+#include <tiles/components/Area.h>
+#include <tiles/components/Border.h>
+#include <tiles/components/Hex_point.h>
+#include <tiles/components/River.h>
 
 namespace tile
 {
-enum Direction
-{
-  north_west = 0,
-  north_east,
-  east,
-  south_east,
-  south_west,
-  west
-};
 
 class Tile : public std::enable_shared_from_this<Tile>
 {
+  enum Terrain
+  {
+    plains = 0,
+    rock,
+    mountain,
+    forest,
+    desert,
+    sea
+  };
+
 public:
-  Tile();
-  Tile(std::set<Direction> p_river_points);
+  Tile(const Terrain t);
+  Tile(const Terrain t, const hex_point hp);
+  Tile(const Tile &other);
   ~Tile();
 
-  bool operator==(Tile const &other) const;
-  bool operator!=(Tile const &other) const;
-
-  virtual nlohmann::json to_json() const;
-
-  // getters
-  uuids::uuid get_id() const { return id; };
+  inline uuids::uuid get_id() const { return m_p_id; };
+  inline Terrain get_terrain() const { return m_p_terrain; }
+  inline hex_point get_hex_point() const { return m_p_hex_point; };
+  inline std::set<River> get_rivers() const { return m_p_rivers; }
+  inline std::set<Area> const get_all_areas() const { return m_p_areas; }
+  std::shared_ptr<Area> get_area(const Border b) const;
+  std::vector<std::shared_ptr<Area>> get_areas(const Direction d) const;
 
   /// Gets the first adjacent tile in the input direction
   /// @param direction Side of the tile to check for a neighbor
@@ -51,7 +56,7 @@ public:
   ///   - nullptr if no tile is in the given direction
   std::shared_ptr<Tile> get_neighbor(Direction direction) const;
   std::shared_ptr<Tile> *get_neighbors();
-  std::set<Direction> get_river_points() const;
+  std::set<Direction> get_all_river_points() const;
 
   /// Gets the building (if any) currently on this tile
   /// @return
@@ -59,20 +64,19 @@ public:
   ///   - nullptr if no structure has been built here
   std::shared_ptr<building::Building> get_building() const;
   std::map<std::string, std::pair<portable::Resource, uint8_t>>
-  get_resources() const;
+  get_all_resources() const;
   std::map<player::Color, std::vector<std::shared_ptr<portable::Transporter>>>
-  get_transporters() const;
+  get_all_transporters() const;
   std::vector<std::shared_ptr<portable::Transporter>>
-  get_player_transporters(player::Color color) const;
+  get_all_player_transporters(player::Color color) const;
 
   /// Checks whether tile has a river that flows through the input direction
   /// @param[in] direction
   /// @return
   ///   - true if the tile has a river flowing through the input direction
   ///   - false otherwise
-  bool river_has_point(Direction direction) const;
-  virtual bool is_shore() const;
-  virtual inline bool is_sea() const { return false; }
+  bool has_river_point(const Direction direction) const;
+  bool is_shore() const;
 
   /// Add a tile as a neighbor in the input direction.
   /// @param[in] neighbor The tile to be placed next to this one.
@@ -106,22 +110,17 @@ public:
   /// Rotates the tile clockwise the number of rotations.
   /// @param[in] rotations The number of clockwise rotations to perform. A
   /// negative value rotates counter-clockwise.
-  /// @return
-  ///   - common::Error::ERR_NONE on success
-  ///   - common::Error::ERR_FAIL on fail
-  common::Error rotate(int8_t rotations);
+  void rotate(int8_t rotations);
 
   // Helpers
-  // friend std::ostream &operator<<(std::ostream &os, const Tile &tile);
-  inline static bool is_valid_direction(Direction direction)
-  {
-    return ((0 <= direction) && (m_max_directions > direction));
-  };
+  friend std::ostream &operator<<(std::ostream &os, const Tile &tile);
+  bool operator==(Tile &other) const;
+  bool operator!=(Tile &other) const;
 
-  static Direction get_opposite_direction(Direction direction);
-  static const uint8_t m_max_directions = 6;
+  nlohmann::json to_json() const;
 
 protected:
+private:
   /// Checks whether neighbor can be placed at the direction relative to the
   /// tile.
   /// @param[in] neighbor  Tile to be placed
@@ -139,17 +138,23 @@ protected:
 
   bool is_neighboring_sea() const;
 
-  uuids::uuid id;
-  hex_point m_p_coordinates;
-  std::shared_ptr<Tile> m_p_neighbors[6];
-  std::set<Direction> m_p_river_points;
-  std::shared_ptr<building::Building> m_p_building;
-  std::map<std::string, std::pair<portable::Resource, uint8_t>> m_p_resources;
-  std::map<player::Color, std::vector<std::shared_ptr<portable::Transporter>>>
-      m_p_transporters;
-
-private:
+  uuids::uuid m_p_id;
+  hex_point m_p_hex_point;
+  Terrain m_p_terrain;
+  std::shared_ptr<Tile> m_p_neighbors[MAX_DIRECTIONS];
+  std::set<River> m_p_rivers;
+  std::set<Area> m_p_areas;
+  std::set<Border> m_p_roads;
+  std::pair<player::Color, uint8_t> m_p_walls[MAX_DIRECTIONS];
 };
 
+/// Create a Tile object using the input json.
+/// @param[in] j Input json
+/// @param[out] t Pointer to created Tile object. Null on invalid json input.
+/// @return
+///   - common::ERR_NONE on success
+///   - common::ERR_FAIL on invalid json object
+static common::Error from_json(const nlohmann::json j,
+                               std::shared_ptr<Tile> &t);
 } // namespace tile
 #endif // end Tile_H

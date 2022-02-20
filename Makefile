@@ -3,7 +3,15 @@ LD        := g++
 
 FLAGS     := -g -Wall -Wextra -pthread -std=c++20
 
-MODULES   := buildings common players portables tiles utils windows
+MODULES   := buildings \
+						 common \
+						 players \
+						 portables \
+						 portables/transporters \
+						 tiles \
+						 tiles/components \
+						 utils \
+						 windows
 SRC_DIR   := $(addprefix src/,$(MODULES))   # Searches src/* for .h/.cpp files
 BUILD_DIR := $(addprefix build/,$(MODULES)) # Recreates build dir to match src
 TEST_DIR  := tests
