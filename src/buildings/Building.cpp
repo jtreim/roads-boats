@@ -19,6 +19,7 @@ static const size_t BUILDING_NAMES_SIZE =
 
 Building::Building(const Building &other) : m_p_type(other.get_type()) {}
 Building::Building(const Type &type) : m_p_type(type) {}
+Building::~Building() {}
 
 std::string Building::get_name() const
 {
@@ -44,4 +45,5 @@ nlohmann::json Building::to_json() const
 {
   nlohmann::json retval;
   retval["type"] = get_name();
+  return retval;
 }

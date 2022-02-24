@@ -2,6 +2,7 @@
 #define BORDER_H
 
 #include <iostream>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,15 @@ static const std::string DIRECTION_NAMES[MAX_DIRECTIONS]{
 static bool is_valid(const Direction d)
 {
   return ((0 <= d) && (MAX_DIRECTIONS > d));
+}
+static std::set<Direction> get_all_directions()
+{
+  std::set<Direction> retval;
+  for (int i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    retval.insert(static_cast<Direction>(i));
+  }
+  return retval;
 }
 static std::string to_string(const Direction d)
 {
@@ -73,6 +83,15 @@ static const std::string BORDER_NAMES[MAX_BORDERS]{
     "northwest_left", "northwest_right", "northeast_left", "northeast_right",
     "east_left",      "east_right",      "southeast_left", "southeast_right",
     "southwest_left", "southwest_right", "west_left",      "west_right"};
+static std::set<Border> get_all_borders()
+{
+  std::set<Border> retval;
+  for (int i = 0; i < MAX_BORDERS; i++)
+  {
+    retval.insert(static_cast<Border>(i));
+  }
+  return retval;
+}
 static bool is_valid(const Border b) { return ((0 <= b) && (MAX_BORDERS > b)); }
 static std::string to_string(const Border b)
 {

@@ -166,7 +166,7 @@ TEST(hex_point_test, neighboring_points_test)
   ASSERT_EQ(5, neighbor.r());
   ASSERT_EQ(0, neighbor.s());
 
-  // Chaining neighbor calls should lead to the expected result.
+  // Chaining neighbor calls should be okay.
   ASSERT_EQ(
       test_object.neighbor(Direction::north_west),
       test_object.neighbor(Direction::west).neighbor(Direction::north_east));

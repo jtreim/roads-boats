@@ -38,7 +38,7 @@ CXXFLAGS += -g -Wall -Wextra -pthread -std=c++20
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
-TESTS = base_test hex_point_test river_test tile_test
+TESTS = base_test hex_point_test river_test area_test tile_test
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
@@ -101,6 +101,15 @@ river_test : $(TEST_BUILD_DIR)/river_test.o $(TEST_BUILD_DIR)/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
 			$(BUILD_DIR)/portables/Transporter.o \
 			$(BUILD_DIR)/tiles/components/River.o \
+			$^ -o $(TEST_BUILD_DIR)/$@
+	$(TEST_BUILD_DIR)/$@.exe
+
+area_test : $(TEST_BUILD_DIR)/area_test.o $(TEST_BUILD_DIR)/gtest_main.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
+			$(BUILD_DIR)/buildings/Building.o \
+			$(BUILD_DIR)/players/Player.o \
+			$(BUILD_DIR)/portables/Transporter.o \
+			$(BUILD_DIR)/tiles/components/Area.o \
 			$^ -o $(TEST_BUILD_DIR)/$@
 	$(TEST_BUILD_DIR)/$@.exe
 

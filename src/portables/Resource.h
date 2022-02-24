@@ -51,5 +51,10 @@ static std::string to_string(Resource res)
   return "unknown";
 }
 
+static bool is_valid(const Resource r)
+{
+  return ((0 <= r) && (RESOURCE_NAMES_SIZE > r));
+}
+
 } // namespace portable
 #endif // end RESOURCE_H
