@@ -15,6 +15,7 @@ class Tile;
 ///
 enum Color
 {
+  invalid = -1,
   black = 0,
   blue,
   green,
@@ -52,7 +53,7 @@ public:
 
 protected:
 private:
-  Color mp_color;
+  Color m_p_color;
   std::vector<std::unique_ptr<portable::Transporter>> mp_transporters;
 };
 } // namespace player

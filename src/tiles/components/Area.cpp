@@ -236,8 +236,21 @@ bool Area::operator==(Area const &other) const
   }
   return are_equal;
 }
+bool Area::operator==(std::set<Border> &borders)
+{
+  return m_p_borders == borders;
+}
+bool Area::operator==(std::set<Border> const &borders) const
+{
+  return m_p_borders == borders;
+}
 bool Area::operator!=(Area &other) { return !(*this == other); }
 bool Area::operator!=(Area const &other) const { return !(*this == other); }
+bool Area::operator!=(std::set<Border> &borders) { return !(*this == borders); }
+bool Area::operator!=(std::set<Border> const &borders) const
+{
+  return !(*this == borders);
+}
 bool Area::operator<(Area const &other) const
 {
   return uuids::to_string(m_p_id) < uuids::to_string(other.m_p_id);
@@ -303,6 +316,27 @@ void Area::operator+=(uint16_t const resources[portable::RESOURCE_NAMES_SIZE])
   {
     m_p_resources[i] += resources[i];
   }
+}
+
+template <typename Iter> bool Area::has_borders(Iter begin, Iter end)
+{
+  bool retval = true;
+  while (begin != end)
+  {
+    if (!m_p_borders.contains(*begin))
+    {
+      retval = false;
+      break;
+    }
+    ++begin;
+  }
+  return retval;
+}
+
+bool Area::contains(const Area other)
+{
+  return has_borders<std::set<Border>::iterator>(other.m_p_borders.begin(),
+                                                 other.m_p_borders.end());
 }
 
 bool Area::does_share_direction(const Direction dir)

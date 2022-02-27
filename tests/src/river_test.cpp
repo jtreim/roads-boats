@@ -113,3 +113,109 @@ TEST(river_test, rotate_river_test)
   }
   EXPECT_TRUE(test_object.has_bridge(Direction::north_west));
 }
+
+TEST(river_test, area_borders_test)
+{
+  // It should be possible to determine area borders based on how a river
+  // divides the tile. A river should return pairings of borders that define
+  // adjacent areas' borders.
+
+  // These first tests assume only 1 river is on a tile.
+  // When there's only one river point, the area should effectively not be
+  // divided. This should still only create 1 area: NW_right->NW_left
+  std::set<Direction> points;
+  points.insert(Direction::north_west);
+  River test_object(points);
+  std::vector<std::set<Border>> results = test_object.get_area_borders();
+  ASSERT_EQ(1, results.size());
+  ASSERT_EQ(ALL_BORDERS, results[0]);
+
+  // If we add another river point, the number of potential areas should
+  // increase. This should create 2 areas: NW_right->SW_left, &
+  // SW_right->NW_left
+  points.insert(Direction::south_west);
+  test_object = River(points);
+  results = test_object.get_area_borders();
+  ASSERT_EQ(2, results.size());
+
+  ASSERT_EQ(8, results[0].size());
+  for (int i = Border::NW_right; i <= Border::SW_left; i++)
+  {
+    ASSERT_TRUE(results[0].contains(static_cast<Border>(i)));
+  }
+
+  ASSERT_EQ(4, results[1].size());
+  for (int i = Border::SW_right; i <= Border::W_right; i++)
+  {
+    ASSERT_TRUE(results[1].contains(static_cast<Border>(i)));
+  }
+  ASSERT_TRUE(results[1].contains(Border::NW_left));
+
+  // If we instead split part of a tile with the river, we should only use the
+  // borders we were given.
+  // This should still create two areas:
+  // NW_right->E_left + SE_right->SW_left
+  // SW_right->NW_left
+  std::set<Border> partial = ALL_BORDERS;
+  partial.erase(Border::E_right);
+  partial.erase(Border::SE_left);
+  results = test_object.get_area_borders(partial);
+  ASSERT_EQ(2, results.size());
+
+  ASSERT_EQ(6, results[0].size());
+  for (int i = Border::NW_right; i <= Border::E_left; i++)
+  {
+    ASSERT_TRUE(results[0].contains(static_cast<Border>(i)));
+  }
+  ASSERT_FALSE(results[0].contains(Border::E_right));
+  ASSERT_FALSE(results[0].contains(Border::SE_left));
+  for (int i = Border::SE_right; i <= Border::SW_left; i++)
+  {
+    ASSERT_TRUE(results[0].contains(static_cast<Border>(i)));
+  }
+
+  ASSERT_EQ(4, results[1].size());
+  for (int i = Border::SW_right; i <= Border::W_right; i++)
+  {
+    ASSERT_TRUE(results[1].contains(static_cast<Border>(i)));
+  }
+  ASSERT_TRUE(results[1].contains(Border::NW_left));
+
+  // If we try to split a partial area that this river does not flow throw, the
+  // resulting list should just return the input.
+  std::set<Border> unused;
+  unused.insert(Border::E_right);
+  unused.insert(Border::SE_left);
+  results = test_object.get_area_borders(unused);
+  ASSERT_EQ(1, results.size());
+  ASSERT_TRUE(results[0].contains(Border::E_right));
+  ASSERT_TRUE(results[0].contains(Border::SE_left));
+
+  // Adding another point should create another area. This should create:
+  // NW_right->E_left,
+  // E_right->SW_left, &
+  // SW_right->NW_left.
+  points.insert(Direction::east);
+  test_object = River(points);
+  results = test_object.get_area_borders();
+  ASSERT_EQ(3, results.size());
+
+  ASSERT_EQ(4, results[0].size());
+  for (int i = Border::NW_right; i <= Border::E_left; i++)
+  {
+    ASSERT_TRUE(results[0].contains(static_cast<Border>(i)));
+  }
+
+  ASSERT_EQ(4, results[1].size());
+  for (int i = Border::E_right; i <= Border::SW_left; i++)
+  {
+    ASSERT_TRUE(results[1].contains(static_cast<Border>(i)));
+  }
+
+  ASSERT_EQ(4, results[2].size());
+  for (int i = Border::SW_right; i <= Border::W_right; i++)
+  {
+    ASSERT_TRUE(results[2].contains(static_cast<Border>(i)));
+  }
+  ASSERT_TRUE(results[2].contains(Border::NW_left));
+}

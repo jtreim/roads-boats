@@ -38,6 +38,65 @@ bool River::operator!=(River const &other) const { return !(*this == other); }
 
 bool River::operator!=(River &other) { return !(*this == other); }
 
+bool River::splits_borders(std::set<Border> borders) const
+{
+  bool does_split = false;
+  for (auto point : m_p_points)
+  {
+    std::vector<Border> b = borders_from_direction(point);
+    if ((borders.contains(b[0])) && (borders.contains(b[1])))
+    {
+      does_split = true;
+      break;
+    }
+  }
+  return does_split;
+}
+
+std::vector<std::set<Border>>
+River::get_area_borders(std::set<Border> borders) const
+{
+  std::vector<std::set<Border>> retval;
+  if (m_p_points.size() > 1)
+  {
+    std::vector<Direction> p(m_p_points.begin(), m_p_points.end());
+
+    // Pair up the right border of each point with the next point's left border.
+    // Because it's circular, we know the last pairing will be whatever's
+    // leftover.
+    for (int i = 0; i < p.size() - 1; i++)
+    {
+      int next = i + 1;
+      Border start = borders_from_direction(p[i])[1];
+      Border end = borders_from_direction(p[next])[0];
+      // Only add to potential areas if the river point splits available area
+      if ((borders.contains(start)) && borders.contains(end))
+      {
+        std::set<Border> area_borders;
+        area_borders.insert(start);
+        borders.erase(start);
+        area_borders.insert(end);
+        borders.erase(end);
+        // Fill in all borders between the two.
+        // Only add the ones that we can from the borders remaining.
+        for (int j = start; j < end; j++)
+        {
+          Border border = static_cast<Border>(j);
+          if (borders.contains(border))
+          {
+            borders.erase(border);
+            area_borders.insert(border);
+          }
+        }
+        retval.push_back(area_borders);
+      }
+    }
+  }
+  retval.push_back(borders);
+
+  return retval;
+}
+
 common::Error River::build_bridge(const Direction d)
 {
   common::Error err = common::ERR_FAIL;

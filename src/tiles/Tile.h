@@ -22,30 +22,48 @@
 
 namespace tile
 {
+enum Terrain
+{
+  invalid = -1,
+  desert = 0,
+  forest,
+  mountain,
+  plains,
+  rock,
+  sea
+};
+static const uint8_t MAX_TERRAIN_TYPES = 6;
+static const std::string TERRAIN_NAMES[MAX_TERRAIN_TYPES]{
+    "desert", "forest", "mountain", "plains", "rock", "sea"};
+static bool is_valid(const Terrain t)
+{
+  return ((0 <= t) && (MAX_TERRAIN_TYPES > t));
+}
+static const std::string to_string(const Terrain t)
+{
+  if (is_valid(t))
+  {
+    return TERRAIN_NAMES[t];
+  }
+  return "unknown";
+}
 
 class Tile : public std::enable_shared_from_this<Tile>
 {
-  enum Terrain
-  {
-    plains = 0,
-    rock,
-    mountain,
-    forest,
-    desert,
-    sea
-  };
-
 public:
-  Tile(const Terrain t);
-  Tile(const Terrain t, const hex_point hp);
+  Tile(const Terrain t = Terrain::desert);
+  Tile(const hex_point hp, const Terrain t = Terrain::desert);
+  Tile(const hex_point hp, const std::vector<River> rivers,
+       const Terrain t = Terrain::desert);
   Tile(const Tile &other);
+  Tile();
   ~Tile();
 
   inline uuids::uuid get_id() const { return m_p_id; };
   inline Terrain get_terrain() const { return m_p_terrain; }
-  inline hex_point get_hex_point() const { return m_p_hex_point; };
-  inline std::set<River> get_rivers() const { return m_p_rivers; }
-  inline std::set<Area> const get_all_areas() const { return m_p_areas; }
+  inline hex_point get_hex_point() { return m_p_hex_point; };
+  inline std::vector<River> get_rivers() const { return m_p_rivers; }
+  inline std::vector<Area> const get_all_areas() const { return m_p_areas; }
   std::shared_ptr<Area> get_area(const Border b) const;
   std::vector<std::shared_ptr<Area>> get_areas(const Direction d) const;
 
@@ -54,8 +72,16 @@ public:
   /// @return
   ///   - pointer to the first adjacent tile
   ///   - nullptr if no tile is in the given direction
-  std::shared_ptr<Tile> get_neighbor(Direction direction) const;
+  std::shared_ptr<Tile> get_neighbor(const Direction direction) const;
   std::shared_ptr<Tile> *get_neighbors();
+  inline std::pair<player::Color, uint8_t> get_wall(const Direction d) const
+  {
+    if (is_valid(d))
+    {
+      return m_p_walls[d];
+    }
+    return std::make_pair<player::Color, uint8_t>(player::Color::invalid, 0);
+  }
   std::set<Direction> get_all_river_points() const;
 
   /// Gets the building (if any) currently on this tile
@@ -113,7 +139,7 @@ public:
   void rotate(int8_t rotations);
 
   // Helpers
-  friend std::ostream &operator<<(std::ostream &os, const Tile &tile);
+  // friend std::ostream &operator<<(std::ostream &os, const Tile &tile);
   bool operator==(Tile &other) const;
   bool operator!=(Tile &other) const;
 
@@ -121,6 +147,9 @@ public:
 
 protected:
 private:
+  /// Divides areas based on where all river points are.
+  void split_by_rivers();
+
   /// Checks whether neighbor can be placed at the direction relative to the
   /// tile.
   /// @param[in] neighbor  Tile to be placed
@@ -133,8 +162,8 @@ private:
   ///   there, or if the new neighbor matches ourselves or a neighbor we
   ///   already have.
   ///   - common::Error::ERR_NONE on valid placement.
-  virtual common::Error can_add_neighbor(std::shared_ptr<Tile> neighbor,
-                                         Direction direction);
+  common::Error can_add_neighbor(std::shared_ptr<Tile> neighbor,
+                                 Direction direction);
 
   bool is_neighboring_sea() const;
 
@@ -142,9 +171,8 @@ private:
   hex_point m_p_hex_point;
   Terrain m_p_terrain;
   std::shared_ptr<Tile> m_p_neighbors[MAX_DIRECTIONS];
-  std::set<River> m_p_rivers;
-  std::set<Area> m_p_areas;
-  std::set<Border> m_p_roads;
+  std::vector<River> m_p_rivers;
+  std::vector<Area> m_p_areas;
   std::pair<player::Color, uint8_t> m_p_walls[MAX_DIRECTIONS];
 };
 

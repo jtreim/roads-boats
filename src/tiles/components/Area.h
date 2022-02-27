@@ -33,8 +33,12 @@ public:
   Area operator+(const std::set<Border> borders) const;
   Area operator+(const uint16_t resources[portable::RESOURCE_NAMES_SIZE]) const;
 
+  bool operator==(std::set<Border> &borders);
+  bool operator==(std::set<Border> const &borders) const;
   bool operator==(Area &other);
   bool operator==(Area const &other) const;
+  bool operator!=(std::set<Border> &borders);
+  bool operator!=(std::set<Border> const &borders) const;
   bool operator!=(Area &other);
   bool operator!=(Area const &other) const;
   bool operator<(Area const &other) const;
@@ -48,6 +52,7 @@ public:
 
   inline uuids::uuid get_id() const { return m_p_id; }
   inline bool has_border(const Border b) { return m_p_borders.contains(b); }
+  template <typename Iter> bool has_borders(Iter begin, Iter end);
   inline bool has_road(const Border b) { return m_p_roads.contains(b); }
   inline std::set<Border> get_borders() { return m_p_borders; }
   inline std::set<Border> get_roads() { return m_p_roads; }
@@ -64,6 +69,11 @@ public:
     }
     return 0;
   }
+
+  /// Checks to see if input Area is contained within this Area.
+  /// @param[in] other
+  /// @return true, false
+  bool contains(const Area other);
 
   /// Checks to see if one of the area's borders is in the input direction
   /// @param[in] dir

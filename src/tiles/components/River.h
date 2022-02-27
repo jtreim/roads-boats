@@ -45,6 +45,14 @@ public:
     return m_p_points.contains(d);
   }
 
+  bool splits_borders(const std::set<Border> borders) const;
+
+  /// Returns a list of area borders this river creates from a otherwise empty
+  /// tile.
+  /// @return The list of area borders.
+  std::vector<std::set<Border>>
+  get_area_borders(std::set<Border> borders = ALL_BORDERS) const;
+
   /// Builds a bridge over the point at the input direction.
   /// @param[in] d
   /// @return

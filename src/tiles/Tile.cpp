@@ -28,15 +28,10 @@ Tile::Tile(const Terrain t) : m_p_id(utils::gen_uuid()), m_p_terrain(t)
     m_p_walls[i] =
         std::make_pair<player::Color, uint8_t>(player::Color::neutral, 0);
   }
-  std::set<Border> all_borders;
-  for (uint8_t b = 0; b < MAX_BORDERS; b++)
-  {
-    all_borders.insert(static_cast<Border>(b));
-  }
-  m_p_areas.insert(Area(all_borders));
+  m_p_areas.push_back(Area(ALL_BORDERS));
 }
 
-Tile::Tile(const Terrain t, const hex_point hp)
+Tile::Tile(const hex_point hp, const Terrain t)
     : m_p_id(utils::gen_uuid()), m_p_terrain(t), m_p_hex_point(hp)
 {
   for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
@@ -45,17 +40,36 @@ Tile::Tile(const Terrain t, const hex_point hp)
     m_p_walls[i] =
         std::make_pair<player::Color, uint8_t>(player::Color::neutral, 0);
   }
-  std::set<Border> all_borders;
-  for (uint8_t b = 0; b < MAX_BORDERS; b++)
-  {
-    all_borders.insert(static_cast<Border>(b));
-  }
-  m_p_areas.insert(Area(all_borders));
+  m_p_areas.push_back(Area(ALL_BORDERS));
+}
+
+Tile::Tile(const hex_point hp, const std::vector<River> rivers, const Terrain t)
+    : m_p_id(utils::gen_uuid()), m_p_terrain(t), m_p_hex_point(hp),
+      m_p_rivers(rivers)
+{
+  split_by_rivers();
 }
 
 Tile::Tile(const Tile &other)
-    : m_p_id(other.m_p_id), m_p_terrain(other.m_p_terrain)
+    : m_p_id(other.m_p_id), m_p_terrain(other.m_p_terrain),
+      m_p_hex_point(other.m_p_hex_point), m_p_neighbors(other.m_p_neighbors),
+      m_p_rivers(other.m_p_rivers), m_p_areas(other.m_p_areas)
 {
+  for (int i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    m_p_walls[i] = other.m_p_walls[i];
+  }
+}
+
+Tile::Tile() : m_p_id(utils::gen_uuid()), m_p_terrain(Terrain::desert)
+{
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    m_p_neighbors[i].reset();
+    m_p_walls[i] =
+        std::make_pair<player::Color, uint8_t>(player::Color::neutral, 0);
+  }
+  m_p_areas.push_back(Area(ALL_BORDERS));
 }
 
 Tile::~Tile()
@@ -73,6 +87,20 @@ Tile::~Tile()
 
 bool Tile::operator==(Tile &other) const { return m_p_id == other.m_p_id; }
 bool Tile::operator!=(Tile &other) const { return m_p_id != other.m_p_id; }
+
+std::shared_ptr<Area> Tile::get_area(const Border b) const
+{
+  std::shared_ptr<Area> retval;
+  for (auto a : m_p_areas)
+  {
+    if (a.has_border(b))
+    {
+      retval = std::make_shared<Area>(a);
+      break;
+    }
+  }
+  return retval;
+}
 
 std::shared_ptr<Tile> Tile::get_neighbor(Direction direction) const
 {
@@ -282,6 +310,18 @@ void Tile::rotate(int8_t rotations)
   }
 }
 
+// std::ostream &operator<<(std::ostream &os, const Tile &tile)
+// {
+//   os << "<Tile::id=" << tile.get_id()
+//      << ", hex=" << tile.get_hex_point()
+//      << ", terrain=" << to_string(tile.get_terrain());
+//      << ", rivers=[" << tile.get_rivers()[0];
+//   for (auto river : tile.get_rivers())
+//   {
+//     os <<
+//   }
+// }
+
 nlohmann::json Tile::to_json() const
 {
   nlohmann::json result;
@@ -314,11 +354,6 @@ nlohmann::json Tile::to_json() const
     result["areas"].push_back(area.to_json());
   }
 
-  for (auto road : m_p_roads)
-  {
-    result["roads"].push_back(to_string(road));
-  }
-
   for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
     std::pair<player::Color, uint8_t> wall = m_p_walls[i];
@@ -328,6 +363,46 @@ nlohmann::json Tile::to_json() const
   }
 
   return result;
+}
+
+void Tile::split_by_rivers()
+{
+  std::set<std::set<Border>> remaining_borders;
+  remaining_borders.insert(ALL_BORDERS);
+  for (River r : m_p_rivers)
+  {
+    std::vector<std::set<Border>> add;
+    std::vector<std::set<Border>> remove;
+
+    for (auto b : remaining_borders)
+    {
+      // Check to see if this river affects this set of borders.
+      if (r.splits_borders(b))
+      {
+        // It does, so we'll replace the old value with the new sets
+        remove.push_back(b);
+        std::vector<std::set<Border>> new_borders = r.get_area_borders(b);
+        add.insert(add.end(), new_borders.begin(), new_borders.end());
+      }
+    }
+
+    // Remove all border sets to be updated
+    for (auto rem : remove)
+    {
+      remaining_borders.erase(rem);
+    }
+    // Add updated border sets
+    for (auto a : add)
+    {
+      remaining_borders.insert(a);
+    }
+  }
+
+  // We've now defined each area's borders; make 'em.
+  for (auto borders : remaining_borders)
+  {
+    m_p_areas.push_back(Area(borders));
+  }
 }
 
 // TODO: implement from_json
