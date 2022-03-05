@@ -22,12 +22,13 @@ public:
   Area(std::set<Border> borders);
   Area(uuids::uuid id, std::set<Border> borders, std::set<Border> roads,
        std::shared_ptr<building::Building> building,
-       uint16_t resources[portable::RESOURCE_NAMES_SIZE],
-       std::vector<std::shared_ptr<portable::Transporter>>
-           transporters[player::MAX_PLAYER_COLORS]);
+       uint16_t resources[portable::RESOURCE_NAMES_SIZE]);
   Area(const Area &other);
   Area();
   virtual ~Area();
+
+  // Clears the area of all roads/buildings/resources
+  void reset();
 
   Area operator+(const Area &other) const;
   Area operator+(const std::set<Border> borders) const;
@@ -80,16 +81,6 @@ public:
   /// @return boolean for whether the area does include the input direction
   bool does_share_direction(const Direction dir);
 
-  /// Retrieves all transporters in the area for the input player
-  /// @param[in] color Color of the player to search
-  /// @param[out] transporters Resulting list of transporters
-  /// @return
-  ///   - common::ERR_NONE on success
-  ///   - common::ERR_INVALID on invalid inputs
-  common::Error get_player_transporters(
-      const player::Color color,
-      std::vector<std::shared_ptr<portable::Transporter>> &transporters);
-
   bool can_build_road(const Border b);
   bool can_merge(Area &other);
   bool can_merge(Area const &other) const;
@@ -120,17 +111,6 @@ public:
   common::Error add_resource(const portable::Resource res,
                              const uint16_t amount = 1);
 
-  /// Moves transporter into this area
-  /// @param[in] color Player owning the transporter
-  /// @param[in] transporter Transporter to be added to the area
-  /// @return
-  ///   - common::ERR_NONE on success
-  ///   - common::ERR_INVALID if transporter is null or color is invalid
-  ///   - common::ERR_FAIL otherwise
-  common::Error
-  add_transporter(const player::Color color,
-                  std::shared_ptr<portable::Transporter> transporter);
-
   /// Combines this area with another to make a single area.
   /// @param other Area to be merged with
   /// @return
@@ -139,11 +119,17 @@ public:
   ///   - common::ERR_NONE on success. This area will be merged with other
   common::Error merge(Area &other);
 
+  bool can_rotate() const;
+
   /// Rotates the area clockwise the number of rotations.
   /// @param[in] rotations The number of clockwise rotations to perform. A
   /// negative value rotates counter-clockwise. This value is the same # of
   /// rotations that the tile should make as a whole.
-  void rotate(int8_t rotations);
+  /// @return
+  ///   - common::ERR_NONE on success
+  ///   - common::ERR_FAIL on failed can_rotate check
+  ///   - common::ERR_UNKNOWN otherwise
+  common::Error rotate(int8_t rotations);
 
   friend std::ostream &operator<<(std::ostream &os, Area &a);
   nlohmann::json to_json();
@@ -155,8 +141,6 @@ private:
   std::set<Border> m_p_roads;
   std::shared_ptr<building::Building> m_p_building;
   uint16_t m_p_resources[portable::RESOURCE_NAMES_SIZE];
-  std::vector<std::shared_ptr<portable::Transporter>>
-      m_p_transporters[(player::MAX_PLAYER_COLORS)];
 };
 
 /// Create an Area object using the input json.

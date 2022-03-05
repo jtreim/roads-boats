@@ -21,11 +21,15 @@ River::River(const River &other)
     : m_p_id(other.m_p_id), m_p_points(other.m_p_points),
       m_p_bridges(other.m_p_bridges)
 {
-  std::copy(other.m_p_transporters.begin(), other.m_p_transporters.end(),
-            m_p_transporters.begin());
 }
 
-River::~River() {}
+River::~River()
+{
+  m_p_points.clear();
+  reset();
+}
+
+void River::reset() { m_p_bridges.clear(); }
 
 bool River::operator==(River const &other) const
 {
@@ -97,51 +101,82 @@ River::get_area_borders(std::set<Border> borders) const
   return retval;
 }
 
-common::Error River::build_bridge(const Direction d)
+common::Error River::build(const Direction d)
 {
-  common::Error err = common::ERR_FAIL;
   if (!is_valid(d))
   {
-    err = common::ERR_INVALID;
+    return common::ERR_INVALID;
   }
-  else if (can_build_bridge(d))
+  if (!can_build_bridge(d))
   {
-    m_p_bridges.insert(d);
-    err = common::ERR_NONE;
+    return common::ERR_FAIL;
   }
 
+  m_p_bridges.insert(d);
+  return common::ERR_NONE;
+}
+
+bool River::can_rotate() const
+{
+  // Don't allow rotating if the tile has any bridges
+  return 0 == m_p_bridges.size();
+}
+
+common::Error River::rotate(int8_t rotations)
+{
+  common::Error err = common::ERR_UNKNOWN;
+  if (can_rotate())
+  {
+    // Making 0 rotations doesn't do anything...
+    if (0 != rotations)
+    {
+      bool is_clockwise = (0 < rotations);
+      rotations = abs(rotations) % MAX_DIRECTIONS;
+      rotations = (is_clockwise ? rotations : (MAX_DIRECTIONS - rotations));
+
+      std::vector<Direction> tmp_river_points;
+      for (auto p : m_p_points)
+      {
+        Direction rotated =
+            static_cast<Direction>((rotations + p) % MAX_DIRECTIONS);
+        tmp_river_points.push_back(rotated);
+      }
+      m_p_points.clear();
+      m_p_points.insert(tmp_river_points.begin(), tmp_river_points.end());
+    }
+
+    err = common::ERR_NONE;
+  }
+  else
+  {
+    err = common::ERR_FAIL;
+  }
   return err;
 }
 
-void River::rotate(int8_t rotations)
+std::ostream &operator<<(std::ostream &os, River &river)
 {
-  // Making 0 rotations doesn't do anything...
-  if (0 != rotations)
+  std::vector<Direction> points(river.get_points().begin(),
+                                river.get_points().end());
+  std::vector<Direction> bridges(river.get_bridges().begin(),
+                                 river.get_bridges().end());
+  os << "<River::id=" << river.get_id() << ", points=["
+     << to_string(points.at(0));
+  for (int i = 1; i < points.size(); i++)
   {
-    bool is_clockwise = (0 < rotations);
-    rotations = abs(rotations) % MAX_DIRECTIONS;
-    rotations = (is_clockwise ? rotations : (MAX_DIRECTIONS - rotations));
-
-    std::vector<Direction> tmp_river_points;
-    for (auto p : m_p_points)
-    {
-      Direction rotated =
-          static_cast<Direction>((rotations + p) % MAX_DIRECTIONS);
-      tmp_river_points.push_back(rotated);
-    }
-    m_p_points.clear();
-    m_p_points.insert(tmp_river_points.begin(), tmp_river_points.end());
-
-    std::vector<Direction> tmp_bridges;
-    for (auto b : m_p_bridges)
-    {
-      Direction rotated =
-          static_cast<Direction>((rotations + b) % MAX_DIRECTIONS);
-      tmp_bridges.push_back(rotated);
-    }
-    m_p_bridges.clear();
-    m_p_bridges.insert(tmp_bridges.begin(), tmp_bridges.end());
+    os << ", " << to_string(points.at(i));
   }
+  os << "], bridges=[";
+  if (bridges.size() > 0)
+  {
+    os << to_string(bridges.at(0));
+    for (int i = 1; i < bridges.size(); i++)
+    {
+      os << to_string(bridges.at(i));
+    }
+  }
+  os << "]>";
+  return os;
 }
 
 nlohmann::json River::to_json() const
@@ -155,16 +190,6 @@ nlohmann::json River::to_json() const
   }
 
   retval["points"] = points;
-
-  std::vector<nlohmann::json> transporters;
-  for (auto t : m_p_transporters)
-  {
-    if (t)
-    {
-      transporters.push_back(t->to_json());
-    }
-  }
-  retval["transporters"] = transporters;
 
   std::vector<nlohmann::json> bridges;
   for (auto bridge : m_p_bridges)

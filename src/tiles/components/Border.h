@@ -90,7 +90,11 @@ static std::string to_string(const Border b)
 }
 static Border operator!(Border b)
 {
-  return static_cast<Border>((b + MAX_BORDERS / 2) % MAX_BORDERS);
+  if (b % 2 == 0)
+  {
+    return static_cast<Border>((1 + b + MAX_BORDERS / 2) % MAX_BORDERS);
+  }
+  return static_cast<Border>(((b + MAX_BORDERS / 2) - 1) % MAX_BORDERS);
 }
 static std::ostream &operator<<(std::ostream &output, const Border &b)
 {

@@ -15,6 +15,62 @@
 
 using namespace tile;
 
+std::vector<std::shared_ptr<Area>>
+copy_areas(std::vector<std::shared_ptr<Area>> areas)
+{
+  std::vector<std::shared_ptr<Area>> copied;
+  for (auto area : areas)
+  {
+    copied.push_back(std::make_shared<Area>(area->get_borders()));
+  }
+  return copied;
+}
+
+std::vector<std::shared_ptr<River>>
+copy_rivers(std::vector<std::shared_ptr<River>> rivers)
+{
+  std::vector<std::shared_ptr<River>> copied;
+  for (auto river : rivers)
+  {
+    copied.push_back(std::make_shared<River>(river->get_points()));
+  }
+  return copied;
+}
+
+void check_rivers(std::vector<std::shared_ptr<River>> exp,
+                  std::vector<std::shared_ptr<River>> actual, bool should_equal)
+{
+  ASSERT_EQ(exp.size(), actual.size());
+  for (int i = 0; i < exp.size(); i++)
+  {
+    if (should_equal)
+    {
+      EXPECT_EQ(exp.at(i)->get_points(), actual.at(i)->get_points());
+    }
+    else
+    {
+      EXPECT_NE(exp.at(i)->get_points(), actual.at(i)->get_points());
+    }
+  }
+}
+
+void check_areas(std::vector<std::shared_ptr<Area>> exp,
+                 std::vector<std::shared_ptr<Area>> actual, bool should_equal)
+{
+  ASSERT_EQ(exp.size(), actual.size());
+  for (int i = 0; i < exp.size(); i++)
+  {
+    if (should_equal)
+    {
+      EXPECT_EQ(exp.at(i)->get_borders(), actual.at(i)->get_borders());
+    }
+    else
+    {
+      EXPECT_NE(exp.at(i)->get_borders(), actual.at(i)->get_borders());
+    }
+  }
+}
+
 TEST(tile_test, create_tile_test)
 {
   // When creating tiles, an unique ID should be added for each tile.
@@ -22,11 +78,11 @@ TEST(tile_test, create_tile_test)
   // This should not matter what type of Tile, or how many river points it is
   // initialized with.
   std::set<uuids::uuid> ids;
-  hex_point hp = hex_point();
-  Terrain terrain = Terrain::desert;
-  std::vector<River> rivers;
-  std::vector<Area> areas;
-  Tile test_object = Tile(terrain, hp);
+  hex_point hp = hex_point(1, 0);
+  Terrain terrain = Terrain::plains;
+  std::vector<std::shared_ptr<River>> rivers;
+  std::vector<std::shared_ptr<Area>> areas;
+  Tile test_object = Tile(hp, terrain);
 
   // New ID should not be empty, and should follow the expected uuid format.
   uuids::uuid id = test_object.get_id();
@@ -38,8 +94,10 @@ TEST(tile_test, create_tile_test)
   ASSERT_EQ(terrain, test_object.get_terrain());
   ASSERT_EQ(hp, test_object.get_hex_point());
   // We didn't specify neighbors/rivers, so those should be empty.
+  ASSERT_EQ(0, test_object.get_rivers().size());
+  ASSERT_EQ(1, test_object.get_areas().size());
   // Walls should also initialize as empty
-  for (int i = Direction::north_west; i <= Direction::west; i++)
+  for (int i = 0; i < MAX_DIRECTIONS; i++)
   {
     ASSERT_EQ(nullptr, test_object.get_neighbor(static_cast<Direction>(i)));
     std::pair<player::Color, uint8_t> wall =
@@ -48,9 +106,7 @@ TEST(tile_test, create_tile_test)
     ASSERT_EQ(0, wall.second);
   }
 
-  ASSERT_EQ(0, test_object.get_rivers().size());
-  ASSERT_EQ(1, test_object.get_all_areas().size());
-  ASSERT_EQ(ALL_BORDERS, test_object.get_all_areas()[0]);
+  ASSERT_EQ(ALL_BORDERS, (*test_object.get_areas().at(0)));
 
   ids.insert(test_object.get_id());
 
@@ -64,13 +120,12 @@ TEST(tile_test, create_tile_test)
   // A river with just one point should result in a single area.
   std::set<Direction> river_points;
   river_points.insert(Direction::north_west);
-  rivers.push_back(River(river_points));
-  test_object = Tile(terrain, hp, rivers);
+  test_object = Tile(hp, river_points, terrain);
 
   ASSERT_FALSE(ids.contains(test_object.get_id()));
   ids.insert(test_object.get_id());
-  ASSERT_EQ(rivers, test_object.get_rivers());
-  ASSERT_EQ(1, test_object.get_all_areas().size());
+  ASSERT_EQ(river_points, test_object.get_river_points());
+  ASSERT_EQ(1, test_object.get_areas().size());
   ASSERT_EQ(ALL_BORDERS, (*test_object.get_area(Border::NW_left)));
 
   // A river with two points should result in two areas.
@@ -90,14 +145,12 @@ TEST(tile_test, create_tile_test)
   area_2.insert(Border::W_right);
   area_2.insert(Border::NW_left);
   river_points.insert(Direction::south_west);
-  rivers.clear();
-  rivers.push_back(River(river_points));
-  test_object = Tile(terrain, hp, rivers);
+  test_object = Tile(hp, river_points, terrain);
 
   ASSERT_FALSE(ids.contains(test_object.get_id()));
   ids.insert(test_object.get_id());
-  ASSERT_EQ(rivers, test_object.get_rivers());
-  ASSERT_EQ(2, test_object.get_all_areas().size());
+  ASSERT_EQ(river_points, test_object.get_river_points());
+  ASSERT_EQ(2, test_object.get_areas().size());
 
   ASSERT_EQ(area_1, (*test_object.get_area(Border::NW_right)));
   ASSERT_EQ(area_2, (*test_object.get_area(Border::SW_right)));
@@ -114,14 +167,12 @@ TEST(tile_test, create_tile_test)
   area_3.insert(Border::SE_right);
   area_3.insert(Border::SW_left);
   river_points.insert(Direction::south_east);
-  rivers.clear();
-  rivers.push_back(River(river_points));
-  test_object = Tile(terrain, hp, rivers);
+  test_object = Tile(hp, river_points, terrain);
 
   ASSERT_FALSE(ids.contains(test_object.get_id()));
   ids.insert(test_object.get_id());
-  ASSERT_EQ(rivers, test_object.get_rivers());
-  ASSERT_EQ(3, test_object.get_all_areas().size());
+  ASSERT_EQ(river_points, test_object.get_river_points());
+  ASSERT_EQ(3, test_object.get_areas().size());
 
   ASSERT_EQ(area_1, (*test_object.get_area(Border::NW_right)));
   ASSERT_EQ(area_2, (*test_object.get_area(Border::SW_right)));
@@ -153,16 +204,19 @@ TEST(tile_test, create_tile_test)
   std::set<Direction> river_points_2;
   river_points_2.insert(Direction::east);
   river_points_2.insert(Direction::south_east);
-  rivers.clear();
-  rivers.push_back(River(river_points));
-  rivers.push_back(River(river_points_2));
-  test_object = Tile(terrain, hp, rivers);
+  std::vector<std::set<Direction>> river_point_sets;
+  river_point_sets.push_back(river_points);
+  river_point_sets.push_back(river_points_2);
+  test_object = Tile(hp, river_point_sets, terrain);
 
   ASSERT_FALSE(ids.contains(test_object.get_id()));
   ids.insert(test_object.get_id());
-  ASSERT_EQ(rivers, test_object.get_rivers());
-  ASSERT_EQ(3, test_object.get_all_areas().size());
 
+  ASSERT_EQ(2, test_object.get_rivers().size());
+  ASSERT_EQ(river_points, test_object.get_river_points(Direction::north_west));
+  ASSERT_EQ(river_points_2, test_object.get_river_points(Direction::east));
+
+  ASSERT_EQ(3, test_object.get_areas().size());
   ASSERT_EQ(area_1, (*test_object.get_area(Border::NW_right)));
   ASSERT_EQ(area_2, (*test_object.get_area(Border::E_right)));
   ASSERT_EQ(area_3, (*test_object.get_area(Border::SW_right)));
@@ -170,270 +224,326 @@ TEST(tile_test, create_tile_test)
 
 TEST(tile_test, add_neighbor_test)
 {
-  // // Tile placement is limited by river points for each tile, and whether
-  // // either tile already has a neighbor in the given direction.
-  // // Rivers should continue from tile to tile; this means if a tile has a
-  // river
-  // // point on the side that we're trying to add a neighbor, the neighbor must
-  // // also have a river point on its corresponding side.
+  // Tile placement is limited by river points for each tile, and whether
+  // either tile already has a neighbor in the given direction.
+  // Rivers should continue from tile to tile; this means if a tile has a
+  // river point on the side that we're trying to add a neighbor, the neighbor
+  // must also have a river point on its corresponding side.
+  std::set<Direction> river_points;
+  river_points.insert(Direction::north_east);
 
-  // std::set<Direction> river_points;
-  // river_points.insert(Direction::north_east);
+  std::shared_ptr<Tile> test_object = std::make_shared<Tile>();
+  std::shared_ptr<Tile> neighbor = std::make_shared<Tile>();
+  std::shared_ptr<Tile> river_neighbor = std::make_shared<Tile>(river_points);
 
-  // std::shared_ptr<Tile> test = std::make_shared<Tile>();
-  // std::shared_ptr<Tile> neighbor = std::make_shared<Tile>();
-  // std::shared_ptr<Tile> river_neighbor =
-  // std::make_shared<Tile>(river_points);
+  // Adding a nonexistent neighbor or direction should be invalid.
+  ASSERT_EQ(common::ERR_INVALID,
+            test_object->add_neighbor(neighbor, static_cast<Direction>(-1)));
+  std::shared_ptr<Tile> added = test_object->get_neighbor(Direction::east);
+  EXPECT_EQ(nullptr, added);
+  EXPECT_EQ(common::ERR_INVALID,
+            test_object->add_neighbor(neighbor, static_cast<Direction>(6)));
+  added = test_object->get_neighbor(Direction::east);
+  EXPECT_EQ(nullptr, added);
+  EXPECT_EQ(common::ERR_INVALID,
+            test_object->add_neighbor(nullptr, Direction::east));
+  added = test_object->get_neighbor(Direction::east);
+  EXPECT_EQ(nullptr, added);
 
-  // // Adding a nonexistant neighbor or direction should fail.
-  // EXPECT_EQ(common::ERR_INVALID,
-  //           test->add_neighbor(neighbor, static_cast<Direction>(-1)));
-  // std::shared_ptr<Tile> added = test->get_neighbor(Direction::east);
-  // EXPECT_EQ(nullptr, added);
-  // EXPECT_EQ(common::ERR_INVALID,
-  //           test->add_neighbor(neighbor, static_cast<Direction>(6)));
-  // added = test->get_neighbor(Direction::east);
-  // EXPECT_EQ(nullptr, added);
-  // EXPECT_EQ(common::ERR_INVALID, test->add_neighbor(nullptr,
-  // Direction::east)); added = test->get_neighbor(Direction::east);
-  // EXPECT_EQ(nullptr, added);
+  // Adding ourselves as a neighbor should fail.
+  EXPECT_EQ(common::ERR_FAIL,
+            test_object->add_neighbor(test_object, Direction::east));
+  added = test_object->get_neighbor(Direction::east);
+  EXPECT_EQ(nullptr, added);
 
-  // // Adding ourselves as a neighbor should fail.
-  // EXPECT_EQ(common::ERR_FAIL, test->add_neighbor(test, Direction::east));
-  // added = test->get_neighbor(Direction::east);
-  // EXPECT_EQ(nullptr, added);
+  // Adding a neighbor without any rivers where we don't have rivers should be
+  // fine.
+  EXPECT_EQ(common::ERR_NONE,
+            test_object->add_neighbor(neighbor, Direction::east));
+  added = test_object->get_neighbor(Direction::east);
+  EXPECT_NE(nullptr, added);
+  EXPECT_EQ(added->get_id(), neighbor->get_id());
 
-  // // Adding a neighbor without any rivers should be fine.
-  // EXPECT_EQ(common::ERR_NONE, test->add_neighbor(neighbor, Direction::east));
-  // added = test->get_neighbor(Direction::east);
-  // EXPECT_NE(nullptr, added);
-  // EXPECT_EQ(added->get_id(), neighbor->get_id());
+  // Adding the same neighbor again should fail.
+  EXPECT_EQ(common::ERR_FAIL,
+            test_object->add_neighbor(neighbor, Direction::north_east));
+  added = test_object->get_neighbor(Direction::north_east);
+  EXPECT_EQ(nullptr, added);
 
-  // // Adding the same neighbor again should fail.
-  // EXPECT_EQ(common::ERR_FAIL,
-  //           test->add_neighbor(neighbor, Direction::north_east));
-  // added = test->get_neighbor(Direction::north_east);
-  // EXPECT_EQ(nullptr, added);
+  // Trying to add another neighbor in the same direction should fail.
+  EXPECT_EQ(common::ERR_FAIL,
+            test_object->add_neighbor(river_neighbor, Direction::east));
+  added = test_object->get_neighbor(Direction::east);
+  EXPECT_NE(nullptr, added);
+  EXPECT_EQ(added->get_id(), neighbor->get_id());
 
-  // // Trying to add another neighbor in the same direction should fail.
-  // EXPECT_EQ(common::ERR_FAIL,
-  //           test->add_neighbor(river_neighbor, Direction::east));
-  // added = test->get_neighbor(Direction::east);
-  // EXPECT_NE(nullptr, added);
-  // EXPECT_EQ(added->get_id(), neighbor->get_id());
+  // Remove from tile's neighbors.
+  EXPECT_EQ(common::ERR_NONE, test_object->remove_neighbor(Direction::east));
+  EXPECT_EQ(nullptr, test_object->get_neighbor(Direction::east));
 
-  // // Remove from tile's neighbors.
-  // EXPECT_EQ(common::ERR_NONE, test->remove_neighbor(Direction::east));
-  // EXPECT_EQ(nullptr, test->get_neighbor(Direction::east));
+  // Trying to add a neighbor with a river where we don't match should fail.
+  EXPECT_EQ(common::ERR_FAIL,
+            test_object->add_neighbor(river_neighbor, Direction::south_west));
+  added = test_object->get_neighbor(Direction::south_west);
+  EXPECT_EQ(nullptr, added);
 
-  // // Trying to add a neighbor with a river where we don't match should fail.
-  // EXPECT_EQ(common::ERR_FAIL,
-  //           test->add_neighbor(river_neighbor, Direction::south_west));
-  // added = test->get_neighbor(Direction::south_west);
-  // EXPECT_EQ(nullptr, added);
+  // Here we reset the test tile to have a river point on the south_west
+  // border.
+  std::set<Direction> test_river_points;
+  test_river_points.insert(Direction::south_west);
+  test_object.reset();
+  test_object = std::make_shared<Tile>(Tile(test_river_points));
+  // Adding a neighbor with a shared river point on the boundary should be
+  // fine.
+  EXPECT_EQ(common::ERR_NONE,
+            test_object->add_neighbor(river_neighbor, Direction::south_west));
+  added = test_object->get_neighbor(Direction::south_west);
+  EXPECT_NE(nullptr, added);
+  EXPECT_EQ(added->get_id(), river_neighbor->get_id());
 
-  // // Here we reset the test tile to have a river point on the south_west
-  // border. std::set<Direction> test_river;
-  // test_river.insert(Direction::south_west);
-  // test.reset();
-  // test = std::make_shared<Tile>(test_river);
-  // // Adding a neighbor with a shared river point on the boundary should be
-  // fine. EXPECT_EQ(common::ERR_NONE,
-  //           test->add_neighbor(river_neighbor, Direction::south_west));
-  // added = test->get_neighbor(Direction::south_west);
-  // EXPECT_NE(nullptr, added);
-  // EXPECT_EQ(added->get_id(), river_neighbor->get_id());
+  // Remove from tile's neighbors.
+  EXPECT_EQ(common::ERR_NONE,
+            test_object->remove_neighbor(Direction::south_west));
+  EXPECT_EQ(nullptr, test_object->get_neighbor(Direction::south_west));
 
-  // // Remove from tile's neighbors.
-  // EXPECT_EQ(common::ERR_NONE, test->remove_neighbor(Direction::south_west));
-  // EXPECT_EQ(nullptr, test->get_neighbor(Direction::south_west));
+  // Adding a neighbor that doesn't have a river where we do should fail
+  EXPECT_EQ(common::ERR_FAIL,
+            test_object->add_neighbor(neighbor, Direction::south_west));
+  added = test_object->get_neighbor(Direction::south_west);
+  EXPECT_EQ(nullptr, added);
 
-  // // Adding a neighbor that doesn't have a river where we do should fail
-  // EXPECT_EQ(common::ERR_FAIL,
-  //           test->add_neighbor(neighbor, Direction::south_west));
-  // added = test->get_neighbor(Direction::south_west);
-  // EXPECT_EQ(nullptr, added);
+  // Sea tiles are the exception to this; they can ignore river/land
+  // border restrictions.
+  std::shared_ptr<Tile> sea_neighbor =
+      std::make_shared<Tile>(Tile(Terrain::sea));
+  EXPECT_EQ(common::ERR_NONE,
+            test_object->add_neighbor(sea_neighbor, Direction::east));
+  added = test_object->get_neighbor(Direction::east);
+  EXPECT_NE(nullptr, added);
+  EXPECT_EQ(added->get_id(), sea_neighbor->get_id());
+  // Remove from tile's neighbors.
+  EXPECT_EQ(common::ERR_NONE, test_object->remove_neighbor(Direction::east));
+  EXPECT_EQ(nullptr, test_object->get_neighbor(Direction::east));
 
-  // // Sea tiles are the exception to this; they can ignore river/land
-  // // border restrictions.
-  // std::shared_ptr<Sea> sea_neighbor = std::make_shared<Sea>();
-  // EXPECT_EQ(common::ERR_NONE,
-  //           test->add_neighbor(sea_neighbor, Direction::east));
-  // added = test->get_neighbor(Direction::east);
-  // EXPECT_NE(nullptr, added);
-  // EXPECT_EQ(added->get_id(), sea_neighbor->get_id());
-  // // Remove from tile's neighbors.
-  // EXPECT_EQ(common::ERR_NONE, test->remove_neighbor(Direction::east));
-  // EXPECT_EQ(nullptr, test->get_neighbor(Direction::east));
+  // The reverse should also be true; any tile can be placed next to a sea
+  // tile, provided all other checks pass.
+  EXPECT_EQ(common::ERR_NONE,
+            sea_neighbor->add_neighbor(test_object, Direction::east));
+  added = sea_neighbor->get_neighbor(Direction::east);
+  EXPECT_NE(nullptr, added);
+  EXPECT_EQ(added, test_object);
+}
 
-  // // The reverse should also be true; any tile can be placed next to a sea
-  // tile,
-  // // provided all other checks pass.
-  // EXPECT_EQ(common::ERR_NONE,
-  //           sea_neighbor->add_neighbor(test, Direction::east));
-  // added = sea_neighbor->get_neighbor(Direction::east);
-  // EXPECT_NE(nullptr, added);
-  // EXPECT_EQ(added->get_id(), test->get_id());
+TEST(tile_test, build_road_test)
+{
+  // Building a road from the tile's perspective should be as simple as telling
+  // the associated area to do it. That area should enforce any restrictions it
+  // has to building a road (as in not allowing two roads built on an undivided
+  // side, and only 1 road per border). The tile should add an additional check
+  // that it has a neighboring tile to share the road with, and that neither are
+  // sea tiles. On a successful build, the neighbor should list the road in its
+  // corresponding border.
+  std::set<Direction> rp;
+  rp.insert(Direction::north_east);
+  rp.insert(Direction::south_west);
+  rp.insert(Direction::west);
+  std::shared_ptr<Tile> test_object = std::make_shared<Tile>(rp);
+  std::shared_ptr<Tile> neighbor = std::make_shared<Tile>();
+  std::shared_ptr<Tile> river_neighbor = std::make_shared<Tile>(rp);
+  std::shared_ptr<Tile> sea_neighbor = std::make_shared<Tile>(Terrain::sea);
+  ASSERT_EQ(common::ERR_NONE,
+            test_object->add_neighbor(neighbor, Direction::east));
+  ASSERT_EQ(common::ERR_NONE,
+            test_object->add_neighbor(river_neighbor, Direction::south_west));
+  ASSERT_EQ(common::ERR_NONE,
+            test_object->add_neighbor(sea_neighbor, Direction::north_west));
+  ASSERT_EQ(common::ERR_NONE,
+            neighbor->add_neighbor(test_object, Direction::west));
+  ASSERT_EQ(common::ERR_NONE,
+            river_neighbor->add_neighbor(test_object, Direction::north_east));
+  ASSERT_EQ(common::ERR_NONE,
+            sea_neighbor->add_neighbor(test_object, Direction::south_east));
+
+  // Don't allow a road to be built to a nonexistent neighbor or on sea tiles
+  EXPECT_EQ(common::ERR_FAIL, test_object->build_road(Border::NE_left));
+  EXPECT_FALSE(test_object->has_road(Border::NE_left));
+  EXPECT_EQ(common::ERR_FAIL, test_object->build_road(Border::NW_left));
+  EXPECT_FALSE(test_object->has_road(Border::NW_left));
+  EXPECT_FALSE(test_object->has_road(Border::SE_right));
+
+  // Building roads to each valid neighbor should be fine.
+  EXPECT_EQ(common::ERR_NONE, test_object->build_road(Border::E_left));
+  EXPECT_TRUE(test_object->has_road(Border::E_left));
+  EXPECT_TRUE(neighbor->has_road(Border::W_right));
+  EXPECT_EQ(common::ERR_NONE, test_object->build_road(Border::SW_left));
+  EXPECT_TRUE(test_object->has_road(Border::SW_left));
+  EXPECT_TRUE(river_neighbor->has_road(Border::NE_right));
+
+  // Building a road on the same border should fail (from us or our neighbors).
+  EXPECT_EQ(common::ERR_FAIL, test_object->build_road(Border::E_left));
+  EXPECT_EQ(common::ERR_FAIL, neighbor->build_road(Border::W_right));
+  EXPECT_EQ(common::ERR_FAIL, test_object->build_road(Border::SW_left));
+  EXPECT_EQ(common::ERR_FAIL, river_neighbor->build_road(Border::NE_right));
+
+  // Trying to build another road on an undivided side should fail.
+  EXPECT_EQ(common::ERR_FAIL, test_object->build_road(Border::E_right));
+  EXPECT_EQ(common::ERR_FAIL, neighbor->build_road(Border::W_left));
+
+  // Building another road on a divided side should be fine.
+  EXPECT_EQ(common::ERR_NONE, test_object->build_road(Border::SW_right));
+  EXPECT_TRUE(test_object->has_road(Border::SW_right));
+  EXPECT_TRUE(river_neighbor->has_road(Border::NE_left));
+}
+
+TEST(tile_test, build_bridge_test)
+{
+  // Building a bridge from the tile's perspective should be as simple as
+  // telling the associated river to do it. That river should enforce any
+  // restrictions it has to building a bridge.
+  std::set<Direction> rp;
+  rp.insert(Direction::north_east);
+  rp.insert(Direction::south_west);
+  rp.insert(Direction::west);
+  std::shared_ptr<Tile> test_object = std::make_shared<Tile>(rp);
+
+  // Don't allow a bridge to be built on a point that a river is not there for.
+  EXPECT_EQ(common::ERR_FAIL, test_object->build_bridge(Direction::north_west));
+  EXPECT_FALSE(test_object->get_river(Direction::north_east)
+                   ->has_bridge(Direction::north_west));
+
+  // Building a bridge at a valid location should be fine.
+  EXPECT_EQ(common::ERR_NONE, test_object->build_bridge(Direction::north_east));
+  EXPECT_TRUE(test_object->get_river(Direction::north_east)
+                  ->has_bridge(Direction::north_east));
+
+  // Don't allow building at the same location
+  EXPECT_EQ(common::ERR_FAIL, test_object->build_bridge(Direction::north_east));
+
+  // Building at another point on a river fork should be fine
+  EXPECT_EQ(common::ERR_NONE, test_object->build_bridge(Direction::south_west));
+  EXPECT_TRUE(test_object->get_river(Direction::north_east)
+                  ->has_bridge(Direction::north_east));
+  EXPECT_TRUE(test_object->get_river(Direction::north_east)
+                  ->has_bridge(Direction::south_west));
+
+  // Trying to build an extranneous bridge is not allowed
+  EXPECT_EQ(common::ERR_FAIL, test_object->build_bridge(Direction::west));
+  EXPECT_FALSE(test_object->get_river(Direction::north_east)
+                   ->has_bridge(Direction::west));
 }
 
 TEST(tile_test, rotate_test)
 {
-  // // Rotating a tile should be clockwise. If the input value is negative,
-  // then
-  // // rotation is counter-clockwise.
-  // // This should rotate all of the Tile's river points and neighbors
-  // // accordingly.
-  // std::set<Direction> rp;
-  // rp.insert(Direction::north_east);
-  // rp.insert(Direction::south_west);
-  // rp.insert(Direction::west);
-  // std::shared_ptr<Tile> test = std::make_shared<Tile>(rp);
-  // std::shared_ptr<Tile> neighbor = std::make_shared<Tile>();
-  // std::shared_ptr<Tile> river_neighbor = std::make_shared<Tile>(rp);
-  // EXPECT_EQ(common::ERR_NONE,
-  //           test->add_neighbor(river_neighbor, Direction::north_east));
-  // EXPECT_EQ(common::ERR_NONE, test->add_neighbor(neighbor, Direction::east));
+  // Rotating a tile should be clockwise. If the input value is negative, then
+  // rotation is counter-clockwise.
+  // This should rotate all of the Tile's river points accordingly.
+  std::set<Direction> rp;
+  rp.insert(Direction::north_east);
+  rp.insert(Direction::south_west);
+  rp.insert(Direction::west);
+  std::shared_ptr<Tile> test = std::make_shared<Tile>(rp);
+  std::shared_ptr<Tile> neighbor = std::make_shared<Tile>();
+  std::vector<std::shared_ptr<River>> rivers = copy_rivers(test->get_rivers());
+  std::vector<std::shared_ptr<Area>> areas = copy_areas(test->get_areas());
+  ASSERT_EQ(common::ERR_NONE,
+            test->add_neighbor(neighbor, Direction::north_west));
+  ASSERT_EQ(common::ERR_NONE,
+            neighbor->add_neighbor(test, Direction::south_east));
 
-  // // When rotating 0, nothing should actually move.
-  // EXPECT_EQ(common::ERR_NONE, test->rotate(0));
-  // auto river_points = test->get_river_points();
+  // If any of the areas can't rotate, the tile should not rotate
+  EXPECT_EQ(common::ERR_NONE, test->build_road(Border::NW_left));
+  ASSERT_EQ(common::ERR_FAIL, test->rotate(1));
+  check_rivers(rivers, test->get_rivers(), true);
+  check_areas(areas, test->get_areas(), true);
+  // Same goes for if any of the rivers can't rotate
+  test = std::make_shared<Tile>(rp);
+  rivers = copy_rivers(test->get_rivers());
+  areas = copy_areas(test->get_areas());
+  EXPECT_EQ(common::ERR_NONE, test->build_bridge(Direction::north_east));
+  EXPECT_EQ(common::ERR_FAIL, test->rotate(1));
+  check_rivers(rivers, test->get_rivers(), true);
+  check_areas(areas, test->get_areas(), true);
+  // Additionally, the tile won't rotate if it has any neighbors
+  test = std::make_shared<Tile>(rp);
+  rivers = copy_rivers(test->get_rivers());
+  areas = copy_areas(test->get_areas());
+  EXPECT_EQ(common::ERR_NONE, test->add_neighbor(neighbor, Direction::east));
+  EXPECT_EQ(common::ERR_FAIL, test->rotate(1));
+  check_rivers(rivers, test->get_rivers(), true);
+  check_areas(areas, test->get_areas(), true);
 
-  // EXPECT_EQ(3, river_points.size());
-  // EXPECT_TRUE(river_points.end() !=
-  // river_points.find(Direction::north_east)); EXPECT_TRUE(river_points.end()
-  // != river_points.find(Direction::south_west));
-  // EXPECT_TRUE(river_points.end() != river_points.find(Direction::west));
+  // Reset tile for the rest of the tests
+  test = std::make_shared<Tile>(rp);
+  rivers = copy_rivers(test->get_rivers());
+  areas = copy_areas(test->get_areas());
 
-  // for (int d = 0; d < 6; d++)
-  // {
-  //   if (Direction::north_east == d)
-  //   {
-  //     EXPECT_TRUE(*river_neighbor ==
-  //                 *(test->get_neighbor(static_cast<Direction>(d))));
-  //   }
-  //   else if (Direction::east == d)
-  //   {
-  //     EXPECT_TRUE(*neighbor ==
-  //                 *(test->get_neighbor(static_cast<Direction>(d))));
-  //   }
-  //   else
-  //   {
-  //     EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
-  //   }
-  // }
+  // When rotating 0, nothing should actually move.
+  EXPECT_EQ(common::ERR_NONE, test->rotate(0));
+  check_rivers(rivers, test->get_rivers(), true);
+  check_areas(areas, test->get_areas(), true);
 
-  // // When rotating 1, everything should move clockwise 1 step
-  // EXPECT_EQ(common::ERR_NONE, test->rotate(1));
-  // river_points = test->get_river_points();
+  // When rotating 1, everything should move clockwise 1 step
+  EXPECT_EQ(common::ERR_NONE, test->rotate(1));
+  check_rivers(rivers, test->get_rivers(), false);
+  for (auto r : rivers)
+  {
+    EXPECT_EQ(common::ERR_NONE, r->rotate(1));
+  }
+  check_rivers(rivers, test->get_rivers(), true);
 
-  // EXPECT_EQ(3, river_points.size());
-  // EXPECT_TRUE(river_points.end() != river_points.find(Direction::east));
-  // EXPECT_TRUE(river_points.end() != river_points.find(Direction::west));
-  // EXPECT_TRUE(river_points.end() !=
-  // river_points.find(Direction::north_west));
+  check_areas(areas, test->get_areas(), false);
+  for (auto a : areas)
+  {
+    EXPECT_EQ(common::ERR_NONE, a->rotate(1));
+  }
+  check_areas(areas, test->get_areas(), true);
 
-  // for (int d = 0; d < 6; d++)
-  // {
-  //   if (Direction::east == d)
-  //   {
-  //     EXPECT_TRUE(*river_neighbor ==
-  //                 *(test->get_neighbor(static_cast<Direction>(d))));
-  //   }
-  //   else if (Direction::south_east == d)
-  //   {
-  //     EXPECT_TRUE(*neighbor ==
-  //                 *(test->get_neighbor(static_cast<Direction>(d))));
-  //   }
-  //   else
-  //   {
-  //     EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
-  //   }
-  // }
+  // When rotating -1, everything should move counter-clockwise 1 step
+  EXPECT_EQ(common::ERR_NONE, test->rotate(-1));
+  check_rivers(rivers, test->get_rivers(), false);
+  for (auto r : rivers)
+  {
+    EXPECT_EQ(common::ERR_NONE, r->rotate(-1));
+  }
+  check_rivers(rivers, test->get_rivers(), true);
 
-  // // When rotating -1, everything should move counter-clockwise 1 step
-  // EXPECT_EQ(common::ERR_NONE, test->rotate(-1));
-  // river_points = test->get_river_points();
+  check_areas(areas, test->get_areas(), false);
+  for (auto a : areas)
+  {
+    EXPECT_EQ(common::ERR_NONE, a->rotate(-1));
+  }
+  check_areas(areas, test->get_areas(), true);
 
-  // EXPECT_EQ(3, river_points.size());
-  // EXPECT_TRUE(river_points.end() !=
-  // river_points.find(Direction::north_east)); EXPECT_TRUE(river_points.end()
-  // != river_points.find(Direction::south_west));
-  // EXPECT_TRUE(river_points.end() != river_points.find(Direction::west));
+  // When rotating 8, everything should effectively move 2 steps clockwise
+  EXPECT_EQ(common::ERR_NONE, test->rotate(8));
+  check_rivers(rivers, test->get_rivers(), false);
+  for (auto r : rivers)
+  {
+    EXPECT_EQ(common::ERR_NONE, r->rotate(8));
+  }
+  check_rivers(rivers, test->get_rivers(), true);
 
-  // for (int d = 0; d < 6; d++)
-  // {
-  //   if (Direction::north_east == d)
-  //   {
-  //     EXPECT_TRUE(*river_neighbor ==
-  //                 *(test->get_neighbor(static_cast<Direction>(d))));
-  //   }
-  //   else if (Direction::east == d)
-  //   {
-  //     EXPECT_TRUE(*neighbor ==
-  //                 *(test->get_neighbor(static_cast<Direction>(d))));
-  //   }
-  //   else
-  //   {
-  //     EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
-  //   }
-  // }
+  check_areas(areas, test->get_areas(), false);
+  for (auto a : areas)
+  {
+    EXPECT_EQ(common::ERR_NONE, a->rotate(8));
+  }
+  check_areas(areas, test->get_areas(), true);
 
-  // // When rotating 8, everything should effectively move 2 steps clockwise
-  // EXPECT_EQ(common::ERR_NONE, test->rotate(8));
-  // river_points = test->get_river_points();
+  // When rotating -15, everything should effectively move 3 steps
+  // counter-clockwise
+  EXPECT_EQ(common::ERR_NONE, test->rotate(-15));
+  check_rivers(rivers, test->get_rivers(), false);
+  for (auto r : rivers)
+  {
+    EXPECT_EQ(common::ERR_NONE, r->rotate(-15));
+  }
+  check_rivers(rivers, test->get_rivers(), true);
 
-  // EXPECT_EQ(3, river_points.size());
-  // EXPECT_TRUE(river_points.end() !=
-  // river_points.find(Direction::south_east)); EXPECT_TRUE(river_points.end()
-  // != river_points.find(Direction::north_west));
-  // EXPECT_TRUE(river_points.end() !=
-  // river_points.find(Direction::north_east));
-
-  // for (int d = 0; d < 6; d++)
-  // {
-  //   if (Direction::south_east == d)
-  //   {
-  //     EXPECT_TRUE(*river_neighbor ==
-  //                 *(test->get_neighbor(static_cast<Direction>(d))));
-  //   }
-  //   else if (Direction::south_west == d)
-  //   {
-  //     EXPECT_TRUE(*neighbor ==
-  //                 *(test->get_neighbor(static_cast<Direction>(d))));
-  //   }
-  //   else
-  //   {
-  //     EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
-  //   }
-  // }
-
-  // // When rotating -15, everything should effectively move 3 steps
-  // // counter-clockwise
-  // EXPECT_EQ(common::ERR_NONE, test->rotate(-15));
-  // river_points = test->get_river_points();
-
-  // EXPECT_EQ(3, river_points.size());
-  // EXPECT_TRUE(river_points.end() !=
-  // river_points.find(Direction::north_west)); EXPECT_TRUE(river_points.end()
-  // != river_points.find(Direction::south_east));
-  // EXPECT_TRUE(river_points.end() !=
-  // river_points.find(Direction::south_west));
-
-  // for (int d = 0; d < 6; d++)
-  // {
-  //   if (Direction::north_west == d)
-  //   {
-  //     EXPECT_TRUE(*river_neighbor ==
-  //                 *(test->get_neighbor(static_cast<Direction>(d))));
-  //   }
-  //   else if (Direction::north_east == d)
-  //   {
-  //     EXPECT_TRUE(*neighbor ==
-  //                 *(test->get_neighbor(static_cast<Direction>(d))));
-  //   }
-  //   else
-  //   {
-  //     EXPECT_EQ(nullptr, test->get_neighbor(static_cast<Direction>(d)));
-  //   }
-  // }
+  check_areas(areas, test->get_areas(), false);
+  for (auto a : areas)
+  {
+    EXPECT_EQ(common::ERR_NONE, a->rotate(-15));
+  }
+  check_areas(areas, test->get_areas(), true);
 }

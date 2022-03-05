@@ -62,26 +62,47 @@ TEST(river_test, rotate_river_test)
   points.insert(Direction::south_east);
 
   River test_object(points);
-  EXPECT_EQ(common::ERR_NONE, test_object.build_bridge(Direction::north_west));
 
-  // When rotating 0, nothing should move
-  test_object.rotate(0);
+  // Should fail trying to rotate with a bridge on it
+  EXPECT_EQ(common::ERR_NONE, test_object.build(Direction::north_west));
+  ASSERT_EQ(common::ERR_FAIL, test_object.rotate(0));
   EXPECT_EQ(points.size(), test_object.get_points().size());
   for (auto p : points)
   {
     EXPECT_TRUE(test_object.has_point(p));
   }
-  EXPECT_TRUE(test_object.has_bridge(Direction::north_west));
+  ASSERT_EQ(common::ERR_FAIL, test_object.rotate(1));
+  EXPECT_EQ(points.size(), test_object.get_points().size());
+  for (auto p : points)
+  {
+    EXPECT_TRUE(test_object.has_point(p));
+  }
+  ASSERT_EQ(common::ERR_FAIL, test_object.rotate(-1));
+  EXPECT_EQ(points.size(), test_object.get_points().size());
+  for (auto p : points)
+  {
+    EXPECT_TRUE(test_object.has_point(p));
+  }
+
+  // Reset for the rest of the tests.
+  test_object = River(points);
+
+  // When rotating 0, nothing should move
+  ASSERT_EQ(common::ERR_NONE, test_object.rotate(0));
+  EXPECT_EQ(points.size(), test_object.get_points().size());
+  for (auto p : points)
+  {
+    EXPECT_TRUE(test_object.has_point(p));
+  }
 
   // When rotating 1, everything should move clockwise 1 step
-  test_object.rotate(1);
+  ASSERT_EQ(common::ERR_NONE, test_object.rotate(1));
   EXPECT_EQ(points.size(), test_object.get_points().size());
   EXPECT_FALSE(test_object.has_point(Direction::north_west));
   EXPECT_TRUE(test_object.has_point(Direction::north_east));
   EXPECT_FALSE(test_object.has_point(Direction::east));
   EXPECT_TRUE(test_object.has_point(Direction::south_east));
   EXPECT_TRUE(test_object.has_point(Direction::south_west));
-  EXPECT_TRUE(test_object.has_bridge(Direction::north_east));
 
   // When rotating -1, everything should move counter-clockwise 1 step
   // Subsequent rotations should be additive.
@@ -91,27 +112,24 @@ TEST(river_test, rotate_river_test)
   {
     EXPECT_TRUE(test_object.has_point(p));
   }
-  EXPECT_TRUE(test_object.has_bridge(Direction::north_west));
 
   // When rotating 8, everything should move effectively clockwise 2 steps
-  test_object.rotate(8);
+  ASSERT_EQ(common::ERR_NONE, test_object.rotate(8));
   EXPECT_EQ(points.size(), test_object.get_points().size());
   EXPECT_FALSE(test_object.has_point(Direction::north_west));
   EXPECT_TRUE(test_object.has_point(Direction::east));
   EXPECT_TRUE(test_object.has_point(Direction::south_west));
   EXPECT_FALSE(test_object.has_point(Direction::south_east));
   EXPECT_TRUE(test_object.has_point(Direction::west));
-  EXPECT_TRUE(test_object.has_bridge(Direction::east));
 
   // When rotating -14, everything should move effectively counter-clockwise 2
   // steps
-  test_object.rotate(-14);
+  ASSERT_EQ(common::ERR_NONE, test_object.rotate(-14));
   EXPECT_EQ(points.size(), test_object.get_points().size());
   for (auto p : points)
   {
     EXPECT_TRUE(test_object.has_point(p));
   }
-  EXPECT_TRUE(test_object.has_bridge(Direction::north_west));
 }
 
 TEST(river_test, area_borders_test)

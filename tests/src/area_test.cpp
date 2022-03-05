@@ -312,7 +312,17 @@ TEST(area_test, rotate_area_test)
   borders.insert(Border::NE_left);
 
   Area test_object(borders);
+  // Should fail trying to rotate after the area has something built
   EXPECT_EQ(common::ERR_NONE, test_object.build(Border::NW_left));
+  ASSERT_EQ(common::ERR_FAIL, test_object.rotate(0));
+  EXPECT_EQ(borders.size(), test_object.get_borders().size());
+  for (auto b : borders)
+  {
+    EXPECT_TRUE(test_object.has_border(b));
+  }
+
+  // Reset for the rest of the tests.
+  test_object = Area(borders);
 
   // When rotating 0, nothing should move
   test_object.rotate(0);
@@ -321,7 +331,6 @@ TEST(area_test, rotate_area_test)
   {
     EXPECT_TRUE(test_object.has_border(b));
   }
-  EXPECT_TRUE(test_object.has_road(Border::NW_left));
 
   // When rotating 1, everything should move clockwise 1 step
   test_object.rotate(1);
@@ -331,8 +340,6 @@ TEST(area_test, rotate_area_test)
   EXPECT_FALSE(test_object.has_border(Border::NW_right));
   EXPECT_TRUE(test_object.has_border(Border::NE_right));
   EXPECT_TRUE(test_object.has_border(Border::E_left));
-  EXPECT_FALSE(test_object.has_road(Border::NW_left));
-  EXPECT_TRUE(test_object.has_road(Border::NE_left));
 
   // When rotating -1, everything should move counter-clockwise 1 step
   // Subsequent rotations should be additive.
@@ -342,7 +349,6 @@ TEST(area_test, rotate_area_test)
   {
     EXPECT_TRUE(test_object.has_border(b));
   }
-  EXPECT_TRUE(test_object.has_road(Border::NW_left));
 
   // When rotating 8, everything should move effectively clockwise 2 steps
   test_object.rotate(8);
@@ -353,7 +359,6 @@ TEST(area_test, rotate_area_test)
   EXPECT_TRUE(test_object.has_border(Border::E_right));
   EXPECT_FALSE(test_object.has_border(Border::NE_left));
   EXPECT_TRUE(test_object.has_border(Border::SE_left));
-  EXPECT_TRUE(test_object.has_road(Border::E_left));
 
   // When rotating -14, everything should move effectively counter-clockwise 2
   // steps
@@ -363,5 +368,4 @@ TEST(area_test, rotate_area_test)
   {
     EXPECT_TRUE(test_object.has_border(b));
   }
-  EXPECT_TRUE(test_object.has_road(Border::NW_left));
 }

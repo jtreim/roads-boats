@@ -21,6 +21,9 @@ public:
   River(const River &other);
   virtual ~River();
 
+  // Clears river of bridges
+  void reset();
+
   inline uuids::uuid get_id() { return m_p_id; }
 
   bool operator==(River const &other) const;
@@ -30,20 +33,23 @@ public:
 
   bool inline can_build_bridge(Direction d)
   {
-    // TODO: This still allows building another bridge between the same two
-    // areas at another point of a river.
-    return ((m_p_points.contains(d)) && !(m_p_bridges.contains(d)));
+    return ((m_p_points.contains(d)) &&
+            (m_p_bridges.size() < m_p_points.size() - 1) &&
+            (!m_p_bridges.contains(d)));
   }
 
+  inline bool has_point(const Direction d) const
+  {
+    return m_p_points.contains(d);
+  }
   inline bool has_bridge(const Direction d) const
   {
     return m_p_bridges.contains(d);
   }
   inline std::set<Direction> get_points() { return m_p_points; }
-  inline bool has_point(const Direction d) const
-  {
-    return m_p_points.contains(d);
-  }
+  inline std::set<Direction> get_bridges() { return m_p_bridges; }
+  inline std::set<Direction> get_points() const { return m_p_points; }
+  inline std::set<Direction> get_bridges() const { return m_p_bridges; }
 
   bool splits_borders(const std::set<Border> borders) const;
 
@@ -59,13 +65,22 @@ public:
   ///   - common::ERR_NONE on success
   ///   - common::ERR_FAIL when unable to build bridge at input direction.
   ///   - common::ERR_INVALID on invalid direction.
-  common::Error build_bridge(const Direction d);
+  common::Error build(const Direction d);
+
+  /// Check to see if river can rotate
+  /// @return false if river has any bridges or transporters; true otherwise
+  bool can_rotate() const;
 
   /// Rotates the river clockwise the number of rotations.
   /// @param[in] rotations The number of clockwise rotations to perform. A
   /// negative value rotates counter-clockwise.
-  void rotate(int8_t rotations);
+  /// @return
+  ///   - common::ERR_NONE on success
+  ///   - common::ERR_FAIL on failed can_rotate check
+  ///   - common::ERR_UNKNOWN otherwise
+  common::Error rotate(int8_t rotations);
 
+  friend std::ostream &operator<<(std::ostream &os, River &r);
   nlohmann::json to_json() const;
 
 protected:
@@ -73,7 +88,6 @@ private:
   uuids::uuid m_p_id;
   std::set<Direction> m_p_points;
   std::set<Direction> m_p_bridges;
-  std::vector<std::shared_ptr<portable::Transporter>> m_p_transporters;
 };
 
 /// Create a River object using the input json.

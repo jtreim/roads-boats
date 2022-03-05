@@ -27,26 +27,18 @@ Area::Area(std::set<Border> borders)
 
 Area::Area(uuids::uuid id, std::set<Border> borders, std::set<Border> roads,
            std::shared_ptr<building::Building> building,
-           uint16_t resources[portable::RESOURCE_NAMES_SIZE],
-           std::vector<std::shared_ptr<portable::Transporter>>
-               transporters[player::MAX_PLAYER_COLORS])
+           uint16_t resources[portable::RESOURCE_NAMES_SIZE])
     : m_p_id(id), m_p_roads(roads), m_p_borders(borders), m_p_building(building)
 {
   for (uint8_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
   {
     m_p_resources[i] = resources[i];
   }
-  for (uint8_t c = 0; c < player::MAX_PLAYER_COLORS; c++)
-  {
-    std::copy(transporters[c].begin(), transporters[c].end(),
-              m_p_transporters[c].begin());
-  }
 }
 
 Area::Area(const Area &other)
     : m_p_id(other.m_p_id), m_p_borders(other.m_p_borders),
-      m_p_roads(other.m_p_roads), m_p_building(other.m_p_building),
-      m_p_transporters(other.m_p_transporters)
+      m_p_roads(other.m_p_roads), m_p_building(other.m_p_building)
 {
   for (uint8_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
   {
@@ -59,9 +51,15 @@ Area::Area() : m_p_id(utils::gen_uuid()) {}
 Area::~Area()
 {
   m_p_borders.clear();
+  reset();
+};
+
+void Area::reset()
+{
+  m_p_roads.clear();
   m_p_building.reset();
   std::fill_n(m_p_resources, portable::RESOURCE_NAMES_SIZE, 0);
-};
+}
 
 Area Area::operator+(const Area &other) const
 {
@@ -81,19 +79,6 @@ Area Area::operator+(const Area &other) const
     {
       merged.m_p_resources[i] += other.m_p_resources[i];
     }
-
-    for (size_t c = 0; c < player::MAX_PLAYER_COLORS; c++)
-    {
-      for (auto t : other.m_p_transporters[c])
-      {
-        if (std::find(merged.m_p_transporters[c].begin(),
-                      merged.m_p_transporters[c].end(),
-                      t) == merged.m_p_transporters[c].end())
-        {
-          merged.m_p_transporters[c].push_back(t);
-        }
-      }
-    }
   }
 
   return merged;
@@ -112,17 +97,6 @@ Area Area::operator+(const std::set<Border> borders) const
   new_area.m_p_roads.insert(m_p_roads.begin(), m_p_roads.end());
   std::copy(std::begin(m_p_resources), std::end(m_p_resources),
             std::begin(new_area.m_p_resources));
-
-  for (int c = 0; c < player::MAX_PLAYER_COLORS; c++)
-  {
-    if (!m_p_transporters[c].empty())
-    {
-      std::vector<std::shared_ptr<portable::Transporter>> player_transporters;
-      std::copy(m_p_transporters[c].begin(), m_p_transporters[c].end(),
-                player_transporters.begin());
-      new_area.m_p_transporters[c] = player_transporters;
-    }
-  }
   return new_area;
 }
 
@@ -137,104 +111,40 @@ operator+(const uint16_t resources[portable::RESOURCE_NAMES_SIZE]) const
   {
     new_area.m_p_resources[i] = m_p_resources[i] + resources[i];
   }
-  for (int c = 0; c < player::MAX_PLAYER_COLORS; c++)
-  {
-    if (!m_p_transporters[c].empty())
-    {
-      std::vector<std::shared_ptr<portable::Transporter>> player_transporters;
-      std::copy(m_p_transporters[c].begin(), m_p_transporters[c].end(),
-                player_transporters.begin());
-      new_area.m_p_transporters[c] = player_transporters;
-    }
-  }
   return new_area;
 }
 
 bool Area::operator==(Area &other)
 {
-  bool are_equal = (m_p_id == other.m_p_id);
-
-  are_equal &= (other.m_p_borders == m_p_borders);
-  are_equal &= (other.m_p_roads == m_p_roads);
-  if (are_equal)
+  if ((m_p_id != other.m_p_id) || (other.m_p_borders != m_p_borders) ||
+      (other.m_p_roads != m_p_roads) || (other.m_p_building != m_p_building))
   {
-    for (int i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+    return false;
+  }
+  for (int i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  {
+    if (m_p_resources[i] != other.m_p_resources[i])
     {
-      if (m_p_resources[i] != other.m_p_resources[i])
-      {
-        are_equal = false;
-        break;
-      }
-    }
-    if (are_equal)
-    {
-      for (int i = 0; i < player::MAX_PLAYER_COLORS; i++)
-      {
-        if (m_p_transporters[i].size() != other.m_p_transporters[i].size())
-        {
-          are_equal = false;
-          break;
-        }
-        else
-        {
-          for (auto t : m_p_transporters[i])
-          {
-            if (std::find(other.m_p_transporters[i].begin(),
-                          other.m_p_transporters[i].end(),
-                          t) == other.m_p_transporters[i].end())
-            {
-              are_equal = false;
-              break;
-            }
-          }
-        }
-      }
+      return false;
     }
   }
-  return are_equal;
+  return true;
 }
 bool Area::operator==(Area const &other) const
 {
-  bool are_equal = (m_p_id == other.m_p_id);
-
-  are_equal &= (other.m_p_borders == m_p_borders);
-  are_equal &= (other.m_p_roads == m_p_roads);
-  if (are_equal)
+  if ((m_p_id != other.m_p_id) || (other.m_p_borders != m_p_borders) ||
+      (other.m_p_roads != m_p_roads) || (other.m_p_building != m_p_building))
   {
-    for (int i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+    return false;
+  }
+  for (int i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  {
+    if (m_p_resources[i] != other.m_p_resources[i])
     {
-      if (m_p_resources[i] != other.m_p_resources[i])
-      {
-        are_equal = false;
-        break;
-      }
-    }
-    if (are_equal)
-    {
-      for (int i = 0; i < player::MAX_PLAYER_COLORS; i++)
-      {
-        if (m_p_transporters[i].size() != other.m_p_transporters[i].size())
-        {
-          are_equal = false;
-          break;
-        }
-        else
-        {
-          for (auto t : m_p_transporters[i])
-          {
-            if (std::find(other.m_p_transporters[i].begin(),
-                          other.m_p_transporters[i].end(),
-                          t) == other.m_p_transporters[i].end())
-            {
-              are_equal = false;
-              break;
-            }
-          }
-        }
-      }
+      return false;
     }
   }
-  return are_equal;
+  return true;
 }
 bool Area::operator==(std::set<Border> &borders)
 {
@@ -284,23 +194,6 @@ void Area::operator+=(Area const &other)
     {
       m_p_resources[i] += other.m_p_resources[i];
     }
-
-    for (size_t c = 0; c < player::MAX_PLAYER_COLORS; c++)
-    {
-      player::Color idx = static_cast<player::Color>(c);
-      std::vector<std::shared_ptr<portable::Transporter>> others =
-          other.m_p_transporters[idx];
-      for (auto t : others)
-      {
-        if (std::find(m_p_transporters[idx].begin(),
-                      m_p_transporters[idx].end(),
-                      t) == m_p_transporters[idx].end())
-        {
-          std::shared_ptr<portable::Transporter> ptr(t.get());
-          m_p_transporters[idx].push_back(ptr);
-        }
-      }
-    }
   }
 }
 
@@ -320,17 +213,15 @@ void Area::operator+=(uint16_t const resources[portable::RESOURCE_NAMES_SIZE])
 
 template <typename Iter> bool Area::has_borders(Iter begin, Iter end)
 {
-  bool retval = true;
   while (begin != end)
   {
     if (!m_p_borders.contains(*begin))
     {
-      retval = false;
-      break;
+      return false;
     }
     ++begin;
   }
-  return retval;
+  return true;
 }
 
 bool Area::contains(const Area other)
@@ -341,73 +232,42 @@ bool Area::contains(const Area other)
 
 bool Area::does_share_direction(const Direction dir)
 {
-  bool retval = false;
   std::set<Direction> checked;
 
   for (Border b : m_p_borders)
   {
     Direction border_direction = direction_from_border(b);
-    if (!checked.contains(border_direction))
+    if ((border_direction == dir) && (!checked.contains(border_direction)))
     {
-      if (border_direction == dir)
-      {
-        retval = true;
-        break;
-      }
-      else
-      {
-        checked.insert(border_direction);
-      }
+      return true;
     }
+    checked.insert(border_direction);
   }
-  return retval;
-}
-
-common::Error Area::get_player_transporters(
-    const player::Color color,
-    std::vector<std::shared_ptr<portable::Transporter>> &transporters)
-{
-  common::Error err = common::ERR_NONE;
-  if ((0 > color) || (player::MAX_PLAYER_COLORS <= color) ||
-      (player::Color::neutral == color))
-  {
-    err = common::ERR_INVALID;
-  }
-  else
-  {
-    transporters.clear();
-    std::copy(m_p_transporters[color].begin(), m_p_transporters[color].end(),
-              transporters.begin());
-  }
-
-  return err;
+  return false;
 }
 
 bool Area::can_build_road(const Border b)
 {
-  bool retval = true;
   if ((!m_p_borders.contains(b)) || (m_p_roads.contains(b)))
   {
-    retval = false;
+    return false;
   }
-  else
+
+  Direction d = direction_from_border(b);
+  std::vector<Border> both = borders_from_direction(d);
+  bool has_both_borders = ((m_p_borders.contains(both.at(0))) &&
+                           (m_p_borders.contains(both.at(1))));
+  bool direction_has_road =
+      ((m_p_roads.contains(both.at(0))) || (m_p_roads.contains(both.at(1))));
+
+  // If the border isn't split by a river, only allow 1 road to be built
+  // between both borders in that direction.
+  if (has_both_borders && direction_has_road)
   {
-    Direction d = direction_from_border(b);
-    std::vector<Border> both = borders_from_direction(d);
-    bool has_both_borders = ((m_p_borders.contains(both.at(0))) &&
-                             (m_p_borders.contains(both.at(1))));
-    bool direction_has_road =
-        ((m_p_roads.contains(both.at(0))) || (m_p_roads.contains(both.at(1))));
-
-    // If the border isn't split by a river, only allow 1 road to be built
-    // between both borders in that direction.
-    if (has_both_borders && direction_has_road)
-    {
-      retval = false;
-    }
+    return false;
   }
 
-  return retval;
+  return true;
 }
 
 bool Area::can_merge(Area &other)
@@ -424,63 +284,45 @@ bool Area::can_merge(Area const &other) const
 
 common::Error Area::build(std::shared_ptr<building::Building> bldg)
 {
-  common::Error err = common::ERR_NONE;
   if (!bldg)
   {
-    err = common::ERR_INVALID;
+    return common::ERR_INVALID;
   }
-  else if (m_p_building)
+
+  if (m_p_building)
   {
-    err = common::ERR_FAIL;
+    return common::ERR_FAIL;
   }
-  else
-  {
-    m_p_building = bldg;
-  }
-  return err;
+
+  m_p_building = bldg;
+  return common::ERR_NONE;
 }
 
 common::Error Area::build(const Border border)
 {
-  common::Error err = common::ERR_NONE;
   if (!is_valid(border))
   {
-    err = common::ERR_INVALID;
+    return common::ERR_INVALID;
   }
-  else if (!can_build_road(border))
+  if (!can_build_road(border))
   {
-    err = common::ERR_FAIL;
+    return common::ERR_FAIL;
   }
-  else
-  {
-    m_p_roads.insert(border);
-  }
-  return err;
+
+  m_p_roads.insert(border);
+  return common::ERR_NONE;
 }
 
 common::Error Area::add_resource(const portable::Resource res,
                                  const uint16_t amount)
 {
-  if (portable::is_valid(res))
+  if (!portable::is_valid(res))
   {
-    m_p_resources[res] += amount;
+    return common::ERR_INVALID;
   }
-}
 
-common::Error
-Area::add_transporter(const player::Color color,
-                      std::shared_ptr<portable::Transporter> transporter)
-{
-  common::Error err = common::ERR_NONE;
-  if ((!transporter) || (!is_valid(color)))
-  {
-    err = common::ERR_INVALID;
-  }
-  else
-  {
-    m_p_transporters[color].push_back(transporter);
-  }
-  return err;
+  m_p_resources[res] += amount;
+  return common::ERR_NONE;
 }
 
 common::Error Area::merge(Area &other)
@@ -489,16 +331,35 @@ common::Error Area::merge(Area &other)
   if (can_merge(other))
   {
     (*this) += other;
+    return common::ERR_NONE;
   }
-  else
-  {
-    err = common::ERR_FAIL;
-  }
-  return err;
+
+  return common::ERR_FAIL;
 }
 
-void Area::rotate(int8_t rotations)
+bool Area::can_rotate() const
 {
+  if ((0 != m_p_roads.size()) || (m_p_building))
+  {
+    return false;
+  }
+  for (auto res : m_p_resources)
+  {
+    if (0 != res)
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+common::Error Area::rotate(int8_t rotations)
+{
+  if (!can_rotate())
+  {
+    return common::ERR_FAIL;
+  }
+
   // Making 0 rotations doesn't do anything...
   if (0 != rotations)
   {
@@ -517,21 +378,40 @@ void Area::rotate(int8_t rotations)
     }
     m_p_borders.clear();
     m_p_borders.insert(tmp_borders.begin(), tmp_borders.end());
-
-    std::vector<Border> tmp_roads;
-    for (auto b : m_p_roads)
-    {
-      Border rotated = static_cast<Border>((rotations + b) % MAX_BORDERS);
-      tmp_roads.push_back(rotated);
-    }
-    m_p_roads.clear();
-    m_p_roads.insert(tmp_roads.begin(), tmp_roads.end());
   }
+
+  return common::ERR_NONE;
 }
 
 std::ostream &operator<<(std::ostream &os, Area &a)
 {
-  // TODO: Add logic to print area object
+  std::vector<Border> borders(a.get_borders().begin(), a.get_borders().end());
+  std::vector<Border> roads(a.get_roads().begin(), a.get_roads().end());
+  os << "<Area::id=" << a.get_id() << ", borders=[" << to_string(borders.at(0));
+  for (int i = 1; i < borders.size(); i++)
+  {
+    os << ", " << to_string(borders.at(i));
+  }
+  os << "], roads=[";
+  if (roads.size() > 0)
+  {
+    os << to_string(roads.at(0));
+    for (int i = 1; i < roads.size(); i++)
+    {
+      os << ", " << to_string(roads.at(i));
+    }
+  }
+  os << "], building="
+     << (a.get_building() ? a.get_building()->get_name() : "none")
+     << ", resources={"
+     << portable::to_string(static_cast<portable::Resource>(0)) << ": "
+     << a.get_all_resources()[0];
+  for (int i = 1; i < portable::RESOURCE_NAMES_SIZE; i++)
+  {
+    os << ", " << portable::to_string(static_cast<portable::Resource>(i))
+       << ": " << a.get_all_resources()[i];
+  }
+  os << "}>";
   return os;
 }
 
@@ -563,28 +443,6 @@ nlohmann::json Area::to_json()
   {
     portable::Resource r = static_cast<portable::Resource>(i);
     retval["resources"][to_string(r)] = m_p_resources[i];
-  }
-
-  // List transporters
-  for (uint8_t c = 0; c < player::MAX_PLAYER_COLORS; c++)
-  {
-    std::string color = to_string(static_cast<player::Color>(c));
-    bool added_transporters = false;
-    if (!((m_p_transporters[c]).empty()))
-    {
-      for (auto transporter : m_p_transporters[c])
-      {
-        if (transporter)
-        {
-          retval[c].push_back(transporter->to_json());
-          added_transporters = true;
-        }
-      }
-    }
-    if (!added_transporters)
-    {
-      retval[c] = std::vector<nlohmann::json>();
-    }
   }
 
   return retval;
