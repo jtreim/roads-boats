@@ -14,42 +14,113 @@
 #include <common/Errors.h>
 #include <players/Player.h>
 #include <portables/Resource.h>
-#include <portables/transporters/Transporter.h>
+#include <portables/Transporter.h>
+#include <tiles/components/Area.h>
+#include <tiles/components/Border.h>
+#include <tiles/components/Hex_point.h>
+#include <tiles/components/River.h>
 
 namespace tile
 {
-enum Direction
+enum Terrain
 {
-  north_east = 0,
-  east,
-  south_east,
-  south_west,
-  west,
-  north_west
+  invalid = -1,
+  desert = 0,
+  forest,
+  mountain,
+  plains,
+  rock,
+  sea
 };
+static const uint8_t MAX_TERRAIN_TYPES = 6;
+static const std::string TERRAIN_NAMES[MAX_TERRAIN_TYPES]{
+    "desert", "forest", "mountain", "plains", "rock", "sea"};
+static bool is_valid(const Terrain t)
+{
+  return ((0 <= t) && (MAX_TERRAIN_TYPES > t));
+}
+static const std::string to_string(const Terrain t)
+{
+  if (is_valid(t))
+  {
+    return TERRAIN_NAMES[t];
+  }
+  return "unknown";
+}
 
 class Tile : public std::enable_shared_from_this<Tile>
 {
 public:
-  Tile();
-  Tile(std::set<Direction> p_river_points);
+  Tile(const Terrain t = Terrain::desert);
+  Tile(const hex_point hp, const Terrain t = Terrain::desert);
+  Tile(const std::set<Direction> river_points,
+       const Terrain t = Terrain::desert);
+  Tile(const hex_point hp, std::set<Direction> river_points,
+       const Terrain t = Terrain::desert);
+  Tile(const std::vector<std::set<Direction>> river_points,
+       const Terrain t = Terrain::desert);
+  Tile(const hex_point hp, const std::vector<std::set<Direction>> river_points,
+       const Terrain t = Terrain::desert);
+  Tile(const Tile &other);
   ~Tile();
 
-  bool operator==(Tile const &other) const;
+  /// Initializes the Tile using the contructor's parameters, e.g.
+  /// dividing the tile into areas using the input rivers.
+  void init();
+  /// Clears tile of all buildings/resources/neighbors.
+  void reset();
 
-  // Abstract calls
-  virtual nlohmann::json to_json() const;
+  inline uuids::uuid get_id() const { return m_p_id; };
+  inline Terrain get_terrain() const { return m_p_terrain; }
+  inline hex_point get_hex_point() const { return m_p_hex_point; }
+  inline bool is_rot_locked() const { return m_p_rot_locked; }
 
-  // getters
-  uuids::uuid get_id() const { return id; };
+  /// Returns the river with a point at the input direction.
+  /// @param[in] d Direction to check for a river point.
+  /// @return A pointer to the river at the input direction. Null if no river
+  /// found with that point.
+  std::shared_ptr<River> get_river(const Direction d);
+  inline std::vector<std::shared_ptr<River>> get_rivers() { return m_p_rivers; }
+  inline std::vector<std::shared_ptr<River>> get_rivers() const
+  {
+    return m_p_rivers;
+  }
+  std::set<Direction> get_river_points() const;
+  std::set<Direction> get_river_points(const Direction d);
+
+  /// Returns the area that uses the input border.
+  /// @param[in] b Border that area is a part of.
+  /// @return A pointer to the area with the input border. Null on invalid
+  /// border input.
+  std::shared_ptr<Area> get_area(const Border b);
+  /// Returns all areas of the tile.
+  /// @return all of the tile's areas.
+  inline std::vector<std::shared_ptr<Area>> get_areas() { return m_p_areas; }
+  inline std::vector<std::shared_ptr<Area>> get_areas() const
+  {
+    return m_p_areas;
+  }
+  /// Returns the areas associated with the input tile side.
+  /// @param[in] d side of the tile that areas are associated with.
+  /// @return areas associated with the input side.
+  std::vector<std::shared_ptr<Area>> get_areas(const Direction d);
 
   /// Gets the first adjacent tile in the input direction
+  /// @param direction Side of the tile to check for a neighbor
   /// @return
   ///   - pointer to the first adjacent tile
   ///   - nullptr if no tile is in the given direction
-  std::shared_ptr<Tile> get_neighbor(Direction direction) const;
+  std::shared_ptr<Tile> get_neighbor(const Direction direction);
   std::shared_ptr<Tile> *get_neighbors();
-  std::set<Direction> get_river_points() const;
+
+  inline std::pair<player::Color, uint8_t> get_wall(const Direction d) const
+  {
+    if (is_valid(d))
+    {
+      return m_p_walls[d];
+    }
+    return std::make_pair<player::Color, uint8_t>(player::Color::invalid, 0);
+  }
 
   /// Gets the building (if any) currently on this tile
   /// @return
@@ -57,20 +128,11 @@ public:
   ///   - nullptr if no structure has been built here
   std::shared_ptr<building::Building> get_building() const;
   std::map<std::string, std::pair<portable::Resource, uint8_t>>
-  get_resources() const;
-  std::map<player::Color, std::vector<std::shared_ptr<portable::Transporter>>>
-  get_transporters() const;
-  std::vector<std::shared_ptr<portable::Transporter>>
-  get_player_transporters(player::Color color) const;
+  get_all_resources() const;
 
-  /// Checks whether tile has a river that flows through the input direction
-  /// @param[in] direction
-  /// @return
-  ///   - true if the tile has a river flowing through the input direction
-  ///   - false otherwise
-  bool river_has_point(Direction direction) const;
-  virtual bool is_shore() const;
-  virtual inline bool is_sea() const { return false; }
+  bool has_river_point(const Direction direction);
+  bool has_road(const Border border);
+  bool is_shore() const;
 
   /// Add a tile as a neighbor in the input direction.
   /// @param[in] neighbor The tile to be placed next to this one.
@@ -101,25 +163,61 @@ public:
   ///   - common::Error::ERR_FAIL on fail
   common::Error clear_neighbors();
 
+  /// Check to see if tile can rotate. Don't allow if the tile has any
+  /// neighbors; if at least one of its areas/rivers can't rotate; or if it is
+  /// locked.
+  /// @return true if tile isn't rotation-locked, it doesn't have any neighbors,
+  /// all of its areas can rotate, and all of its rivers can rotate.
+  bool can_rotate() const;
+
   /// Rotates the tile clockwise the number of rotations.
   /// @param[in] rotations The number of clockwise rotations to perform. A
   /// negative value rotates counter-clockwise.
   /// @return
-  ///   - common::Error::ERR_NONE on success
-  ///   - common::Error::ERR_FAIL on fail
+  ///   - common::ERR_NONE on success
+  ///   - common::ERR_FAIL if failed can_rotate check
+  ///   - common::ERR_UNKNOWN otherwise
   common::Error rotate(int8_t rotations);
+
+  /// Builds a road on the input border if possible.
+  /// @param[in] border border to build a road on.
+  /// @return
+  ///   - common::ERR_NONE on success
+  ///   - common::ERR_INVALID if border is invalid value
+  ///   - common::ERR_FAIL if unable to build road on this border
+  common::Error build_road(const Border border);
+
+  /// Builds a building on the input area if possible.
+  /// @param[in] area Pointer to the area to construct a building on.
+  /// @param[in] bldg Pointer to the building to construct.
+  /// @return
+  ///   - common::ERR_NONE on success
+  ///   - commmon::ERR_INVALID if area is invalid value, or bldg type is
+  ///   invalid.
+  ///   - common::ERR_FAIL otherwise
+  common::Error build_building(const std::shared_ptr<Area> &area,
+                               const std::shared_ptr<building::Building> &bldg);
+
+  /// Builds a bridge at input river point if possible.
+  /// @param[in] point Point to build a bridge.
+  /// @return
+  ///   - common::ERR_NONE on success
+  ///   - common::ERR_FAIL when unable to build bridge at input direction.
+  ///   - common::ERR_INVALID on invalid direction.
+  common::Error build_bridge(const Direction point);
 
   // Helpers
   // friend std::ostream &operator<<(std::ostream &os, const Tile &tile);
-  inline static bool is_valid_direction(Direction direction)
-  {
-    return ((0 <= direction) && (m_max_directions > direction));
-  };
+  bool operator==(Tile &other) const;
+  bool operator!=(Tile &other) const;
 
-  static Direction get_opposite_direction(Direction direction);
-  static const uint8_t m_max_directions = 6;
+  nlohmann::json to_json() const;
 
 protected:
+private:
+  /// Divides areas based on where all river points are.
+  void split_by_rivers();
+
   /// Checks whether neighbor can be placed at the direction relative to the
   /// tile.
   /// @param[in] neighbor  Tile to be placed
@@ -132,21 +230,29 @@ protected:
   ///   there, or if the new neighbor matches ourselves or a neighbor we
   ///   already have.
   ///   - common::Error::ERR_NONE on valid placement.
-  virtual common::Error can_add_neighbor(std::shared_ptr<Tile> neighbor,
-                                         Direction direction);
+  common::Error can_add_neighbor(std::shared_ptr<Tile> neighbor,
+                                 Direction direction);
 
   bool is_neighboring_sea() const;
 
-  uuids::uuid id;
-  std::shared_ptr<Tile> m_p_neighbors[6];
-  std::set<Direction> m_p_river_points;
-  std::shared_ptr<building::Building> m_p_building;
-  std::map<std::string, std::pair<portable::Resource, uint8_t>> m_p_resources;
-  std::map<player::Color, std::vector<std::shared_ptr<portable::Transporter>>>
-      m_p_transporters;
-
-private:
+  uuids::uuid m_p_id;
+  hex_point m_p_hex_point;
+  Terrain m_p_terrain;
+  std::shared_ptr<Tile> m_p_neighbors[MAX_DIRECTIONS];
+  std::vector<std::shared_ptr<River>> m_p_rivers;
+  std::vector<std::shared_ptr<Area>> m_p_areas;
+  std::pair<player::Color, uint8_t> m_p_walls[MAX_DIRECTIONS];
+  // Flag to prevent tile from rotating after placed in a map.
+  bool m_p_rot_locked;
 };
 
+/// Create a Tile object using the input json.
+/// @param[in] j Input json
+/// @param[out] t Pointer to created Tile object. Null on invalid json input.
+/// @return
+///   - common::ERR_NONE on success
+///   - common::ERR_FAIL on invalid json object
+static common::Error from_json(const nlohmann::json j,
+                               std::shared_ptr<Tile> &t);
 } // namespace tile
 #endif // end Tile_H

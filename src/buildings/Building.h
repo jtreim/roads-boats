@@ -26,10 +26,7 @@ public:
     truck_factory,
     raft_factory,
     rowboat_factory,
-    steamer_factory,
-    road,
-    bridge,
-    wall
+    steamer_factory
   };
 
   Building(const Building &other);
@@ -37,8 +34,7 @@ public:
   ~Building();
 
   inline Type get_type() const { return m_p_type; };
-  inline common::Error get_name(std::string &name) const;
-  void to_json(nlohmann::json &j) const;
+  inline std::string get_name() const;
 
   Building operator=(const Building &other);
   Building operator=(const Type &other);
@@ -46,7 +42,9 @@ public:
   bool operator==(Type const &t) const;
 
   // helpers
-  friend std::ostream &operator<<(std::ostream &os, const Building &building);
+  // friend std::ostream &operator<<(std::ostream &os, const Building
+  // &building);
+  nlohmann::json to_json() const;
 
 protected:
 private:

@@ -8,7 +8,7 @@ namespace utils
 
 /// Generates a new UUID
 /// @return The new UUID
-uuids::uuid gen_uuid()
+static uuids::uuid gen_uuid()
 {
   std::random_device rd;
   auto seed_data = std::array<int, std::mt19937::state_size>{};
