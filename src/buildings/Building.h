@@ -42,8 +42,6 @@ public:
   bool operator==(Type const &t) const;
 
   // helpers
-  // friend std::ostream &operator<<(std::ostream &os, const Building
-  // &building);
   nlohmann::json to_json() const;
 
 protected:
@@ -52,4 +50,7 @@ private:
 };
 
 } // namespace building
+
+std::ostream &operator<<(std::ostream &os, const building::Building &b);
+
 #endif // end BUILDING_H

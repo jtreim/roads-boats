@@ -12,7 +12,6 @@
 
 namespace tile
 {
-class Area;
 
 class River : public std::enable_shared_from_this<River>
 {
@@ -25,6 +24,7 @@ public:
   void reset();
 
   inline uuids::uuid get_id() { return m_p_id; }
+  inline uuids::uuid get_id() const { return m_p_id; }
 
   bool operator==(River const &other) const;
   bool operator==(River &other);
@@ -80,7 +80,6 @@ public:
   ///   - common::ERR_UNKNOWN otherwise
   common::Error rotate(int8_t rotations);
 
-  friend std::ostream &operator<<(std::ostream &os, River &r);
   nlohmann::json to_json() const;
 
 protected:
@@ -99,5 +98,7 @@ private:
 static common::Error from_json(const nlohmann::json j,
                                std::shared_ptr<River> &r);
 } // namespace tile
+
+std::ostream &operator<<(std::ostream &os, tile::River const &r);
 
 #endif

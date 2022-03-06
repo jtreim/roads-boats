@@ -42,11 +42,6 @@ static Direction operator!(Direction d)
 {
   return static_cast<Direction>((d + MAX_DIRECTIONS / 2) % MAX_DIRECTIONS);
 }
-static std::ostream &operator<<(std::ostream &output, const Direction &d)
-{
-  output << to_string(d);
-  return output;
-}
 static nlohmann::json json(const Direction d)
 {
   nlohmann::json retval;
@@ -96,11 +91,6 @@ static Border operator!(Border b)
   }
   return static_cast<Border>(((b + MAX_BORDERS / 2) - 1) % MAX_BORDERS);
 }
-static std::ostream &operator<<(std::ostream &output, const Border &b)
-{
-  output << to_string(b);
-  return output;
-}
 static nlohmann::json json(const Border b)
 {
   nlohmann::json retval;
@@ -127,5 +117,16 @@ static std::vector<Border> borders_from_direction(const Direction d)
 }
 
 } // namespace tile
+
+static std::ostream &operator<<(std::ostream &output, const tile::Direction &d)
+{
+  output << tile::to_string(d);
+  return output;
+}
+static std::ostream &operator<<(std::ostream &output, const tile::Border &b)
+{
+  output << tile::to_string(b);
+  return output;
+}
 
 #endif

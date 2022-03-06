@@ -3,7 +3,8 @@
 #include <buildings/Building.h>
 #include <common/Errors.h>
 
-using namespace building;
+namespace building
+{
 
 static const std::string BUILDING_NAMES[] = {
     "woodcutter",     "oil_rig",
@@ -46,4 +47,11 @@ nlohmann::json Building::to_json() const
   nlohmann::json retval;
   retval["type"] = get_name();
   return retval;
+}
+} // namespace building
+
+std::ostream &operator<<(std::ostream &os, const building::Building &b)
+{
+  os << "<Building::name=" << b.get_name() << ", type=" << b.get_type() << ">";
+  return os;
 }

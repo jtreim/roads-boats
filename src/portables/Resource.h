@@ -44,7 +44,7 @@ static const size_t RESOURCE_NAMES_SIZE =
 /// The string name for the resource. "unknown" if invalid resource value.
 static std::string to_string(Resource res)
 {
-  if (RESOURCE_NAMES_SIZE > RESOURCE_NAMES_SIZE)
+  if (res < RESOURCE_NAMES_SIZE)
   {
     return RESOURCE_NAMES[static_cast<uint8_t>(res)];
   }
@@ -55,6 +55,13 @@ static bool is_valid(const Resource r)
 {
   return ((0 <= r) && (RESOURCE_NAMES_SIZE > r));
 }
-
 } // namespace portable
+
+static std::ostream &operator<<(std::ostream &output,
+                                const portable::Resource &r)
+{
+  output << portable::to_string(r);
+  return output;
+}
+
 #endif // end RESOURCE_H
