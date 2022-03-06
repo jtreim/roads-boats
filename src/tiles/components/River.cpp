@@ -10,7 +10,8 @@
 #include <tiles/components/River.h>
 #include <utils/id_utils.h>
 
-using namespace tile;
+namespace tile
+{
 
 River::River(const std::set<Direction> river_points)
     : m_p_id(utils::gen_uuid()), m_p_points(river_points)
@@ -68,7 +69,7 @@ River::get_area_borders(std::set<Border> borders) const
     // Pair up the right border of each point with the next point's left border.
     // Because it's circular, we know the last pairing will be whatever's
     // leftover.
-    for (int i = 0; i < p.size() - 1; i++)
+    for (size_t i = 0; i < p.size() - 1; i++)
     {
       int next = i + 1;
       Border start = borders_from_direction(p[i])[1];
@@ -83,7 +84,7 @@ River::get_area_borders(std::set<Border> borders) const
         borders.erase(end);
         // Fill in all borders between the two.
         // Only add the ones that we can from the borders remaining.
-        for (int j = start; j < end; j++)
+        for (size_t j = start; j < end; j++)
         {
           Border border = static_cast<Border>(j);
           if (borders.contains(border))
@@ -154,31 +155,6 @@ common::Error River::rotate(int8_t rotations)
   return err;
 }
 
-std::ostream &operator<<(std::ostream &os, River &river)
-{
-  std::vector<Direction> points(river.get_points().begin(),
-                                river.get_points().end());
-  std::vector<Direction> bridges(river.get_bridges().begin(),
-                                 river.get_bridges().end());
-  os << "<River::id=" << river.get_id() << ", points=["
-     << to_string(points.at(0));
-  for (int i = 1; i < points.size(); i++)
-  {
-    os << ", " << to_string(points.at(i));
-  }
-  os << "], bridges=[";
-  if (bridges.size() > 0)
-  {
-    os << to_string(bridges.at(0));
-    for (int i = 1; i < bridges.size(); i++)
-    {
-      os << to_string(bridges.at(i));
-    }
-  }
-  os << "]>";
-  return os;
-}
-
 nlohmann::json River::to_json() const
 {
   nlohmann::json retval;
@@ -204,6 +180,33 @@ nlohmann::json River::to_json() const
   retval["bridges"] = bridges;
 
   return retval;
+}
+} // namespace tile
+
+std::ostream &operator<<(std::ostream &os, tile::River const &river)
+{
+  std::set<tile::Direction> pts = river.get_points();
+  std::vector<tile::Direction> points(pts.begin(), pts.end());
+  std::set<tile::Direction> brs = river.get_bridges();
+  std::vector<tile::Direction> bridges(brs.begin(), brs.end());
+  os << "<River::id=" << river.get_id() << ", points=[" << points.at(0);
+  for (size_t i = 1; i < points.size(); i++)
+  {
+    os << ", " << points.at(i);
+  }
+  os << "]";
+  if (bridges.size() > 0)
+  {
+    os << ", bridges=[";
+    os << bridges.at(0);
+    for (size_t i = 1; i < bridges.size(); i++)
+    {
+      os << bridges.at(i);
+    }
+    os << "]";
+  }
+  os << ">";
+  return os;
 }
 
 // TODO: implement from_json

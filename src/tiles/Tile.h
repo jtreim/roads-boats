@@ -48,7 +48,7 @@ static const std::string to_string(const Terrain t)
   return "unknown";
 }
 
-class Tile : public std::enable_shared_from_this<Tile>
+class Tile
 {
 public:
   Tile(const Terrain t = Terrain::desert);
@@ -122,6 +122,9 @@ public:
     return std::make_pair<player::Color, uint8_t>(player::Color::invalid, 0);
   }
 
+  std::map<Direction, std::pair<player::Color, uint8_t>>
+  get_built_walls() const;
+
   /// Gets the building (if any) currently on this tile
   /// @return
   ///   - pointer to the structure built on this tile
@@ -132,6 +135,7 @@ public:
 
   bool has_river_point(const Direction direction);
   bool has_road(const Border border);
+  bool has_wall() const;
   bool is_shore() const;
 
   /// Add a tile as a neighbor in the input direction.
@@ -145,8 +149,8 @@ public:
   ///   direction, or the neighbor's river points doesn't allow being added
   ///   there.
   ///   - common::Error::ERR_NONE on success.
-  virtual common::Error add_neighbor(std::shared_ptr<Tile> neighbor,
-                                     Direction direction);
+  common::Error add_neighbor(std::shared_ptr<Tile> neighbor,
+                             Direction direction);
 
   /// Remove the neighbor from the input direction
   /// @param[in] neighbor The direction of the neighbor to be removed.
@@ -155,7 +159,7 @@ public:
   ///   - common::Error::ERR_MISSING if there is no neighbor in the input
   ///   direction.
   ///   - common::Error::ERR_NONE on success.
-  virtual common::Error remove_neighbor(Direction direction);
+  common::Error remove_neighbor(Direction direction);
 
   /// Removes all neighbors from the tile
   /// @return
@@ -207,7 +211,6 @@ public:
   common::Error build_bridge(const Direction point);
 
   // Helpers
-  // friend std::ostream &operator<<(std::ostream &os, const Tile &tile);
   bool operator==(Tile &other) const;
   bool operator!=(Tile &other) const;
 
@@ -255,4 +258,7 @@ private:
 static common::Error from_json(const nlohmann::json j,
                                std::shared_ptr<Tile> &t);
 } // namespace tile
+
+std::ostream &operator<<(std::ostream &os, const tile::Tile &tile);
+
 #endif // end Tile_H

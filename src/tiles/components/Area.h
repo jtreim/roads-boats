@@ -56,12 +56,18 @@ public:
   template <typename Iter> bool has_borders(Iter begin, Iter end);
   inline bool has_road(const Border b) { return m_p_roads.contains(b); }
   inline std::set<Border> get_borders() { return m_p_borders; }
+  inline std::set<Border> get_borders() const { return m_p_borders; }
   inline std::set<Border> get_roads() { return m_p_roads; }
+  inline std::set<Border> get_roads() const { return m_p_roads; }
   inline std::shared_ptr<building::Building> get_building()
   {
     return m_p_building;
   };
-  inline uint16_t *get_all_resources() { return m_p_resources; }
+  inline std::shared_ptr<building::Building> get_building() const
+  {
+    return m_p_building;
+  };
+  inline uint16_t *get_resources() { return m_p_resources; }
   inline uint16_t get_resource_amount(const portable::Resource res)
   {
     if (portable::is_valid(res))
@@ -70,6 +76,17 @@ public:
     }
     return 0;
   }
+  inline uint16_t get_resource_amount(const portable::Resource res) const
+  {
+    if (portable::is_valid(res))
+    {
+      return m_p_resources[res];
+    }
+    return 0;
+  }
+
+  bool has_resources() const;
+  std::map<portable::Resource, uint16_t> list_available_resources() const;
 
   /// Checks to see if input Area is contained within this Area.
   /// @param[in] other
@@ -131,7 +148,6 @@ public:
   ///   - common::ERR_UNKNOWN otherwise
   common::Error rotate(int8_t rotations);
 
-  friend std::ostream &operator<<(std::ostream &os, Area &a);
   nlohmann::json to_json();
 
 protected:
@@ -152,5 +168,7 @@ private:
 static common::Error from_json(const nlohmann::json j,
                                std::shared_ptr<Area> &a);
 } // namespace tile
+
+std::ostream &operator<<(std::ostream &os, tile::Area const &a);
 
 #endif

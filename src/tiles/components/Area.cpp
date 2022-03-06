@@ -17,7 +17,8 @@
 #include <tiles/components/Border.h>
 #include <utils/id_utils.h>
 
-using namespace tile;
+namespace tile
+{
 
 Area::Area(std::set<Border> borders)
     : m_p_id(utils::gen_uuid()), m_p_borders(borders)
@@ -107,7 +108,7 @@ operator+(const uint16_t resources[portable::RESOURCE_NAMES_SIZE]) const
   new_area.m_p_id = m_p_id;
   new_area.m_p_building = m_p_building;
   new_area.m_p_roads.insert(m_p_roads.begin(), m_p_roads.end());
-  for (uint8_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  for (size_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
   {
     new_area.m_p_resources[i] = m_p_resources[i] + resources[i];
   }
@@ -121,7 +122,7 @@ bool Area::operator==(Area &other)
   {
     return false;
   }
-  for (int i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  for (size_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
   {
     if (m_p_resources[i] != other.m_p_resources[i])
     {
@@ -137,7 +138,7 @@ bool Area::operator==(Area const &other) const
   {
     return false;
   }
-  for (int i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  for (size_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
   {
     if (m_p_resources[i] != other.m_p_resources[i])
     {
@@ -222,6 +223,30 @@ template <typename Iter> bool Area::has_borders(Iter begin, Iter end)
     ++begin;
   }
   return true;
+}
+
+bool Area::has_resources() const
+{
+  for (size_t r = 0; r < portable::RESOURCE_NAMES_SIZE; r++)
+  {
+    if (m_p_resources[r] > 0)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+std::map<portable::Resource, uint16_t> Area::list_available_resources() const
+{
+  std::map<portable::Resource, uint16_t> retval;
+  for (size_t r = 0; r < portable::RESOURCE_NAMES_SIZE; r++)
+  {
+    if (m_p_resources[r] > 0)
+    {
+      retval.at(static_cast<portable::Resource>(r)) = m_p_resources[r];
+    }
+  }
+  return retval;
 }
 
 bool Area::contains(const Area other)
@@ -383,38 +408,6 @@ common::Error Area::rotate(int8_t rotations)
   return common::ERR_NONE;
 }
 
-std::ostream &operator<<(std::ostream &os, Area &a)
-{
-  std::vector<Border> borders(a.get_borders().begin(), a.get_borders().end());
-  std::vector<Border> roads(a.get_roads().begin(), a.get_roads().end());
-  os << "<Area::id=" << a.get_id() << ", borders=[" << to_string(borders.at(0));
-  for (int i = 1; i < borders.size(); i++)
-  {
-    os << ", " << to_string(borders.at(i));
-  }
-  os << "], roads=[";
-  if (roads.size() > 0)
-  {
-    os << to_string(roads.at(0));
-    for (int i = 1; i < roads.size(); i++)
-    {
-      os << ", " << to_string(roads.at(i));
-    }
-  }
-  os << "], building="
-     << (a.get_building() ? a.get_building()->get_name() : "none")
-     << ", resources={"
-     << portable::to_string(static_cast<portable::Resource>(0)) << ": "
-     << a.get_all_resources()[0];
-  for (int i = 1; i < portable::RESOURCE_NAMES_SIZE; i++)
-  {
-    os << ", " << portable::to_string(static_cast<portable::Resource>(i))
-       << ": " << a.get_all_resources()[i];
-  }
-  os << "}>";
-  return os;
-}
-
 nlohmann::json Area::to_json()
 {
   nlohmann::json retval;
@@ -447,5 +440,50 @@ nlohmann::json Area::to_json()
 
   return retval;
 }
+} // namespace tile
 
+std::ostream &operator<<(std::ostream &os, tile::Area const &a)
+{
+  std::set<tile::Border> bdrs = a.get_borders();
+  std::set<tile::Border> rds = a.get_roads();
+  std::vector<tile::Border> borders(bdrs.begin(), bdrs.end());
+  std::vector<tile::Border> roads(rds.begin(), rds.end());
+  os << "<Area::id=" << a.get_id() << ", borders=[" << borders.at(0);
+  for (size_t i = 1; i < borders.size(); i++)
+  {
+    os << ", " << borders.at(i);
+  }
+  os << "]";
+
+  if (roads.size() > 0)
+  {
+    os << ", roads=[";
+    os << roads.at(0);
+    for (size_t i = 1; i < roads.size(); i++)
+    {
+      os << ", " << roads.at(i);
+    }
+    os << "]";
+  }
+
+  if (a.get_building())
+  {
+    os << ", building=";
+    os << a.get_building().get();
+  }
+
+  if (a.has_resources())
+  {
+    std::map<portable::Resource, uint16_t> res = a.list_available_resources();
+    os << ", resources={";
+    for (std::map<portable::Resource, uint16_t>::iterator it = res.begin();
+         it != res.end(); ++it)
+    {
+      os << "{" << it->first << ":" << static_cast<int>(it->second) << "}";
+    }
+    os << "}";
+  }
+  os << ">";
+  return os;
+}
 // TODO: implement from_json

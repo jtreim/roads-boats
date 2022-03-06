@@ -20,15 +20,16 @@ public:
   hex_point();
   hex_point(const int8_t q, const int8_t r);
   hex_point(const hex_point &other);
+  hex_point operator=(const hex_point &other) { return hex_point(other); }
   virtual ~hex_point();
 
   inline int8_t q() { return m_p_q; }
   inline int8_t r() { return m_p_r; }
   inline int8_t s() { return -m_p_q - m_p_r; }
 
-  inline const int8_t q() const { return m_p_q; }
-  inline const int8_t r() const { return m_p_r; }
-  inline const int8_t s() const { return -m_p_q - m_p_r; }
+  inline int8_t q() const { return m_p_q; }
+  inline int8_t r() const { return m_p_r; }
+  inline int8_t s() const { return -m_p_q - m_p_r; }
 
   hex_point operator+(const hex_point &other) const;
   hex_point operator-(const hex_point &other) const;
@@ -106,7 +107,6 @@ public:
     return hex_point(q, r);
   }
 
-  friend std::ostream &operator<<(std::ostream &os, hex_point &pos);
   nlohmann::json to_json() const;
 
 protected:
@@ -125,5 +125,18 @@ private:
 ///   - common::ERR_FAIL on invalid json object
 static common::Error from_json(const nlohmann::json j, hex_point &hp);
 } // namespace tile
+
+std::ostream &operator<<(std::ostream &os, const tile::hex_point &pos);
+// template <> struct std::hash<hex_point>
+// {
+//   std::size_t operator()(hex_point const &hp) const noexcept
+//   {
+//     std::size_t hq = std::hash<int8_t>{}(hp.q());
+//     std::size_t hr = std::hash<int8_t>{}(hp.r());
+//     return hq ^
+//            (hr << 1); // or use boost::hash_combine (see Discussion)
+//                       // https://en.cppreference.com/w/Talk:cpp/utility/hash
+//   }
+// };
 
 #endif

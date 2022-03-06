@@ -4,8 +4,8 @@
 
 #include <tiles/components/Hex_point.h>
 
-using namespace tile;
-
+namespace tile
+{
 hex_point::hex_point() : m_p_q(0), m_p_r(0) {}
 hex_point::hex_point(const int8_t q, const int8_t r) : m_p_q(q), m_p_r(r) {}
 hex_point::hex_point(const hex_point &other)
@@ -62,12 +62,6 @@ int16_t hex_point::distance(const hex_point other) const
          2;
 }
 
-std::ostream &operator<<(std::ostream &os, hex_point &pos)
-{
-  os << "(q:" << pos.q() << ", r:" << pos.r() << ", s:" << pos.s() << ")";
-  return os;
-}
-
 nlohmann::json hex_point::to_json() const
 {
   nlohmann::json retval;
@@ -76,5 +70,13 @@ nlohmann::json hex_point::to_json() const
   retval["s"] = (-m_p_q - m_p_r);
   return retval;
 }
+} // namespace tile
 
+std::ostream &operator<<(std::ostream &os, const tile::hex_point &pos)
+{
+  os << "(q:" << static_cast<int>(pos.q())
+     << ", r:" << static_cast<int>(pos.r())
+     << ", s:" << static_cast<int>(pos.s()) << ")";
+  return os;
+}
 // TODO: implement from_json

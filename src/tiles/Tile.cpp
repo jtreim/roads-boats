@@ -18,7 +18,8 @@
 #include <tiles/components/River.h>
 #include <utils/id_utils.h>
 
-using namespace tile;
+namespace tile
+{
 
 Tile::Tile(const Terrain t)
     : m_p_id(utils::gen_uuid()), m_p_terrain(t), m_p_rot_locked(false)
@@ -27,7 +28,7 @@ Tile::Tile(const Terrain t)
 }
 
 Tile::Tile(const hex_point hp, const Terrain t)
-    : m_p_id(utils::gen_uuid()), m_p_terrain(t), m_p_hex_point(hp),
+    : m_p_id(utils::gen_uuid()), m_p_hex_point(hp), m_p_terrain(t),
       m_p_rot_locked(false)
 {
   init();
@@ -42,7 +43,7 @@ Tile::Tile(const std::set<Direction> river_points, const Terrain t)
 
 Tile::Tile(const hex_point hp, std::set<Direction> river_points,
            const Terrain t)
-    : m_p_id(utils::gen_uuid()), m_p_terrain(t), m_p_hex_point(hp),
+    : m_p_id(utils::gen_uuid()), m_p_hex_point(hp), m_p_terrain(t),
       m_p_rot_locked(false)
 {
   m_p_rivers.push_back(std::make_shared<River>(river_points));
@@ -61,7 +62,7 @@ Tile::Tile(const std::vector<std::set<Direction>> river_points, const Terrain t)
 
 Tile::Tile(const hex_point hp,
            const std::vector<std::set<Direction>> river_points, const Terrain t)
-    : m_p_id(utils::gen_uuid()), m_p_terrain(t), m_p_hex_point(hp),
+    : m_p_id(utils::gen_uuid()), m_p_hex_point(hp), m_p_terrain(t),
       m_p_rot_locked(false)
 {
   for (auto rp : river_points)
@@ -72,11 +73,11 @@ Tile::Tile(const hex_point hp,
 }
 
 Tile::Tile(const Tile &other)
-    : m_p_id(other.m_p_id), m_p_terrain(other.m_p_terrain),
-      m_p_hex_point(other.m_p_hex_point), m_p_rivers(other.m_p_rivers),
+    : m_p_id(other.m_p_id), m_p_hex_point(other.m_p_hex_point),
+      m_p_terrain(other.m_p_terrain), m_p_rivers(other.m_p_rivers),
       m_p_areas(other.m_p_areas), m_p_rot_locked(other.m_p_rot_locked)
 {
-  for (int i = 0; i < MAX_DIRECTIONS; i++)
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
     m_p_walls[i] = other.m_p_walls[i];
   }
@@ -111,7 +112,7 @@ void Tile::init()
 
 void Tile::reset()
 {
-  m_p_hex_point = hex_point(0, 0);
+  m_p_hex_point = hex_point();
   for (auto area : m_p_areas)
   {
     area->reset();
@@ -120,7 +121,7 @@ void Tile::reset()
   {
     river->reset();
   }
-  for (int i = 0; i < MAX_DIRECTIONS; i++)
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
     m_p_neighbors[i].reset();
     m_p_walls[i] = std::make_pair<player::Color, uint8_t>(player::neutral, 0);
@@ -155,7 +156,7 @@ bool Tile::operator!=(Tile &other) const { return !(*this == other); }
 std::shared_ptr<River> Tile::get_river(const Direction d)
 {
   std::shared_ptr<River> retval;
-  for (int i = 0; i < m_p_rivers.size(); i++)
+  for (size_t i = 0; i < m_p_rivers.size(); i++)
   {
     if (m_p_rivers.at(i)->has_point(d))
     {
@@ -191,7 +192,7 @@ std::set<Direction> Tile::get_river_points(const Direction d)
 std::shared_ptr<Area> Tile::get_area(const Border b)
 {
   std::shared_ptr<Area> retval;
-  for (int i = 0; i < m_p_areas.size(); i++)
+  for (size_t i = 0; i < m_p_areas.size(); i++)
   {
     if (m_p_areas.at(i)->has_border(b))
     {
@@ -208,6 +209,20 @@ std::shared_ptr<Tile> Tile::get_neighbor(Direction direction)
 }
 
 std::shared_ptr<Tile> *Tile::get_neighbors() { return m_p_neighbors; }
+
+std::map<Direction, std::pair<player::Color, uint8_t>>
+Tile::get_built_walls() const
+{
+  std::map<Direction, std::pair<player::Color, uint8_t>> retval;
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    if (m_p_walls[i].second > 0)
+    {
+      retval.at(static_cast<Direction>(i)) = m_p_walls[i];
+    }
+  }
+  return retval;
+}
 
 bool Tile::is_neighboring_sea() const
 {
@@ -241,7 +256,6 @@ common::Error Tile::add_neighbor(std::shared_ptr<Tile> neighbor,
 
 common::Error Tile::remove_neighbor(Direction direction)
 {
-  common::Error err = common::ERR_NONE;
   if (!is_valid(direction))
   {
     return common::ERR_INVALID;
@@ -288,10 +302,21 @@ bool Tile::has_river_point(const Direction direction)
   return ((r) && (r->has_point(direction)));
 }
 
+bool Tile::has_wall() const
+{
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    if (m_p_walls[i].second != 0)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
 common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
                                      Direction direction)
 {
-  common::Error err = common::ERR_NONE;
   // Check that input is valid, that we don't already have a neighbor in
   // that direction, and that we're not already neighbors with the new neighbor.
   if ((!neighbor) || (!is_valid(direction)))
@@ -302,7 +327,7 @@ common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
   {
     return common::ERR_FAIL;
   }
-  for (int d = 0; d < MAX_DIRECTIONS; d++)
+  for (uint8_t d = 0; d < MAX_DIRECTIONS; d++)
   {
     if ((m_p_neighbors[d]) && (*(m_p_neighbors[d]) == *neighbor))
     {
@@ -327,7 +352,7 @@ common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
 
 common::Error Tile::clear_neighbors()
 {
-  for (int d = 0; d < MAX_DIRECTIONS; d++)
+  for (uint8_t d = 0; d < MAX_DIRECTIONS; d++)
   {
     if (m_p_neighbors[d])
     {
@@ -415,39 +440,6 @@ common::Error Tile::rotate(int8_t rotations)
   return err;
 }
 
-// std::ostream &operator<<(std::ostream &os, const Tile &tile)
-// {
-//   os << "<Tile::id=" << tile.get_id() << ", hex=" << tile.get_hex_point()
-//      << ", terrain=" << to_string(tile.get_terrain())
-//      << ", rot_locked=" << (tile.is_rot_locked() ? "true" : "false")
-//      << ", rivers=[";
-//   if (tile.get_rivers().size() > 0)
-//   {
-//     os << (*tile.get_rivers().at(0));
-//     for (int i = 1; i < tile.get_rivers().size(); i++)
-//     {
-//       os << ", " << (*tile.get_rivers().at(i));
-//     }
-//   }
-//   os << "], areas=[" << (*tile.get_areas().at(0));
-//   for (int i = 1; i < tile.get_areas().size(); i++)
-//   {
-//     os << ", " << (*tile.get_areas().at(i));
-//   }
-//   os << "], walls={" << to_string(static_cast<Direction>(0)) << ": {"
-//      << player::to_string(tile.get_wall(static_cast<Direction>(0)).first)
-//      << ", " << tile.get_wall(static_cast<Direction>(0)).second << "}";
-//   for (int i = 1; i < MAX_DIRECTIONS; i++)
-//   {
-//     Direction d = static_cast<Direction>(i);
-//     os << ", " << to_string(d) << ": {"
-//        << player::to_string(tile.get_wall(d).first) << ", "
-//        << tile.get_wall(d).second << "}";
-//   }
-//   os << "}>";
-//   return os;
-// }
-
 common::Error Tile::build_road(const Border border)
 {
   common::Error err = common::ERR_FAIL;
@@ -534,7 +526,7 @@ nlohmann::json Tile::to_json() const
   for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
     std::pair<player::Color, uint8_t> wall = m_p_walls[i];
-    Direction d = static_cast<Direction>(1 + i);
+    Direction d = static_cast<Direction>(i);
     result["walls"][to_string(d)]["color"] = to_string(wall.first);
     result["walls"][to_string(d)]["thickness"] = wall.second;
   }
@@ -581,5 +573,42 @@ void Tile::split_by_rivers()
     m_p_areas.push_back(std::make_shared<Area>(borders));
   }
 }
+} // namespace tile
 
+std::ostream &operator<<(std::ostream &os, const tile::Tile &tile)
+{
+  os << "<Tile::id=" << tile.get_id() << ", hex=" << tile.get_hex_point()
+     << ", terrain=" << tile::to_string(tile.get_terrain())
+     << ", rot_locked=" << (tile.is_rot_locked() ? "true" : "false");
+  if (tile.get_rivers().size() > 0)
+  {
+    os << ", rivers=[" << (*tile.get_rivers().at(0));
+    for (size_t i = 1; i < tile.get_rivers().size(); i++)
+    {
+      os << ", " << (*tile.get_rivers().at(i));
+    }
+    os << "]";
+  }
+  os << ", areas=[" << (*tile.get_areas().at(0));
+  for (size_t i = 1; i < tile.get_areas().size(); i++)
+  {
+    os << ", " << (*tile.get_areas().at(i));
+  }
+  os << "]";
+  if (tile.has_wall())
+  {
+    os << ", walls={";
+    auto walls = tile.get_built_walls();
+    for (std::map<tile::Direction, std::pair<player::Color, uint8_t>>::iterator
+             it = walls.begin();
+         it != walls.end(); ++it)
+    {
+      os << it->first << ":{" << player::to_string(it->second.first) << ", "
+         << it->second.second << "}";
+    }
+    os << "}";
+  }
+  os << ">";
+  return os;
+}
 // TODO: implement from_json
