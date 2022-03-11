@@ -82,6 +82,8 @@ public:
 
   nlohmann::json to_json() const;
 
+  friend std::ostream &operator<<(std::ostream &os, tile::River const &river);
+
 protected:
 private:
   uuids::uuid m_p_id;
@@ -98,7 +100,5 @@ private:
 static common::Error from_json(const nlohmann::json j,
                                std::shared_ptr<River> &r);
 } // namespace tile
-
-std::ostream &operator<<(std::ostream &os, tile::River const &r);
 
 #endif

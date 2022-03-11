@@ -14,7 +14,7 @@
 #include <tiles/Tile.h>
 #include <tiles/components/Area.h>
 #include <tiles/components/Border.h>
-#include <tiles/components/Hex_point.h>
+#include <tiles/components/Hex.h>
 #include <tiles/components/River.h>
 #include <utils/id_utils.h>
 
@@ -22,36 +22,33 @@ namespace tile
 {
 
 Tile::Tile(const Terrain t)
-    : m_p_id(utils::gen_uuid()), m_p_terrain(t), m_p_rot_locked(false)
+    : m_p_terrain(t), m_p_rot_locked(false), m_p_hex_set(false)
 {
   init();
 }
 
-Tile::Tile(const hex_point hp, const Terrain t)
-    : m_p_id(utils::gen_uuid()), m_p_hex_point(hp), m_p_terrain(t),
-      m_p_rot_locked(false)
+Tile::Tile(const Hex hex, const Terrain t)
+    : m_p_hex(hex), m_p_terrain(t), m_p_rot_locked(false), m_p_hex_set(true)
 {
   init();
 }
 
 Tile::Tile(const std::set<Direction> river_points, const Terrain t)
-    : m_p_id(utils::gen_uuid()), m_p_terrain(t), m_p_rot_locked(false)
+    : m_p_terrain(t), m_p_rot_locked(false), m_p_hex_set(false)
 {
   m_p_rivers.push_back(std::make_shared<River>(river_points));
   init();
 }
 
-Tile::Tile(const hex_point hp, std::set<Direction> river_points,
-           const Terrain t)
-    : m_p_id(utils::gen_uuid()), m_p_hex_point(hp), m_p_terrain(t),
-      m_p_rot_locked(false)
+Tile::Tile(const Hex hex, std::set<Direction> river_points, const Terrain t)
+    : m_p_hex(hex), m_p_terrain(t), m_p_rot_locked(false), m_p_hex_set(true)
 {
   m_p_rivers.push_back(std::make_shared<River>(river_points));
   init();
 }
 
 Tile::Tile(const std::vector<std::set<Direction>> river_points, const Terrain t)
-    : m_p_id(utils::gen_uuid()), m_p_terrain(t), m_p_rot_locked(false)
+    : m_p_terrain(t), m_p_rot_locked(false), m_p_hex_set(false)
 {
   for (auto rp : river_points)
   {
@@ -60,10 +57,9 @@ Tile::Tile(const std::vector<std::set<Direction>> river_points, const Terrain t)
   init();
 }
 
-Tile::Tile(const hex_point hp,
-           const std::vector<std::set<Direction>> river_points, const Terrain t)
-    : m_p_id(utils::gen_uuid()), m_p_hex_point(hp), m_p_terrain(t),
-      m_p_rot_locked(false)
+Tile::Tile(const Hex hex, const std::vector<std::set<Direction>> river_points,
+           const Terrain t)
+    : m_p_hex(hex), m_p_terrain(t), m_p_rot_locked(false), m_p_hex_set(true)
 {
   for (auto rp : river_points)
   {
@@ -73,13 +69,14 @@ Tile::Tile(const hex_point hp,
 }
 
 Tile::Tile(const Tile &other)
-    : m_p_id(other.m_p_id), m_p_hex_point(other.m_p_hex_point),
-      m_p_terrain(other.m_p_terrain), m_p_rivers(other.m_p_rivers),
-      m_p_areas(other.m_p_areas), m_p_rot_locked(other.m_p_rot_locked)
+    : m_p_hex(other.m_p_hex), m_p_terrain(other.m_p_terrain),
+      m_p_rivers(other.m_p_rivers), m_p_areas(other.m_p_areas),
+      m_p_rot_locked(other.m_p_rot_locked), m_p_hex_set(other.m_p_hex_set)
 {
   for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
     m_p_walls[i] = other.m_p_walls[i];
+    m_p_neighbors[i] = other.m_p_neighbors[i];
   }
 }
 
@@ -112,7 +109,7 @@ void Tile::init()
 
 void Tile::reset()
 {
-  m_p_hex_point = hex_point();
+  m_p_hex = Hex();
   for (auto area : m_p_areas)
   {
     area->reset();
@@ -121,20 +118,48 @@ void Tile::reset()
   {
     river->reset();
   }
+  clear_neighbors();
   for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
-    m_p_neighbors[i].reset();
     m_p_walls[i] = std::make_pair<player::Color, uint8_t>(player::neutral, 0);
   }
   m_p_rot_locked = false;
+  m_p_hex_set = false;
+}
+
+Tile Tile::operator=(const Tile &other)
+{
+  m_p_hex = other.m_p_hex;
+  m_p_terrain = other.m_p_terrain;
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    m_p_neighbors[i] = other.m_p_neighbors[i];
+    m_p_walls[i] = other.m_p_walls[i];
+  }
+
+  m_p_rivers.clear();
+  for (auto river : other.m_p_rivers)
+  {
+    m_p_rivers.push_back(river);
+  }
+
+  m_p_areas.clear();
+  for (auto area : other.m_p_areas)
+  {
+    m_p_areas.push_back(area);
+  }
+
+  m_p_rot_locked = other.m_p_rot_locked;
+  m_p_hex_set = other.m_p_hex_set;
+  return (*this);
 }
 
 bool Tile::operator==(Tile &other) const
 {
-  if ((m_p_id != other.m_p_id) || (m_p_hex_point != other.m_p_hex_point) ||
-      (m_p_terrain != other.m_p_terrain) || (m_p_rivers != other.m_p_rivers) ||
-      (m_p_areas != other.m_p_areas) ||
-      (m_p_rot_locked != other.m_p_rot_locked))
+  if ((m_p_hex != other.m_p_hex) || (m_p_terrain != other.m_p_terrain) ||
+      (m_p_rivers != other.m_p_rivers) || (m_p_areas != other.m_p_areas) ||
+      (m_p_rot_locked != other.m_p_rot_locked) ||
+      (m_p_hex_set != other.m_p_hex_set))
   {
     return false;
   }
@@ -249,6 +274,8 @@ common::Error Tile::add_neighbor(std::shared_ptr<Tile> neighbor,
   if (common::ERR_NONE == err)
   {
     m_p_neighbors[direction] = neighbor;
+    // Set the new neighbor's hex coordinates to match what we expect
+    m_p_neighbors[direction]->set_hex(m_p_hex.neighbor(direction));
     m_p_rot_locked = true;
   }
   return err;
@@ -266,7 +293,6 @@ common::Error Tile::remove_neighbor(Direction direction)
   }
 
   m_p_neighbors[direction].reset();
-  m_p_neighbors[direction] = 0;
 
   return common::ERR_NONE;
 }
@@ -317,13 +343,14 @@ bool Tile::has_wall() const
 common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
                                      Direction direction)
 {
-  // Check that input is valid, that we don't already have a neighbor in
-  // that direction, and that we're not already neighbors with the new neighbor.
+  // Check that input is valid, that we have a hex coordinate, that we don't
+  // already have a neighbor in that direction, and that we're not already
+  // neighbors with the new neighbor.
   if ((!neighbor) || (!is_valid(direction)))
   {
     return common::ERR_INVALID;
   }
-  if ((m_p_neighbors[direction]) || (*this == *neighbor))
+  if ((!m_p_hex_set) || (m_p_neighbors[direction]) || (*this == *neighbor))
   {
     return common::ERR_FAIL;
   }
@@ -333,6 +360,13 @@ common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
     {
       return common::ERR_FAIL;
     }
+  }
+  // If the neighbor has its hex coordinates defined, it should agree with where
+  // we're trying to add it.
+  if ((neighbor->has_hex()) &&
+      (neighbor->get_hex() != m_p_hex.neighbor(direction)))
+  {
+    return common::ERR_FAIL;
   }
 
   // Check for river points on the borders. Each tile's border should match
@@ -352,16 +386,22 @@ common::Error Tile::can_add_neighbor(std::shared_ptr<Tile> neighbor,
 
 common::Error Tile::clear_neighbors()
 {
-  for (uint8_t d = 0; d < MAX_DIRECTIONS; d++)
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
-    if (m_p_neighbors[d])
+    if (m_p_neighbors[i])
     {
-      m_p_neighbors[d].reset();
-      m_p_neighbors[d] = 0;
+      Direction d = static_cast<Direction>(i);
+      common::Error err = m_p_neighbors[i]->remove_neighbor(!d);
+      if (err)
+      {
+        // TODO: log out error from neighbor removing us.
+        return common::ERR_FAIL;
+      }
+      m_p_neighbors[i].reset();
     }
 
     // If we somehow fail to remove the neighbor, report error.
-    if (m_p_neighbors[d])
+    if (m_p_neighbors[i])
     {
       return common::ERR_FAIL;
     }
@@ -371,7 +411,7 @@ common::Error Tile::clear_neighbors()
 
 bool Tile::can_rotate() const
 {
-  if (m_p_rot_locked)
+  if ((m_p_rot_locked) || (m_p_hex_set))
   {
     return false;
   }
@@ -465,6 +505,11 @@ Tile::build_building(const std::shared_ptr<Area> &area,
                      const std::shared_ptr<building::Building> &bldg)
 {
   common::Error err = common::ERR_FAIL;
+  // Don't allow buildings before having a hex point
+  if (!m_p_hex_set)
+  {
+    return err;
+  }
   Border b = (*area->get_borders().begin());
   if ((area == get_area(b)) && (nullptr == get_building()))
   {
@@ -480,6 +525,11 @@ Tile::build_building(const std::shared_ptr<Area> &area,
 common::Error Tile::build_bridge(const Direction point)
 {
   common::Error err = common::ERR_FAIL;
+  // Don't allow bridges before getting a hex point
+  if (!m_p_hex_set)
+  {
+    return err;
+  }
   if (has_river_point(point))
   {
     err = get_river(point)->build(point);
@@ -494,24 +544,23 @@ common::Error Tile::build_bridge(const Direction point)
 nlohmann::json Tile::to_json() const
 {
   nlohmann::json result;
-  result["id"] = uuids::to_string(m_p_id);
 
-  result["hex_coord"] = m_p_hex_point.to_json();
+  result["hex_coord"] = m_p_hex.to_json();
 
-  // Add immediate neighbor's IDs
-  std::vector<std::string> neighbor_ids;
+  // Add immediate neighbor coordinates
+  std::vector<std::string> neighbors;
   for (auto neighbor : m_p_neighbors)
   {
     if (nullptr == neighbor)
     {
-      neighbor_ids.push_back("empty");
+      neighbors.push_back("empty");
     }
     else
     {
-      neighbor_ids.push_back(uuids::to_string(neighbor->get_id()));
+      neighbors.push_back(neighbor->get_hex().to_string());
     }
   }
-  result["neighbors"] = neighbor_ids;
+  result["neighbors"] = neighbors;
 
   for (auto river : m_p_rivers)
   {
@@ -573,28 +622,14 @@ void Tile::split_by_rivers()
     m_p_areas.push_back(std::make_shared<Area>(borders));
   }
 }
-} // namespace tile
 
 std::ostream &operator<<(std::ostream &os, const tile::Tile &tile)
 {
-  os << "<Tile::id=" << tile.get_id() << ", hex=" << tile.get_hex_point()
+  os << "<Tile::hex=" << tile.get_hex()
      << ", terrain=" << tile::to_string(tile.get_terrain())
-     << ", rot_locked=" << (tile.is_rot_locked() ? "true" : "false");
-  if (tile.get_rivers().size() > 0)
-  {
-    os << ", rivers=[" << (*tile.get_rivers().at(0));
-    for (size_t i = 1; i < tile.get_rivers().size(); i++)
-    {
-      os << ", " << (*tile.get_rivers().at(i));
-    }
-    os << "]";
-  }
-  os << ", areas=[" << (*tile.get_areas().at(0));
-  for (size_t i = 1; i < tile.get_areas().size(); i++)
-  {
-    os << ", " << (*tile.get_areas().at(i));
-  }
-  os << "]";
+     << ", rot_locked=" << (tile.is_rot_locked() ? "true" : "false")
+     << ", rivers=" << (tile.get_rivers().size())
+     << ", areas=" << (tile.get_areas().size());
   if (tile.has_wall())
   {
     os << ", walls={";
@@ -611,4 +646,5 @@ std::ostream &operator<<(std::ostream &os, const tile::Tile &tile)
   os << ">";
   return os;
 }
-// TODO: implement from_json
+} // namespace tile
+  // TODO: implement from_json

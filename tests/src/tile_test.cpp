@@ -10,7 +10,7 @@
 #include <tiles/Tile.h>
 #include <tiles/components/Area.h>
 #include <tiles/components/Border.h>
-#include <tiles/components/Hex_point.h>
+#include <tiles/components/Hex.h>
 #include <tiles/components/River.h>
 
 using namespace tile;
@@ -41,7 +41,7 @@ void check_rivers(std::vector<std::shared_ptr<River>> exp,
                   std::vector<std::shared_ptr<River>> actual, bool should_equal)
 {
   ASSERT_EQ(exp.size(), actual.size());
-  for (int i = 0; i < exp.size(); i++)
+  for (size_t i = 0; i < exp.size(); i++)
   {
     if (should_equal)
     {
@@ -58,7 +58,7 @@ void check_areas(std::vector<std::shared_ptr<Area>> exp,
                  std::vector<std::shared_ptr<Area>> actual, bool should_equal)
 {
   ASSERT_EQ(exp.size(), actual.size());
-  for (int i = 0; i < exp.size(); i++)
+  for (size_t i = 0; i < exp.size(); i++)
   {
     if (should_equal)
     {
@@ -73,26 +73,15 @@ void check_areas(std::vector<std::shared_ptr<Area>> exp,
 
 TEST(tile_test, create_tile_test)
 {
-  // When creating tiles, an unique ID should be added for each tile.
-  // This is implemented as a UUID for each tile.
-  // This should not matter what type of Tile, or how many river points it is
-  // initialized with.
-  std::set<uuids::uuid> ids;
-  hex_point hp = hex_point(1, 0);
+  Hex hex(1, 0);
   Terrain terrain = Terrain::plains;
   std::vector<std::shared_ptr<River>> rivers;
   std::vector<std::shared_ptr<Area>> areas;
-  Tile test_object = Tile(hp, terrain);
+  Tile test_object = Tile(hex, terrain);
 
-  // New ID should not be empty, and should follow the expected uuid format.
-  uuids::uuid id = test_object.get_id();
-  ASSERT_TRUE(!id.is_nil());
-  ASSERT_EQ(16, id.as_bytes().size());
-  ASSERT_EQ(uuids::uuid_version::random_number_based, id.version());
-  ASSERT_EQ(uuids::uuid_variant::rfc, id.variant());
   // Terrain and hex point should match input
   ASSERT_EQ(terrain, test_object.get_terrain());
-  ASSERT_EQ(hp, test_object.get_hex_point());
+  ASSERT_EQ(hex, test_object.get_hex());
   // We didn't specify neighbors/rivers, so those should be empty.
   ASSERT_EQ(0, test_object.get_rivers().size());
   ASSERT_EQ(1, test_object.get_areas().size());
@@ -108,22 +97,13 @@ TEST(tile_test, create_tile_test)
 
   ASSERT_EQ(ALL_BORDERS, (*test_object.get_areas().at(0)));
 
-  ids.insert(test_object.get_id());
-
-  // Subsequent tiles should not duplicate IDs
-  test_object = Tile();
-  ASSERT_EQ(ids.end(), ids.find(test_object.get_id()));
-  ids.insert(test_object.get_id());
-
   // When we create a tile with rivers, it should create areas based on
   // those river points.
   // A river with just one point should result in a single area.
   std::set<Direction> river_points;
   river_points.insert(Direction::north_west);
-  test_object = Tile(hp, river_points, terrain);
+  test_object = Tile(hex, river_points, terrain);
 
-  ASSERT_FALSE(ids.contains(test_object.get_id()));
-  ids.insert(test_object.get_id());
   ASSERT_EQ(river_points, test_object.get_river_points());
   ASSERT_EQ(1, test_object.get_areas().size());
   ASSERT_EQ(ALL_BORDERS, (*test_object.get_area(Border::NW_left)));
@@ -145,10 +125,8 @@ TEST(tile_test, create_tile_test)
   area_2.insert(Border::W_right);
   area_2.insert(Border::NW_left);
   river_points.insert(Direction::south_west);
-  test_object = Tile(hp, river_points, terrain);
+  test_object = Tile(hex, river_points, terrain);
 
-  ASSERT_FALSE(ids.contains(test_object.get_id()));
-  ids.insert(test_object.get_id());
   ASSERT_EQ(river_points, test_object.get_river_points());
   ASSERT_EQ(2, test_object.get_areas().size());
 
@@ -167,10 +145,8 @@ TEST(tile_test, create_tile_test)
   area_3.insert(Border::SE_right);
   area_3.insert(Border::SW_left);
   river_points.insert(Direction::south_east);
-  test_object = Tile(hp, river_points, terrain);
+  test_object = Tile(hex, river_points, terrain);
 
-  ASSERT_FALSE(ids.contains(test_object.get_id()));
-  ids.insert(test_object.get_id());
   ASSERT_EQ(river_points, test_object.get_river_points());
   ASSERT_EQ(3, test_object.get_areas().size());
 
@@ -207,10 +183,7 @@ TEST(tile_test, create_tile_test)
   std::vector<std::set<Direction>> river_point_sets;
   river_point_sets.push_back(river_points);
   river_point_sets.push_back(river_points_2);
-  test_object = Tile(hp, river_point_sets, terrain);
-
-  ASSERT_FALSE(ids.contains(test_object.get_id()));
-  ids.insert(test_object.get_id());
+  test_object = Tile(hex, river_point_sets, terrain);
 
   ASSERT_EQ(2, test_object.get_rivers().size());
   ASSERT_EQ(river_points, test_object.get_river_points(Direction::north_west));
@@ -232,7 +205,8 @@ TEST(tile_test, add_neighbor_test)
   std::set<Direction> river_points;
   river_points.insert(Direction::north_east);
 
-  std::shared_ptr<Tile> test_object = std::make_shared<Tile>();
+  Hex hex(0, 0);
+  std::shared_ptr<Tile> test_object = std::make_shared<Tile>(hex);
   std::shared_ptr<Tile> neighbor = std::make_shared<Tile>();
   std::shared_ptr<Tile> river_neighbor = std::make_shared<Tile>(river_points);
 
@@ -262,7 +236,7 @@ TEST(tile_test, add_neighbor_test)
             test_object->add_neighbor(neighbor, Direction::east));
   added = test_object->get_neighbor(Direction::east);
   EXPECT_NE(nullptr, added);
-  EXPECT_EQ(added->get_id(), neighbor->get_id());
+  EXPECT_EQ(added, neighbor);
 
   // Adding the same neighbor again should fail.
   EXPECT_EQ(common::ERR_FAIL,
@@ -275,7 +249,7 @@ TEST(tile_test, add_neighbor_test)
             test_object->add_neighbor(river_neighbor, Direction::east));
   added = test_object->get_neighbor(Direction::east);
   EXPECT_NE(nullptr, added);
-  EXPECT_EQ(added->get_id(), neighbor->get_id());
+  EXPECT_EQ(added, neighbor);
 
   // Remove from tile's neighbors.
   EXPECT_EQ(common::ERR_NONE, test_object->remove_neighbor(Direction::east));
@@ -292,14 +266,14 @@ TEST(tile_test, add_neighbor_test)
   std::set<Direction> test_river_points;
   test_river_points.insert(Direction::south_west);
   test_object.reset();
-  test_object = std::make_shared<Tile>(Tile(test_river_points));
+  test_object = std::make_shared<Tile>(Tile(hex, test_river_points));
   // Adding a neighbor with a shared river point on the boundary should be
   // fine.
   EXPECT_EQ(common::ERR_NONE,
             test_object->add_neighbor(river_neighbor, Direction::south_west));
   added = test_object->get_neighbor(Direction::south_west);
   EXPECT_NE(nullptr, added);
-  EXPECT_EQ(added->get_id(), river_neighbor->get_id());
+  EXPECT_EQ(added, river_neighbor);
 
   // Remove from tile's neighbors.
   EXPECT_EQ(common::ERR_NONE,
@@ -320,7 +294,7 @@ TEST(tile_test, add_neighbor_test)
             test_object->add_neighbor(sea_neighbor, Direction::east));
   added = test_object->get_neighbor(Direction::east);
   EXPECT_NE(nullptr, added);
-  EXPECT_EQ(added->get_id(), sea_neighbor->get_id());
+  EXPECT_EQ(added, sea_neighbor);
   // Remove from tile's neighbors.
   EXPECT_EQ(common::ERR_NONE, test_object->remove_neighbor(Direction::east));
   EXPECT_EQ(nullptr, test_object->get_neighbor(Direction::east));
@@ -328,8 +302,8 @@ TEST(tile_test, add_neighbor_test)
   // The reverse should also be true; any tile can be placed next to a sea
   // tile, provided all other checks pass.
   EXPECT_EQ(common::ERR_NONE,
-            sea_neighbor->add_neighbor(test_object, Direction::east));
-  added = sea_neighbor->get_neighbor(Direction::east);
+            sea_neighbor->add_neighbor(test_object, Direction::west));
+  added = sea_neighbor->get_neighbor(Direction::west);
   EXPECT_NE(nullptr, added);
   EXPECT_EQ(added, test_object);
 }
@@ -347,7 +321,8 @@ TEST(tile_test, build_road_test)
   rp.insert(Direction::north_east);
   rp.insert(Direction::south_west);
   rp.insert(Direction::west);
-  std::shared_ptr<Tile> test_object = std::make_shared<Tile>(rp);
+  Hex hex(0, 0);
+  std::shared_ptr<Tile> test_object = std::make_shared<Tile>(hex, rp);
   std::shared_ptr<Tile> neighbor = std::make_shared<Tile>();
   std::shared_ptr<Tile> river_neighbor = std::make_shared<Tile>(rp);
   std::shared_ptr<Tile> sea_neighbor = std::make_shared<Tile>(Terrain::sea);
@@ -405,6 +380,7 @@ TEST(tile_test, build_bridge_test)
   rp.insert(Direction::south_west);
   rp.insert(Direction::west);
   std::shared_ptr<Tile> test_object = std::make_shared<Tile>(rp);
+  test_object->set_hex(Hex(0, 0));
 
   // Don't allow a bridge to be built on a point that a river is not there for.
   EXPECT_EQ(common::ERR_FAIL, test_object->build_bridge(Direction::north_west));
@@ -441,7 +417,8 @@ TEST(tile_test, rotate_test)
   rp.insert(Direction::north_east);
   rp.insert(Direction::south_west);
   rp.insert(Direction::west);
-  std::shared_ptr<Tile> test = std::make_shared<Tile>(rp);
+  Hex hex(0, 0);
+  std::shared_ptr<Tile> test = std::make_shared<Tile>(hex, rp);
   std::shared_ptr<Tile> neighbor = std::make_shared<Tile>();
   std::vector<std::shared_ptr<River>> rivers = copy_rivers(test->get_rivers());
   std::vector<std::shared_ptr<Area>> areas = copy_areas(test->get_areas());
@@ -456,7 +433,7 @@ TEST(tile_test, rotate_test)
   check_rivers(rivers, test->get_rivers(), true);
   check_areas(areas, test->get_areas(), true);
   // Same goes for if any of the rivers can't rotate
-  test = std::make_shared<Tile>(rp);
+  test = std::make_shared<Tile>(hex, rp);
   rivers = copy_rivers(test->get_rivers());
   areas = copy_areas(test->get_areas());
   EXPECT_EQ(common::ERR_NONE, test->build_bridge(Direction::north_east));
@@ -464,7 +441,8 @@ TEST(tile_test, rotate_test)
   check_rivers(rivers, test->get_rivers(), true);
   check_areas(areas, test->get_areas(), true);
   // Additionally, the tile won't rotate if it has any neighbors
-  test = std::make_shared<Tile>(rp);
+  test = std::make_shared<Tile>(hex, rp);
+  neighbor = std::make_shared<Tile>();
   rivers = copy_rivers(test->get_rivers());
   areas = copy_areas(test->get_areas());
   EXPECT_EQ(common::ERR_NONE, test->add_neighbor(neighbor, Direction::east));

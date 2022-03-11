@@ -9,7 +9,7 @@
 
 #include <common/Errors.h>
 #include <tiles/Tile.h>
-#include <tiles/components/Hex_point.h>
+#include <tiles/components/Hex.h>
 
 /// This map relies heavily on the q, r, s (cube/axial) coordinate system for
 /// hexagons. Each tile will have a coordinate tuple associated with its
@@ -24,6 +24,12 @@ public:
   Tile_map();
   ~Tile_map();
 
+  inline void reset()
+  {
+    m_p_map.clear();
+    m_p_locked = false;
+  }
+
   /// Retrieves the Tile at the given coordinates on the map
   /// @param[in] q
   /// @param[in] r
@@ -33,15 +39,15 @@ public:
   ///   - ERR_NONE on success
   ///   - ERR_INVALID on invalid input parameters
   ///   - ERR_UNKNOWN on any other errors
-  common::Error get_tile_at(const int8_t q, const int8_t r, const int8_t s,
-                            std::shared_ptr<Tile> &tile)
+  common::Error get_tile(const int8_t q, const int8_t r, const int8_t s,
+                         std::shared_ptr<Tile> &tile)
   {
     if (s != (-q - r))
     {
       return common::ERR_INVALID;
     }
-    hex_point coord(q, r);
-    return get_tile_at(coord, tile);
+    Hex coord(q, r);
+    return get_tile(coord, tile);
   }
 
   /// Retrieves the Tile at the given coordinates on the map
@@ -51,42 +57,23 @@ public:
   ///   - ERR_NONE on success
   ///   - ERR_INVALID on invalid input parameters
   ///   - ERR_UNKNOWN on any other errors
-  common::Error get_tile_at(const hex_point coord, std::shared_ptr<Tile> &tile);
+  common::Error get_tile(const Hex coord, std::shared_ptr<Tile> &tile);
 
-  // /// Retrieves the Tile with the given ID on the map.
-  // /// @param[in] id
-  // /// @param[out] tile Tile found with given ID. Null on error.
-  // /// @param[out] coord Coordinates of requested Tile. Null on error.
-  // /// @return
-  // ///   - ERR_NONE on success
-  // ///   - ERR_INVALID on invalid input parameters
-  // ///   - ERR_UNKNOWN on any other errors
-  // common::Error get_tile_by_id(const uuids::uuid id,
-  //                              std::shared_ptr<Tile> &tile,
-  //                              std::shared_ptr<hex_point> &coord);
-
-  // /// Retrieves the map coordinates for the Tile with the given ID
-  // /// @param[in] id
-  // /// @param[out] coord Coordinates for the tile. Null on error.
-  // /// @return
-  // ///   - ERR_NONE on success
-  // ///   - ERR_INVALID on invalid input parameters
-  // ///   - ERR_MISSING if tile not found in map
-  // ///   - ERR_UNKNOWN on any other errors
-  // common::Error get_tile_hex(const uuids::uuid id,
-  //                            std::shared_ptr<hex_point> &coord);
-
-  // /// Retrieves the map coordinates for the given Tile
-  // /// @param[in] tile
-  // /// @param[out] coord Coordinates for the tile. Null on error.
-  // /// @return
-  // ///   - ERR_NONE on success
-  // ///   - ERR_INVALID on invalid input parameters
-  // ///   - ERR_MISSING if tile not found in map
-  // ///   - ERR_UNKNOWN on any other errors
-  // common::Error get_tile_hex(const std::shared_ptr<Tile> tile,
-  //                            std::shared_ptr<hex_point> &coord);
-
+  /// Adds the tile to the map at the input coordinates.
+  /// @param[in] q
+  /// @param[in] r
+  /// @param[in] tile Tile to be added
+  /// @return
+  ///   - ERR_NONE on success
+  ///   - ERR_INVALID on invalid input parameters
+  ///   - ERR_FAIL on failure to add based on tile layout
+  ///   - ERR_UNKNOWN on any other errors
+  common::Error insert(const int8_t q, const int8_t r,
+                       const std::shared_ptr<Tile> &tile)
+  {
+    Hex coord(q, r);
+    return insert(coord, tile);
+  }
   /// Adds the tile to the map at the input coordinates.
   /// @param[in] q
   /// @param[in] r
@@ -97,17 +84,16 @@ public:
   ///   - ERR_INVALID on invalid input parameters
   ///   - ERR_FAIL on failure to add based on tile layout
   ///   - ERR_UNKNOWN on any other errors
-  common::Error add_tile(const int8_t q, const int8_t r, const int8_t s,
-                         const std::shared_ptr<Tile> &tile)
+  common::Error insert(const int8_t q, const int8_t r, const int8_t s,
+                       const std::shared_ptr<Tile> &tile)
   {
     if (s != (-q - r))
     {
       return common::ERR_INVALID;
     }
-    hex_point coord(q, r);
-    return add_tile(coord, tile);
+    Hex coord(q, r);
+    return insert(coord, tile);
   }
-
   /// Adds the tile to the map at the input coordinates.
   /// @param[in] coord
   /// @param[in] tile Tile to be added
@@ -116,13 +102,58 @@ public:
   ///   - ERR_INVALID on invalid input parameters
   ///   - ERR_FAIL on failure to add based on tile layout
   ///   - ERR_UNKNOWN on any other errors
-  common::Error add_tile(const hex_point coord,
-                         const std::shared_ptr<Tile> &tile);
+  common::Error insert(const Hex coord, const std::shared_ptr<Tile> &tile);
+
+  /// Removes the tile from the map at the input coordinates.
+  /// @param[in] q
+  /// @param[in] r
+  /// @return
+  ///   - ERR_NONE on success
+  ///   - ERR_INVALID on invalid input parameters
+  ///   - ERR_FAIL on failure to remove
+  ///   - ERR_UNKNOWN on any other errors
+  common::Error remove(const int8_t q, const int8_t r)
+  {
+    Hex coord(q, r);
+    return remove(coord);
+  }
+  /// Removes the tile from the map at the input coordinates.
+  /// @param[in] q
+  /// @param[in] r
+  /// @param[in] s
+  /// @return
+  ///   - ERR_NONE on success
+  ///   - ERR_INVALID on invalid input parameters
+  ///   - ERR_FAIL on failure to remove
+  ///   - ERR_UNKNOWN on any other errors
+  common::Error remove(const int8_t q, const int8_t r, const int8_t s)
+  {
+    if (s != (-q - r))
+    {
+      return common::ERR_INVALID;
+    }
+    Hex coord(q, r);
+    return remove(coord);
+  }
+  /// Removes the tile from the map at the input coordinates.
+  /// @param[in] coord
+  /// @return
+  ///   - ERR_NONE on success
+  ///   - ERR_FAIL on failure to remove
+  common::Error remove(const Hex coord);
+
+  inline bool empty() const { return m_p_map.empty(); }
+  inline bool is_locked() const { return m_p_locked; }
+  inline void set_lock(const bool lock_status) { m_p_locked = lock_status; }
 
   nlohmann::json to_json() const;
 
 protected:
 private:
+  std::map<Hex, std::shared_ptr<Tile>> m_p_map;
+
+  // Flag denoting whether tiles can still be added/removed from the map.
+  bool m_p_locked;
 };
 } // namespace tile
 

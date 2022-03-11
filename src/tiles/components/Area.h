@@ -30,6 +30,7 @@ public:
   // Clears the area of all roads/buildings/resources
   void reset();
 
+  Area operator=(const Area &other);
   Area operator+(const Area &other) const;
   Area operator+(const std::set<Border> borders) const;
   Area operator+(const uint16_t resources[portable::RESOURCE_NAMES_SIZE]) const;
@@ -150,6 +151,8 @@ public:
 
   nlohmann::json to_json();
 
+  friend std::ostream &operator<<(std::ostream &os, tile::Area const &a);
+
 protected:
 private:
   uuids::uuid m_p_id;
@@ -168,7 +171,5 @@ private:
 static common::Error from_json(const nlohmann::json j,
                                std::shared_ptr<Area> &a);
 } // namespace tile
-
-std::ostream &operator<<(std::ostream &os, tile::Area const &a);
 
 #endif

@@ -32,9 +32,16 @@ std::string Building::get_name() const
   return retval;
 }
 
-Building Building::operator=(const Building &other) { return Building(other); }
-Building Building::operator=(const Type &other) { return Building(other); }
-
+Building Building::operator=(const Building &other)
+{
+  m_p_type = other.m_p_type;
+  return (*this);
+}
+Building Building::operator=(const Type &other)
+{
+  m_p_type = other;
+  return (*this);
+}
 bool Building::operator==(Building const &other) const
 {
   return m_p_type == other.get_type();
@@ -48,10 +55,10 @@ nlohmann::json Building::to_json() const
   retval["type"] = get_name();
   return retval;
 }
-} // namespace building
 
 std::ostream &operator<<(std::ostream &os, const building::Building &b)
 {
   os << "<Building::name=" << b.get_name() << ", type=" << b.get_type() << ">";
   return os;
 }
+} // namespace building

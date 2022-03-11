@@ -46,6 +46,11 @@ bool River::operator!=(River &other) { return !(*this == other); }
 bool River::splits_borders(std::set<Border> borders) const
 {
   bool does_split = false;
+  if (m_p_points.size() <= 1)
+  {
+    return false;
+  }
+
   for (auto point : m_p_points)
   {
     std::vector<Border> b = borders_from_direction(point);
@@ -181,7 +186,6 @@ nlohmann::json River::to_json() const
 
   return retval;
 }
-} // namespace tile
 
 std::ostream &operator<<(std::ostream &os, tile::River const &river)
 {
@@ -208,5 +212,5 @@ std::ostream &operator<<(std::ostream &os, tile::River const &river)
   os << ">";
   return os;
 }
-
-// TODO: implement from_json
+} // namespace tile
+  // TODO: implement from_json
