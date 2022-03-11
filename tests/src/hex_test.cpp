@@ -20,9 +20,9 @@ TEST(hex_test, create_hex_test)
   ASSERT_EQ(0, test_object.s());
 
   // s = -q - r. When q & r are given, s should be set accordingly.
-  int8_t q = 0;
-  int8_t r = 1;
-  int8_t s = -1;
+  int q = 0;
+  int r = 1;
+  int s = -1;
   test_object = Hex(q, r);
   ASSERT_EQ(q, test_object.q());
   ASSERT_EQ(r, test_object.r());
@@ -51,14 +51,14 @@ TEST(hex_test, eq_hex_test)
 
 TEST(hex_test, add_hexes_test)
 {
-  int8_t q_1 = 0;
-  int8_t r_1 = -1;
-  int8_t s_1 = 1;
+  int q_1 = 0;
+  int r_1 = -1;
+  int s_1 = 1;
   Hex test_object_1(q_1, r_1);
 
-  int8_t q_2 = 1;
-  int8_t r_2 = 1;
-  int8_t s_2 = -2;
+  int q_2 = 1;
+  int r_2 = 1;
+  int s_2 = -2;
   Hex test_object_2(q_2, r_2);
 
   Hex added = test_object_1 + test_object_2;
@@ -74,14 +74,14 @@ TEST(hex_test, add_hexes_test)
 
 TEST(hex_test, subtract_hexes_test)
 {
-  int8_t q_1 = 0;
-  int8_t r_1 = -1;
-  int8_t s_1 = 1;
+  int q_1 = 0;
+  int r_1 = -1;
+  int s_1 = 1;
   Hex test_object_1(q_1, r_1);
 
-  int8_t q_2 = 1;
-  int8_t r_2 = 1;
-  int8_t s_2 = -2;
+  int q_2 = 1;
+  int r_2 = 1;
+  int s_2 = -2;
   Hex test_object_2(q_2, r_2);
 
   Hex subracted = test_object_1 - test_object_2;

@@ -156,13 +156,19 @@ Tile Tile::operator=(const Tile &other)
 
 bool Tile::operator==(Tile &other) const
 {
-  if ((m_p_hex != other.m_p_hex) || (m_p_terrain != other.m_p_terrain) ||
-      (m_p_rivers != other.m_p_rivers) || (m_p_areas != other.m_p_areas) ||
-      (m_p_rot_locked != other.m_p_rot_locked) ||
-      (m_p_hex_set != other.m_p_hex_set))
+  if ((m_p_terrain != other.m_p_terrain) || (m_p_rivers != other.m_p_rivers) ||
+      (m_p_areas != other.m_p_areas) ||
+      (m_p_rot_locked != other.m_p_rot_locked))
   {
     return false;
   }
+
+  // If both tiles have set their hex points, they should agree.
+  if ((m_p_hex_set) && (other.m_p_hex_set) && (m_p_hex != other.m_p_hex))
+  {
+    return false;
+  }
+
   for (Direction d : ALL_DIRECTIONS)
   {
     if (m_p_neighbors[d] != other.m_p_neighbors[d])
@@ -439,7 +445,7 @@ bool Tile::can_rotate() const
   return true;
 }
 
-common::Error Tile::rotate(int8_t rotations)
+common::Error Tile::rotate(int rotations)
 {
   common::Error err = common::ERR_UNKNOWN;
 

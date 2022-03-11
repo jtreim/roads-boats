@@ -7,7 +7,7 @@
 namespace tile
 {
 Hex::Hex() : m_p_q(0), m_p_r(0) {}
-Hex::Hex(const int8_t q, const int8_t r) : m_p_q(q), m_p_r(r) {}
+Hex::Hex(const int q, const int r) : m_p_q(q), m_p_r(r) {}
 Hex::Hex(const Hex &other) : m_p_q(other.m_p_q), m_p_r(other.m_p_r) {}
 
 Hex::~Hex() {}

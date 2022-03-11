@@ -391,7 +391,7 @@ bool Area::can_rotate() const
   return true;
 }
 
-common::Error Area::rotate(int8_t rotations)
+common::Error Area::rotate(int rotations)
 {
   if (!can_rotate())
   {

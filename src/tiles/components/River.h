@@ -78,7 +78,7 @@ public:
   ///   - common::ERR_NONE on success
   ///   - common::ERR_FAIL on failed can_rotate check
   ///   - common::ERR_UNKNOWN otherwise
-  common::Error rotate(int8_t rotations);
+  common::Error rotate(int rotations);
 
   nlohmann::json to_json() const;
 

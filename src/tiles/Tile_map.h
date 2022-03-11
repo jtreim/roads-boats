@@ -22,6 +22,7 @@ class Tile_map
 {
 public:
   Tile_map();
+  Tile_map(const Tile_map &other);
   ~Tile_map();
 
   inline void reset()
@@ -29,6 +30,8 @@ public:
     m_p_map.clear();
     m_p_locked = false;
   }
+
+  Tile_map operator=(const Tile_map &other);
 
   /// Retrieves the Tile at the given coordinates on the map
   /// @param[in] q
@@ -39,13 +42,26 @@ public:
   ///   - ERR_NONE on success
   ///   - ERR_INVALID on invalid input parameters
   ///   - ERR_UNKNOWN on any other errors
-  common::Error get_tile(const int8_t q, const int8_t r, const int8_t s,
+  common::Error get_tile(const int q, const int r, const int s,
                          std::shared_ptr<Tile> &tile)
   {
     if (s != (-q - r))
     {
       return common::ERR_INVALID;
     }
+    Hex coord(q, r);
+    return get_tile(coord, tile);
+  }
+
+  /// Retrieves the Tile at the given coordinates on the map
+  /// @param[in] q
+  /// @param[in] r
+  /// @param[out] tile Tile found at given coordinates. Null on error.
+  /// @return
+  ///   - ERR_NONE on success
+  ///   - ERR_UNKNOWN on any other errors
+  common::Error get_tile(const int q, const int r, std::shared_ptr<Tile> &tile)
+  {
     Hex coord(q, r);
     return get_tile(coord, tile);
   }
@@ -68,7 +84,7 @@ public:
   ///   - ERR_INVALID on invalid input parameters
   ///   - ERR_FAIL on failure to add based on tile layout
   ///   - ERR_UNKNOWN on any other errors
-  common::Error insert(const int8_t q, const int8_t r,
+  common::Error insert(const int q, const int r,
                        const std::shared_ptr<Tile> &tile)
   {
     Hex coord(q, r);
@@ -84,7 +100,7 @@ public:
   ///   - ERR_INVALID on invalid input parameters
   ///   - ERR_FAIL on failure to add based on tile layout
   ///   - ERR_UNKNOWN on any other errors
-  common::Error insert(const int8_t q, const int8_t r, const int8_t s,
+  common::Error insert(const int q, const int r, const int s,
                        const std::shared_ptr<Tile> &tile)
   {
     if (s != (-q - r))
@@ -112,7 +128,7 @@ public:
   ///   - ERR_INVALID on invalid input parameters
   ///   - ERR_FAIL on failure to remove
   ///   - ERR_UNKNOWN on any other errors
-  common::Error remove(const int8_t q, const int8_t r)
+  common::Error remove(const int q, const int r)
   {
     Hex coord(q, r);
     return remove(coord);
@@ -126,7 +142,7 @@ public:
   ///   - ERR_INVALID on invalid input parameters
   ///   - ERR_FAIL on failure to remove
   ///   - ERR_UNKNOWN on any other errors
-  common::Error remove(const int8_t q, const int8_t r, const int8_t s)
+  common::Error remove(const int q, const int r, const int s)
   {
     if (s != (-q - r))
     {

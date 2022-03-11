@@ -202,7 +202,7 @@ public:
   ///   - common::ERR_NONE on success
   ///   - common::ERR_FAIL if failed can_rotate check
   ///   - common::ERR_UNKNOWN otherwise
-  common::Error rotate(int8_t rotations);
+  common::Error rotate(int rotations);
 
   /// Builds a road on the input border if possible.
   /// @param[in] border border to build a road on.

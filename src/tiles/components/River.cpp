@@ -128,7 +128,7 @@ bool River::can_rotate() const
   return 0 == m_p_bridges.size();
 }
 
-common::Error River::rotate(int8_t rotations)
+common::Error River::rotate(int rotations)
 {
   common::Error err = common::ERR_UNKNOWN;
   if (can_rotate())
