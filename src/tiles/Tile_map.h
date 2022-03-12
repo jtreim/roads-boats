@@ -161,6 +161,11 @@ public:
   inline bool empty() const { return m_p_map.empty(); }
   inline bool is_locked() const { return m_p_locked; }
   inline void set_lock(const bool lock_status) { m_p_locked = lock_status; }
+  inline size_t size() const { return m_p_map.size(); }
+
+  // Checks that the current map is a valid map, as in no rivers run to a
+  // nonexistent tile.
+  bool is_valid() const;
 
   nlohmann::json to_json() const;
 
