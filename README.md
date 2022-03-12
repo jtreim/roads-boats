@@ -13,6 +13,7 @@ See [expansion rules](https://github.com/jtreim/roads-boats/blob/main/etcetera.p
   - [x] Rivers flow naturally across land and into sea tiles.
   - [X] Tiles can be organized into a map structure.
   - [ ] A map can be printed as a JSON structure.
+  - [ ] A map can be loaded from a JSON structure.
 - [X] Resources can exist on a map.
   - [X] Resource types are defined.
   - [ ] Resources can be printed as JSON inside a map's JSON structure.
