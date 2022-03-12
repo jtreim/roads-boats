@@ -109,11 +109,10 @@ TEST(area_test, build_road_test)
 TEST(area_test, build_building_test)
 {
   Area test_object = Area();
+  std::shared_ptr<building::Building> bldg;
 
   // An area defaults to not having a building
   ASSERT_EQ(nullptr, test_object.get_building());
-
-  std::shared_ptr<building::Building> bldg;
 
   // An area will fail when "building" a nullptr
   ASSERT_EQ(common::ERR_INVALID, test_object.build(bldg));
@@ -179,7 +178,7 @@ TEST(area_test, area_addition_test)
   {
     ASSERT_TRUE(c.has_road(road));
   }
-  for (int i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
   {
     portable::Resource r = static_cast<portable::Resource>(r);
     uint16_t amount = a.get_resource_amount(r) + b.get_resource_amount(r);
@@ -208,7 +207,7 @@ TEST(area_test, area_addition_test)
   {
     ASSERT_TRUE(c.has_road(road));
   }
-  for (int i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
   {
     portable::Resource r = static_cast<portable::Resource>(r);
     uint16_t amount = a.get_resource_amount(r) + b.get_resource_amount(r);
@@ -229,7 +228,7 @@ TEST(area_test, area_addition_test)
   {
     ASSERT_TRUE(c.has_border(border));
   }
-  for (int i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
   {
     portable::Resource r = static_cast<portable::Resource>(r);
     ASSERT_EQ(a.get_resource_amount(r), c.get_resource_amount(r));
@@ -248,7 +247,7 @@ TEST(area_test, area_addition_test)
   {
     ASSERT_TRUE(c.has_border(border));
   }
-  for (int i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
   {
     portable::Resource r = static_cast<portable::Resource>(r);
     ASSERT_EQ(a.get_resource_amount(r), c.get_resource_amount(r));
@@ -256,10 +255,10 @@ TEST(area_test, area_addition_test)
   ASSERT_EQ(bldg, c.get_building());
 
   // Adding a list of resources should only merge in those to the area.
-  c = a + b.get_all_resources();
+  c = a + b.get_resources();
   ASSERT_EQ(a.get_borders(), c.get_borders());
   ASSERT_EQ(a.get_roads(), c.get_roads());
-  for (int i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
   {
     portable::Resource r = static_cast<portable::Resource>(r);
     ASSERT_EQ(a.get_resource_amount(r) + b.get_resource_amount(r),
@@ -268,10 +267,10 @@ TEST(area_test, area_addition_test)
   ASSERT_EQ(bldg, c.get_building());
 
   c = a;
-  c += b.get_all_resources();
+  c += b.get_resources();
   ASSERT_EQ(a.get_borders(), c.get_borders());
   ASSERT_EQ(a.get_roads(), c.get_roads());
-  for (int i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
   {
     portable::Resource r = static_cast<portable::Resource>(r);
     ASSERT_EQ(a.get_resource_amount(r) + b.get_resource_amount(r),

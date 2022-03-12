@@ -62,6 +62,19 @@ void Area::reset()
   std::fill_n(m_p_resources, portable::RESOURCE_NAMES_SIZE, 0);
 }
 
+Area Area::operator=(const Area &other)
+{
+  m_p_id = other.m_p_id;
+  m_p_borders = other.m_p_borders;
+  m_p_roads = other.m_p_roads;
+  m_p_building = other.m_p_building;
+  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
+  {
+    m_p_resources[i] = other.m_p_resources[i];
+  }
+  return (*this);
+}
+
 Area Area::operator+(const Area &other) const
 {
   Area merged = Area(*this);
@@ -378,7 +391,7 @@ bool Area::can_rotate() const
   return true;
 }
 
-common::Error Area::rotate(int8_t rotations)
+common::Error Area::rotate(int rotations)
 {
   if (!can_rotate())
   {
@@ -440,7 +453,6 @@ nlohmann::json Area::to_json()
 
   return retval;
 }
-} // namespace tile
 
 std::ostream &operator<<(std::ostream &os, tile::Area const &a)
 {
@@ -469,7 +481,7 @@ std::ostream &operator<<(std::ostream &os, tile::Area const &a)
   if (a.get_building())
   {
     os << ", building=";
-    os << a.get_building().get();
+    os << (*a.get_building()).get_name();
   }
 
   if (a.has_resources())
@@ -486,4 +498,5 @@ std::ostream &operator<<(std::ostream &os, tile::Area const &a)
   os << ">";
   return os;
 }
-// TODO: implement from_json
+} // namespace tile
+  // TODO: implement from_json

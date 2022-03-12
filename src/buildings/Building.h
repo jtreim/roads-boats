@@ -44,13 +44,14 @@ public:
   // helpers
   nlohmann::json to_json() const;
 
+  friend std::ostream &operator<<(std::ostream &os,
+                                  const building::Building &b);
+
 protected:
 private:
   Type m_p_type;
 };
 
 } // namespace building
-
-std::ostream &operator<<(std::ostream &os, const building::Building &b);
 
 #endif // end BUILDING_H

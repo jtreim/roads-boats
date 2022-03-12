@@ -37,6 +37,7 @@ static const std::string RESOURCE_NAMES[] = {
     "marble", "wood_carving", "ring",  "sketch", "pottery", "statue"};
 static const size_t RESOURCE_NAMES_SIZE =
     sizeof RESOURCE_NAMES / sizeof RESOURCE_NAMES[0];
+static const size_t RESOURCE_TYPES = RESOURCE_NAMES_SIZE;
 
 /// Retrieves the name for the enum representation of a resource.
 /// @param[in] res

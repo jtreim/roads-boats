@@ -78,9 +78,11 @@ public:
   ///   - common::ERR_NONE on success
   ///   - common::ERR_FAIL on failed can_rotate check
   ///   - common::ERR_UNKNOWN otherwise
-  common::Error rotate(int8_t rotations);
+  common::Error rotate(int rotations);
 
   nlohmann::json to_json() const;
+
+  friend std::ostream &operator<<(std::ostream &os, tile::River const &river);
 
 protected:
 private:
@@ -98,7 +100,5 @@ private:
 static common::Error from_json(const nlohmann::json j,
                                std::shared_ptr<River> &r);
 } // namespace tile
-
-std::ostream &operator<<(std::ostream &os, tile::River const &r);
 
 #endif

@@ -17,7 +17,7 @@
 #include <portables/Transporter.h>
 #include <tiles/components/Area.h>
 #include <tiles/components/Border.h>
-#include <tiles/components/Hex_point.h>
+#include <tiles/components/Hex.h>
 #include <tiles/components/River.h>
 
 namespace tile
@@ -52,14 +52,14 @@ class Tile
 {
 public:
   Tile(const Terrain t = Terrain::desert);
-  Tile(const hex_point hp, const Terrain t = Terrain::desert);
+  Tile(const Hex hex, const Terrain t = Terrain::desert);
   Tile(const std::set<Direction> river_points,
        const Terrain t = Terrain::desert);
-  Tile(const hex_point hp, std::set<Direction> river_points,
+  Tile(const Hex hex, std::set<Direction> river_points,
        const Terrain t = Terrain::desert);
   Tile(const std::vector<std::set<Direction>> river_points,
        const Terrain t = Terrain::desert);
-  Tile(const hex_point hp, const std::vector<std::set<Direction>> river_points,
+  Tile(const Hex hex, const std::vector<std::set<Direction>> river_points,
        const Terrain t = Terrain::desert);
   Tile(const Tile &other);
   ~Tile();
@@ -70,9 +70,15 @@ public:
   /// Clears tile of all buildings/resources/neighbors.
   void reset();
 
-  inline uuids::uuid get_id() const { return m_p_id; };
   inline Terrain get_terrain() const { return m_p_terrain; }
-  inline hex_point get_hex_point() const { return m_p_hex_point; }
+  inline Hex get_hex() const { return m_p_hex; }
+  inline bool has_hex() const { return m_p_hex_set; }
+  inline void set_hex(const Hex hp)
+  {
+    m_p_hex = hp;
+    m_p_hex_set = true;
+  }
+  inline void clear_hex() { m_p_hex_set = false; }
   inline bool is_rot_locked() const { return m_p_rot_locked; }
 
   /// Returns the river with a point at the input direction.
@@ -138,6 +144,21 @@ public:
   bool has_wall() const;
   bool is_shore() const;
 
+  /// Checks whether neighbor can be placed at the direction relative to the
+  /// tile.
+  /// @param[in] neighbor  Tile to be placed
+  /// @param[in] direction  Direction neighbor would be to the tile
+  /// @return
+  ///   - common::Error::ERR_INVALID if either param is an invalid format
+  ///   (null, nonexistant direction).
+  ///   - common::Error::ERR_FAIL if there's already a neighbor in the given
+  ///   direction, the neighbor's river points doesn't allow being added
+  ///   there, or if the new neighbor matches ourselves or a neighbor we
+  ///   already have.
+  ///   - common::Error::ERR_NONE on valid placement.
+  common::Error can_add_neighbor(std::shared_ptr<Tile> neighbor,
+                                 Direction direction);
+
   /// Add a tile as a neighbor in the input direction.
   /// @param[in] neighbor The tile to be placed next to this one.
   /// @param[in] direction The direction the tile should be placed from first
@@ -181,7 +202,7 @@ public:
   ///   - common::ERR_NONE on success
   ///   - common::ERR_FAIL if failed can_rotate check
   ///   - common::ERR_UNKNOWN otherwise
-  common::Error rotate(int8_t rotations);
+  common::Error rotate(int rotations);
 
   /// Builds a road on the input border if possible.
   /// @param[in] border border to build a road on.
@@ -211,35 +232,22 @@ public:
   common::Error build_bridge(const Direction point);
 
   // Helpers
+  Tile operator=(const Tile &other);
   bool operator==(Tile &other) const;
   bool operator!=(Tile &other) const;
 
   nlohmann::json to_json() const;
+
+  friend std::ostream &operator<<(std::ostream &os, const tile::Tile &tile);
 
 protected:
 private:
   /// Divides areas based on where all river points are.
   void split_by_rivers();
 
-  /// Checks whether neighbor can be placed at the direction relative to the
-  /// tile.
-  /// @param[in] neighbor  Tile to be placed
-  /// @param[in] direction  Direction neighbor would be to the tile
-  /// @return
-  ///   - common::Error::ERR_INVALID if either param is an invalid format
-  ///   (null, nonexistant direction).
-  ///   - common::Error::ERR_FAIL if there's already a neighbor in the given
-  ///   direction, the neighbor's river points doesn't allow being added
-  ///   there, or if the new neighbor matches ourselves or a neighbor we
-  ///   already have.
-  ///   - common::Error::ERR_NONE on valid placement.
-  common::Error can_add_neighbor(std::shared_ptr<Tile> neighbor,
-                                 Direction direction);
-
   bool is_neighboring_sea() const;
 
-  uuids::uuid m_p_id;
-  hex_point m_p_hex_point;
+  Hex m_p_hex;
   Terrain m_p_terrain;
   std::shared_ptr<Tile> m_p_neighbors[MAX_DIRECTIONS];
   std::vector<std::shared_ptr<River>> m_p_rivers;
@@ -247,6 +255,9 @@ private:
   std::pair<player::Color, uint8_t> m_p_walls[MAX_DIRECTIONS];
   // Flag to prevent tile from rotating after placed in a map.
   bool m_p_rot_locked;
+  // Flag indicating whether the hex point has been set. If not, tile is not
+  // fully initialized.
+  bool m_p_hex_set;
 };
 
 /// Create a Tile object using the input json.
@@ -258,7 +269,5 @@ private:
 static common::Error from_json(const nlohmann::json j,
                                std::shared_ptr<Tile> &t);
 } // namespace tile
-
-std::ostream &operator<<(std::ostream &os, const tile::Tile &tile);
 
 #endif // end Tile_H
