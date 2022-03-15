@@ -551,7 +551,7 @@ nlohmann::json Tile::to_json() const
 {
   nlohmann::json result;
 
-  result["hex_coord"] = m_p_hex.to_json();
+  // result["hex_coord"] = ;
 
   // Add immediate neighbor coordinates
   std::vector<std::string> neighbors;

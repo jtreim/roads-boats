@@ -6,27 +6,27 @@
 
 namespace tile
 {
-Hex::Hex() : m_p_q(0), m_p_r(0) {}
-Hex::Hex(const int q, const int r) : m_p_q(q), m_p_r(r) {}
-Hex::Hex(const Hex &other) : m_p_q(other.m_p_q), m_p_r(other.m_p_r) {}
+Hex::Hex() : m_q(0), m_r(0) {}
+Hex::Hex(const int q, const int r) : m_q(q), m_r(r) {}
+Hex::Hex(const Hex &other) : m_q(other.m_q), m_r(other.m_r) {}
 
 Hex::~Hex() {}
 
 Hex Hex::operator=(const Hex &other)
 {
-  m_p_q = other.m_p_q;
-  m_p_r = other.m_p_r;
+  m_q = other.m_q;
+  m_r = other.m_r;
   return (*this);
 }
 
 Hex Hex::operator+(const Hex &other) const
 {
-  return Hex(m_p_q + other.m_p_q, m_p_r + other.m_p_r);
+  return Hex(m_q + other.m_q, m_r + other.m_r);
 }
 
 Hex Hex::operator-(const Hex &other) const
 {
-  return Hex(m_p_q - other.m_p_q, m_p_r - other.m_p_r);
+  return Hex(m_q - other.m_q, m_r - other.m_r);
 }
 
 bool Hex::operator==(Hex &other)
@@ -45,73 +45,75 @@ bool Hex::operator!=(const Hex &other) const { return !(*this == other); }
 
 void Hex::operator+=(Hex const &other)
 {
-  m_p_q += other.m_p_q;
-  m_p_r += other.m_p_r;
+  m_q += other.m_q;
+  m_r += other.m_r;
 }
 
 void Hex::operator-=(Hex const &other)
 {
-  m_p_q -= other.m_p_q;
-  m_p_r -= other.m_p_r;
+  m_q -= other.m_q;
+  m_r -= other.m_r;
 }
 
 bool Hex::operator<(Hex const &other) const
 {
-  if (m_p_q != other.m_p_q)
+  if (m_q != other.m_q)
   {
-    return m_p_q < other.m_p_q;
+    return m_q < other.m_q;
   }
-  return m_p_r < other.m_p_r;
+  return m_r < other.m_r;
 }
 bool Hex::operator<(Hex &other)
 {
-  if (m_p_q != other.m_p_q)
+  if (m_q != other.m_q)
   {
-    return m_p_q < other.m_p_q;
+    return m_q < other.m_q;
   }
-  return m_p_r < other.m_p_r;
+  return m_r < other.m_r;
 }
 bool Hex::operator>(Hex const &other) const
 {
-  if (m_p_q != other.m_p_q)
+  if (m_q != other.m_q)
   {
-    return m_p_q > other.m_p_q;
+    return m_q > other.m_q;
   }
-  return m_p_r > other.m_p_r;
+  return m_r > other.m_r;
 }
 bool Hex::operator>(Hex &other)
 {
-  if (m_p_q != other.m_p_q)
+  if (m_q != other.m_q)
   {
-    return m_p_q > other.m_p_q;
+    return m_q > other.m_q;
   }
-  return m_p_r > other.m_p_r;
+  return m_r > other.m_r;
 }
 
 int16_t Hex::distance(const Hex other) const
 {
   Hex diff(*this - other);
-  return (abs((int16_t)diff.m_p_q) + abs((int16_t)diff.m_p_r) +
+  return (abs((int16_t)diff.m_q) + abs((int16_t)diff.m_r) +
           abs((int16_t)diff.s())) /
          2;
 }
 
-nlohmann::json Hex::to_json() const
-{
-  nlohmann::json retval;
-  retval["q"] = m_p_q;
-  retval["r"] = m_p_r;
-  retval["s"] = (-m_p_q - m_p_r);
-  return retval;
-}
-
-std::ostream &operator<<(std::ostream &os, const tile::Hex &pos)
+std::ostream &operator<<(std::ostream &os, const Hex &pos)
 {
   os << "(q:" << static_cast<int>(pos.q())
      << ", r:" << static_cast<int>(pos.r())
      << ", s:" << static_cast<int>(pos.s()) << ")";
   return os;
 }
-} // namespace tile
 
-// TODO: implement from_json
+void to_json(nlohmann::json &j, const Hex &hex)
+{
+  j["q"] = hex.m_q;
+  j["r"] = hex.m_r;
+}
+
+void from_json(const nlohmann::json &j, Hex &hex)
+{
+  int q = j.at("q").get<int>();
+  int r = j.at("r").get<int>();
+  hex = Hex(q, r);
+}
+} // namespace tile
