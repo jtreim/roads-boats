@@ -547,47 +547,47 @@ common::Error Tile::build_bridge(const Direction point)
   return err;
 }
 
-nlohmann::json Tile::to_json() const
-{
-  nlohmann::json result;
+// nlohmann::json Tile::to_json() const
+// {
+//   nlohmann::json result;
 
-  // result["hex_coord"] = ;
+//   // result["hex_coord"] = ;
 
-  // Add immediate neighbor coordinates
-  std::vector<std::string> neighbors;
-  for (auto neighbor : m_p_neighbors)
-  {
-    if (nullptr == neighbor)
-    {
-      neighbors.push_back("empty");
-    }
-    else
-    {
-      neighbors.push_back(neighbor->get_hex().to_string());
-    }
-  }
-  result["neighbors"] = neighbors;
+//   // Add immediate neighbor coordinates
+//   std::vector<std::string> neighbors;
+//   for (auto neighbor : m_p_neighbors)
+//   {
+//     if (nullptr == neighbor)
+//     {
+//       neighbors.push_back("empty");
+//     }
+//     else
+//     {
+//       neighbors.push_back(neighbor->get_hex().to_string());
+//     }
+//   }
+//   result["neighbors"] = neighbors;
 
-  for (auto river : m_p_rivers)
-  {
-    result["rivers"].push_back(river->to_json());
-  }
+//   for (auto river : m_p_rivers)
+//   {
+//     result["rivers"].push_back(river->to_json());
+//   }
 
-  for (auto area : m_p_areas)
-  {
-    result["areas"].push_back(area->to_json());
-  }
+//   for (auto area : m_p_areas)
+//   {
+//     result["areas"].push_back(area->to_json());
+//   }
 
-  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
-  {
-    std::pair<player::Color, uint8_t> wall = m_p_walls[i];
-    Direction d = static_cast<Direction>(i);
-    result["walls"][to_string(d)]["color"] = to_string(wall.first);
-    result["walls"][to_string(d)]["thickness"] = wall.second;
-  }
+//   for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+//   {
+//     std::pair<player::Color, uint8_t> wall = m_p_walls[i];
+//     Direction d = static_cast<Direction>(i);
+//     result["walls"][to_string(d)]["color"] = to_string(wall.first);
+//     result["walls"][to_string(d)]["thickness"] = wall.second;
+//   }
 
-  return result;
-}
+//   return result;
+// }
 
 void Tile::split_by_rivers()
 {

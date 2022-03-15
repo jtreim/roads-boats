@@ -23,7 +23,14 @@ enum Direction
 };
 static const uint8_t MAX_DIRECTIONS = 6;
 static const std::string DIRECTION_NAMES[MAX_DIRECTIONS]{
-    "northwest", "northeast", "east", "southeast", "southwest", "west"};
+    "north_west", "north_east", "east", "south_east", "south_west", "west"};
+NLOHMANN_JSON_SERIALIZE_ENUM(Direction, {{invalid_direction, nullptr},
+                                         {north_west, "north_west"},
+                                         {north_east, "north_east"},
+                                         {east, "east"},
+                                         {south_east, "south_east"},
+                                         {south_west, "south_west"},
+                                         {west, "west"}});
 static bool is_valid(const Direction d)
 {
   return ((0 <= d) && (MAX_DIRECTIONS > d));
@@ -38,16 +45,20 @@ static std::string to_string(const Direction d)
   }
   return "unknown";
 }
+static Direction direction_from_string(const std::string str)
+{
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    if (DIRECTION_NAMES[i] == str)
+    {
+      return static_cast<Direction>(i);
+    }
+  }
+  return Direction::invalid_direction;
+}
 static Direction operator!(Direction d)
 {
   return static_cast<Direction>((d + MAX_DIRECTIONS / 2) % MAX_DIRECTIONS);
-}
-static nlohmann::json json(const Direction d)
-{
-  nlohmann::json retval;
-  retval["val"] = d;
-  retval["name"] = to_string(d);
-  return retval;
 }
 
 enum Border
@@ -68,12 +79,26 @@ enum Border
 };
 static const uint8_t MAX_BORDERS = 12;
 static const std::string BORDER_NAMES[MAX_BORDERS]{
-    "northwest_left", "northwest_right", "northeast_left", "northeast_right",
-    "east_left",      "east_right",      "southeast_left", "southeast_right",
-    "southwest_left", "southwest_right", "west_left",      "west_right"};
+    "north_west_left",  "north_west_right", "north_east_left",
+    "north_east_right", "east_left",        "east_right",
+    "south_east_left",  "south_east_right", "south_west_left",
+    "south_west_right", "west_left",        "west_right"};
 static const std::set<Border> ALL_BORDERS = {
     NW_left, NW_right, NE_left, NE_right, E_left, E_right,
     SE_left, SE_right, SW_left, SW_right, W_left, W_right};
+NLOHMANN_JSON_SERIALIZE_ENUM(Border, {{invalid_border, nullptr},
+                                      {NW_left, "north_west_left"},
+                                      {NW_right, "north_west_right"},
+                                      {NE_left, "north_east_left"},
+                                      {NE_right, "north_east_right"},
+                                      {E_left, "east_left"},
+                                      {E_right, "east_right"},
+                                      {SE_left, "south_east_left"},
+                                      {SE_right, "south_east_right"},
+                                      {SW_left, "south_west_left"},
+                                      {SW_right, "south_west_right"},
+                                      {W_left, "west_left"},
+                                      {W_right, "west_right"}});
 static bool is_valid(const Border b) { return ((0 <= b) && (MAX_BORDERS > b)); }
 static std::string to_string(const Border b)
 {
@@ -90,13 +115,6 @@ static Border operator!(Border b)
     return static_cast<Border>((1 + b + MAX_BORDERS / 2) % MAX_BORDERS);
   }
   return static_cast<Border>(((b + MAX_BORDERS / 2) - 1) % MAX_BORDERS);
-}
-static nlohmann::json json(const Border b)
-{
-  nlohmann::json retval;
-  retval["val"] = b;
-  retval["name"] = to_string(b);
-  return retval;
 }
 
 static Direction direction_from_border(const Border b)
@@ -116,6 +134,17 @@ static std::vector<Border> borders_from_direction(const Direction d)
   return borders;
 }
 
+static Border border_from_string(const std::string str)
+{
+  for (uint8_t i = 0; i < MAX_BORDERS; i++)
+  {
+    if (BORDER_NAMES[i] == str)
+    {
+      return static_cast<Border>(i);
+    }
+  }
+  return Border::invalid_border;
+}
 } // namespace tile
 
 static std::ostream &operator<<(std::ostream &output, const tile::Direction &d)

@@ -1,0 +1,10 @@
+{
+  "points": [
+    "north_west",
+    "north_east",
+    "south_east"
+  ],
+  "bridges": [
+    "north_west"
+  ]
+}

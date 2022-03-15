@@ -142,5 +142,6 @@ file_handler_test : $(TEST_BUILD_DIR)/file_handler_test.o $(TEST_BUILD_DIR)/gtes
 	$(MAKE) -C ../
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
 			$(BUILD_DIR)/tiles/components/Hex.o \
+			$(BUILD_DIR)/tiles/components/River.o \
 			$^ -o $(TEST_BUILD_DIR)/$@
 	$(TEST_BUILD_DIR)/$@.exe

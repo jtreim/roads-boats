@@ -236,7 +236,7 @@ public:
   bool operator==(Tile &other) const;
   bool operator!=(Tile &other) const;
 
-  nlohmann::json to_json() const;
+  // nlohmann::json to_json() const;
 
   friend std::ostream &operator<<(std::ostream &os, const tile::Tile &tile);
 
@@ -266,8 +266,8 @@ private:
 /// @return
 ///   - common::ERR_NONE on success
 ///   - common::ERR_FAIL on invalid json object
-static common::Error from_json(const nlohmann::json j,
-                               std::shared_ptr<Tile> &t);
+// static common::Error from_json(const nlohmann::json j,
+//                                std::shared_ptr<Tile> &t);
 } // namespace tile
 
 #endif // end Tile_H
