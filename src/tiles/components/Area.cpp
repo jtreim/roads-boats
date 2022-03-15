@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <map>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -19,58 +20,55 @@
 
 namespace tile
 {
-
-Area::Area(std::set<Border> borders)
-    : m_p_id(utils::gen_uuid()), m_p_borders(borders)
+Area::Area(std::set<Border> borders) : m_borders(borders)
 {
-  std::fill_n(m_p_resources, portable::RESOURCE_NAMES_SIZE, 0);
+  std::fill_n(m_resources, portable::RESOURCE_NAMES_SIZE, 0);
 }
 
-Area::Area(uuids::uuid id, std::set<Border> borders, std::set<Border> roads,
+Area::Area(std::set<Border> borders, std::set<Border> roads,
            std::shared_ptr<building::Building> building,
            uint16_t resources[portable::RESOURCE_NAMES_SIZE])
-    : m_p_id(id), m_p_roads(roads), m_p_borders(borders), m_p_building(building)
+    : m_roads(roads), m_borders(borders), m_building(building)
 {
   for (uint8_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
   {
-    m_p_resources[i] = resources[i];
+    m_resources[i] = resources[i];
   }
 }
 
 Area::Area(const Area &other)
-    : m_p_id(other.m_p_id), m_p_borders(other.m_p_borders),
-      m_p_roads(other.m_p_roads), m_p_building(other.m_p_building)
+    : m_borders(other.m_borders), m_roads(other.m_roads),
+      m_building(other.m_building)
 {
   for (uint8_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
   {
-    m_p_resources[i] = other.m_p_resources[i];
+    m_resources[i] = other.m_resources[i];
   }
 }
 
-Area::Area() : m_p_id(utils::gen_uuid()) {}
+Area::Area() {}
 
 Area::~Area()
 {
-  m_p_borders.clear();
+  m_borders.clear();
   reset();
 };
 
 void Area::reset()
 {
-  m_p_roads.clear();
-  m_p_building.reset();
-  std::fill_n(m_p_resources, portable::RESOURCE_NAMES_SIZE, 0);
+  m_roads.clear();
+  m_building.reset();
+  std::fill_n(m_resources, portable::RESOURCE_NAMES_SIZE, 0);
 }
 
 Area Area::operator=(const Area &other)
 {
-  m_p_id = other.m_p_id;
-  m_p_borders = other.m_p_borders;
-  m_p_roads = other.m_p_roads;
-  m_p_building = other.m_p_building;
+  m_borders = other.m_borders;
+  m_roads = other.m_roads;
+  m_building = other.m_building;
   for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
   {
-    m_p_resources[i] = other.m_p_resources[i];
+    m_resources[i] = other.m_resources[i];
   }
   return (*this);
 }
@@ -80,18 +78,17 @@ Area Area::operator+(const Area &other) const
   Area merged = Area(*this);
   if (merged.can_merge(other))
   {
-    merged.m_p_borders.insert(other.m_p_borders.begin(),
-                              other.m_p_borders.end());
-    merged.m_p_roads.insert(other.m_p_roads.begin(), other.m_p_roads.end());
+    merged.m_borders.insert(other.m_borders.begin(), other.m_borders.end());
+    merged.m_roads.insert(other.m_roads.begin(), other.m_roads.end());
 
-    if (!merged.m_p_building)
+    if (!merged.m_building)
     {
-      merged.m_p_building = other.m_p_building;
+      merged.m_building = other.m_building;
     }
 
     for (size_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
     {
-      merged.m_p_resources[i] += other.m_p_resources[i];
+      merged.m_resources[i] += other.m_resources[i];
     }
   }
 
@@ -101,43 +98,40 @@ Area Area::operator+(const Area &other) const
 Area Area::operator+(const std::set<Border> borders) const
 {
   std::set<Border> merged_borders;
-  std::merge(m_p_borders.begin(), m_p_borders.end(), borders.begin(),
-             borders.end(),
+  std::merge(m_borders.begin(), m_borders.end(), borders.begin(), borders.end(),
              std::inserter(merged_borders, merged_borders.begin()));
 
   Area new_area(merged_borders);
-  new_area.m_p_id = m_p_id;
-  new_area.m_p_building = m_p_building;
-  new_area.m_p_roads.insert(m_p_roads.begin(), m_p_roads.end());
-  std::copy(std::begin(m_p_resources), std::end(m_p_resources),
-            std::begin(new_area.m_p_resources));
+  new_area.m_building = m_building;
+  new_area.m_roads.insert(m_roads.begin(), m_roads.end());
+  std::copy(std::begin(m_resources), std::end(m_resources),
+            std::begin(new_area.m_resources));
   return new_area;
 }
 
 Area Area::
 operator+(const uint16_t resources[portable::RESOURCE_NAMES_SIZE]) const
 {
-  Area new_area(m_p_borders);
-  new_area.m_p_id = m_p_id;
-  new_area.m_p_building = m_p_building;
-  new_area.m_p_roads.insert(m_p_roads.begin(), m_p_roads.end());
+  Area new_area(m_borders);
+  new_area.m_building = m_building;
+  new_area.m_roads.insert(m_roads.begin(), m_roads.end());
   for (size_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
   {
-    new_area.m_p_resources[i] = m_p_resources[i] + resources[i];
+    new_area.m_resources[i] = m_resources[i] + resources[i];
   }
   return new_area;
 }
 
 bool Area::operator==(Area &other)
 {
-  if ((m_p_id != other.m_p_id) || (other.m_p_borders != m_p_borders) ||
-      (other.m_p_roads != m_p_roads) || (other.m_p_building != m_p_building))
+  if ((other.m_borders != m_borders) || (other.m_roads != m_roads) ||
+      (other.m_building != m_building))
   {
     return false;
   }
   for (size_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
   {
-    if (m_p_resources[i] != other.m_p_resources[i])
+    if (m_resources[i] != other.m_resources[i])
     {
       return false;
     }
@@ -146,14 +140,14 @@ bool Area::operator==(Area &other)
 }
 bool Area::operator==(Area const &other) const
 {
-  if ((m_p_id != other.m_p_id) || (other.m_p_borders != m_p_borders) ||
-      (other.m_p_roads != m_p_roads) || (other.m_p_building != m_p_building))
+  if ((other.m_borders != m_borders) || (other.m_roads != m_roads) ||
+      (other.m_building != m_building))
   {
     return false;
   }
   for (size_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
   {
-    if (m_p_resources[i] != other.m_p_resources[i])
+    if (m_resources[i] != other.m_resources[i])
     {
       return false;
     }
@@ -162,11 +156,11 @@ bool Area::operator==(Area const &other) const
 }
 bool Area::operator==(std::set<Border> &borders)
 {
-  return m_p_borders == borders;
+  return m_borders == borders;
 }
 bool Area::operator==(std::set<Border> const &borders) const
 {
-  return m_p_borders == borders;
+  return m_borders == borders;
 }
 bool Area::operator!=(Area &other) { return !(*this == other); }
 bool Area::operator!=(Area const &other) const { return !(*this == other); }
@@ -177,51 +171,51 @@ bool Area::operator!=(std::set<Border> const &borders) const
 }
 bool Area::operator<(Area const &other) const
 {
-  return uuids::to_string(m_p_id) < uuids::to_string(other.m_p_id);
+  return m_borders.size() < other.m_borders.size();
 }
 bool Area::operator<(Area &other)
 {
-  return uuids::to_string(m_p_id) < uuids::to_string(other.m_p_id);
+  return m_borders.size() < other.m_borders.size();
 }
 bool Area::operator>(Area const &other) const
 {
-  return uuids::to_string(m_p_id) > uuids::to_string(other.m_p_id);
+  return m_borders.size() > other.m_borders.size();
 }
 bool Area::operator>(Area &other)
 {
-  return uuids::to_string(m_p_id) > uuids::to_string(other.m_p_id);
+  return m_borders.size() > other.m_borders.size();
 }
 
 void Area::operator+=(Area const &other)
 {
   if (can_merge(other))
   {
-    m_p_borders.insert(other.m_p_borders.begin(), other.m_p_borders.end());
-    m_p_roads.insert(other.m_p_roads.begin(), other.m_p_roads.end());
+    m_borders.insert(other.m_borders.begin(), other.m_borders.end());
+    m_roads.insert(other.m_roads.begin(), other.m_roads.end());
 
-    if (nullptr == m_p_building)
+    if (nullptr == m_building)
     {
-      m_p_building = other.m_p_building;
+      m_building = other.m_building;
     }
 
     for (size_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
     {
-      m_p_resources[i] += other.m_p_resources[i];
+      m_resources[i] += other.m_resources[i];
     }
   }
 }
 
 void Area::operator+=(std::set<Border> const borders)
 {
-  std::merge(m_p_borders.begin(), m_p_borders.end(), borders.begin(),
-             borders.end(), std::inserter(m_p_borders, m_p_borders.begin()));
+  std::merge(m_borders.begin(), m_borders.end(), borders.begin(), borders.end(),
+             std::inserter(m_borders, m_borders.begin()));
 }
 
 void Area::operator+=(uint16_t const resources[portable::RESOURCE_NAMES_SIZE])
 {
   for (size_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
   {
-    m_p_resources[i] += resources[i];
+    m_resources[i] += resources[i];
   }
 }
 
@@ -229,7 +223,7 @@ template <typename Iter> bool Area::has_borders(Iter begin, Iter end)
 {
   while (begin != end)
   {
-    if (!m_p_borders.contains(*begin))
+    if (!m_borders.contains(*begin))
     {
       return false;
     }
@@ -242,7 +236,7 @@ bool Area::has_resources() const
 {
   for (size_t r = 0; r < portable::RESOURCE_NAMES_SIZE; r++)
   {
-    if (m_p_resources[r] > 0)
+    if (m_resources[r] > 0)
     {
       return true;
     }
@@ -254,9 +248,9 @@ std::map<portable::Resource, uint16_t> Area::list_available_resources() const
   std::map<portable::Resource, uint16_t> retval;
   for (size_t r = 0; r < portable::RESOURCE_NAMES_SIZE; r++)
   {
-    if (m_p_resources[r] > 0)
+    if (m_resources[r] > 0)
     {
-      retval.at(static_cast<portable::Resource>(r)) = m_p_resources[r];
+      retval.at(static_cast<portable::Resource>(r)) = m_resources[r];
     }
   }
   return retval;
@@ -264,15 +258,15 @@ std::map<portable::Resource, uint16_t> Area::list_available_resources() const
 
 bool Area::contains(const Area other)
 {
-  return has_borders<std::set<Border>::iterator>(other.m_p_borders.begin(),
-                                                 other.m_p_borders.end());
+  return has_borders<std::set<Border>::iterator>(other.m_borders.begin(),
+                                                 other.m_borders.end());
 }
 
 bool Area::does_share_direction(const Direction dir)
 {
   std::set<Direction> checked;
 
-  for (Border b : m_p_borders)
+  for (Border b : m_borders)
   {
     Direction border_direction = direction_from_border(b);
     if ((border_direction == dir) && (!checked.contains(border_direction)))
@@ -286,17 +280,17 @@ bool Area::does_share_direction(const Direction dir)
 
 bool Area::can_build_road(const Border b)
 {
-  if ((!m_p_borders.contains(b)) || (m_p_roads.contains(b)))
+  if ((!m_borders.contains(b)) || (m_roads.contains(b)))
   {
     return false;
   }
 
   Direction d = direction_from_border(b);
   std::vector<Border> both = borders_from_direction(d);
-  bool has_both_borders = ((m_p_borders.contains(both.at(0))) &&
-                           (m_p_borders.contains(both.at(1))));
+  bool has_both_borders =
+      ((m_borders.contains(both.at(0))) && (m_borders.contains(both.at(1))));
   bool direction_has_road =
-      ((m_p_roads.contains(both.at(0))) || (m_p_roads.contains(both.at(1))));
+      ((m_roads.contains(both.at(0))) || (m_roads.contains(both.at(1))));
 
   // If the border isn't split by a river, only allow 1 road to be built
   // between both borders in that direction.
@@ -311,13 +305,13 @@ bool Area::can_build_road(const Border b)
 bool Area::can_merge(Area &other)
 {
   return (((*this) != other) &&
-          ((nullptr == m_p_building) || (nullptr == other.m_p_building)));
+          ((nullptr == m_building) || (nullptr == other.m_building)));
 }
 
 bool Area::can_merge(Area const &other) const
 {
   return (((*this) != other) &&
-          ((nullptr == m_p_building) || (nullptr == other.m_p_building)));
+          ((nullptr == m_building) || (nullptr == other.m_building)));
 }
 
 common::Error Area::build(std::shared_ptr<building::Building> bldg)
@@ -327,12 +321,12 @@ common::Error Area::build(std::shared_ptr<building::Building> bldg)
     return common::ERR_INVALID;
   }
 
-  if (m_p_building)
+  if (m_building)
   {
     return common::ERR_FAIL;
   }
 
-  m_p_building = bldg;
+  m_building = bldg;
   return common::ERR_NONE;
 }
 
@@ -347,7 +341,7 @@ common::Error Area::build(const Border border)
     return common::ERR_FAIL;
   }
 
-  m_p_roads.insert(border);
+  m_roads.insert(border);
   return common::ERR_NONE;
 }
 
@@ -359,7 +353,7 @@ common::Error Area::add_resource(const portable::Resource res,
     return common::ERR_INVALID;
   }
 
-  m_p_resources[res] += amount;
+  m_resources[res] += amount;
   return common::ERR_NONE;
 }
 
@@ -377,11 +371,11 @@ common::Error Area::merge(Area &other)
 
 bool Area::can_rotate() const
 {
-  if ((0 != m_p_roads.size()) || (m_p_building))
+  if ((0 != m_roads.size()) || (m_building))
   {
     return false;
   }
-  for (auto res : m_p_resources)
+  for (auto res : m_resources)
   {
     if (0 != res)
     {
@@ -409,49 +403,16 @@ common::Error Area::rotate(int rotations)
     rotations *= 2;
 
     std::vector<Border> tmp_borders;
-    for (auto b : m_p_borders)
+    for (auto b : m_borders)
     {
       Border rotated = static_cast<Border>((rotations + b) % MAX_BORDERS);
       tmp_borders.push_back(rotated);
     }
-    m_p_borders.clear();
-    m_p_borders.insert(tmp_borders.begin(), tmp_borders.end());
+    m_borders.clear();
+    m_borders.insert(tmp_borders.begin(), tmp_borders.end());
   }
 
   return common::ERR_NONE;
-}
-
-nlohmann::json Area::to_json()
-{
-  nlohmann::json retval;
-  retval["id"] = uuids::to_string(m_p_id);
-  // List borders
-  for (auto border : m_p_borders)
-  {
-    nlohmann::json j;
-    j["name"] = to_string(border);
-    j["has_road"] = (m_p_roads.contains(border));
-    retval["borders"].push_back(j);
-  }
-
-  // List building if found
-  if (m_p_building)
-  {
-    retval["building"] = m_p_building->to_json();
-  }
-  else
-  {
-    retval["building"] = nullptr;
-  }
-
-  // List resources
-  for (uint8_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
-  {
-    portable::Resource r = static_cast<portable::Resource>(i);
-    retval["resources"][to_string(r)] = m_p_resources[i];
-  }
-
-  return retval;
 }
 
 std::ostream &operator<<(std::ostream &os, tile::Area const &a)
@@ -460,7 +421,7 @@ std::ostream &operator<<(std::ostream &os, tile::Area const &a)
   std::set<tile::Border> rds = a.get_roads();
   std::vector<tile::Border> borders(bdrs.begin(), bdrs.end());
   std::vector<tile::Border> roads(rds.begin(), rds.end());
-  os << "<Area::id=" << a.get_id() << ", borders=[" << borders.at(0);
+  os << "<Area::borders=[" << borders.at(0);
   for (size_t i = 1; i < borders.size(); i++)
   {
     os << ", " << borders.at(i);
@@ -498,5 +459,81 @@ std::ostream &operator<<(std::ostream &os, tile::Area const &a)
   os << ">";
   return os;
 }
+
+void to_json(nlohmann::json &j, const Area &area)
+{
+  // List borders
+  for (auto border : area.m_borders)
+  {
+    nlohmann::json b;
+    to_json(b, border);
+    j["borders"].push_back(border);
+    if (area.m_roads.contains(border))
+    {
+      j["roads"].push_back(b);
+    }
+  }
+
+  // List building if found
+  // if (area.m_building)
+  // {
+  //   j["building"] = area.m_building->to_json();
+  // }
+  // else
+  // {
+  //   j["building"] = nullptr;
+  // }
+
+  // List resources
+  for (uint8_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  {
+    portable::Resource r = static_cast<portable::Resource>(i);
+    j["resources"][to_string(r)] = area.m_resources[i];
+  }
+}
+
+void from_json(const nlohmann::json &j, Area &area)
+{
+  std::set<Border> borders;
+  for (auto b : j.at("borders").get<std::vector<Border>>())
+  {
+    if (Border::invalid_border == b)
+    {
+      throw nlohmann::json::type_error::create(
+          501, "Invalid border value given as area border!", j);
+    }
+    borders.insert(b);
+  }
+
+  area = Area(borders);
+
+  for (auto r : j.at("roads").get<std::vector<Border>>())
+  {
+    if (common::ERR_NONE != area.build(r))
+    {
+      area = Area();
+      throw nlohmann::json::type_error::create(
+          501, "Invalid border value given as area road: " + to_string(r), j);
+    }
+  }
+
+  // TODO: Add logic to load a building from json
+
+  uint16_t resources[portable::RESOURCE_NAMES_SIZE];
+
+  for (size_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  {
+    portable::Resource res = static_cast<portable::Resource>(i);
+    std::string res_key = portable::RESOURCE_NAMES[i];
+    uint16_t amount = j.at("resources").at(res_key).get<uint16_t>();
+    if (common::ERR_NONE != area.add_resource(res, amount))
+    {
+      area = Area();
+      std::stringstream msg;
+      msg << "Failed adding resource amount: "
+          << "res=" << portable::to_string(res) << ", amount=" << amount;
+      throw nlohmann::json::type_error::create(501, msg.str(), j);
+    }
+  }
+}
 } // namespace tile
-  // TODO: implement from_json

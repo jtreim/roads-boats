@@ -20,7 +20,7 @@ class Area
 {
 public:
   Area(std::set<Border> borders);
-  Area(uuids::uuid id, std::set<Border> borders, std::set<Border> roads,
+  Area(std::set<Border> borders, std::set<Border> roads,
        std::shared_ptr<building::Building> building,
        uint16_t resources[portable::RESOURCE_NAMES_SIZE]);
   Area(const Area &other);
@@ -52,28 +52,27 @@ public:
   void operator+=(std::set<Border> const borders);
   void operator+=(uint16_t const resources[portable::RESOURCE_NAMES_SIZE]);
 
-  inline uuids::uuid get_id() const { return m_p_id; }
-  inline bool has_border(const Border b) { return m_p_borders.contains(b); }
+  inline bool has_border(const Border b) { return m_borders.contains(b); }
   template <typename Iter> bool has_borders(Iter begin, Iter end);
-  inline bool has_road(const Border b) { return m_p_roads.contains(b); }
-  inline std::set<Border> get_borders() { return m_p_borders; }
-  inline std::set<Border> get_borders() const { return m_p_borders; }
-  inline std::set<Border> get_roads() { return m_p_roads; }
-  inline std::set<Border> get_roads() const { return m_p_roads; }
+  inline bool has_road(const Border b) { return m_roads.contains(b); }
+  inline std::set<Border> get_borders() { return m_borders; }
+  inline std::set<Border> get_borders() const { return m_borders; }
+  inline std::set<Border> get_roads() { return m_roads; }
+  inline std::set<Border> get_roads() const { return m_roads; }
   inline std::shared_ptr<building::Building> get_building()
   {
-    return m_p_building;
+    return m_building;
   };
   inline std::shared_ptr<building::Building> get_building() const
   {
-    return m_p_building;
+    return m_building;
   };
-  inline uint16_t *get_resources() { return m_p_resources; }
+  inline uint16_t *get_resources() { return m_resources; }
   inline uint16_t get_resource_amount(const portable::Resource res)
   {
     if (portable::is_valid(res))
     {
-      return m_p_resources[res];
+      return m_resources[res];
     }
     return 0;
   }
@@ -81,7 +80,7 @@ public:
   {
     if (portable::is_valid(res))
     {
-      return m_p_resources[res];
+      return m_resources[res];
     }
     return 0;
   }
@@ -149,27 +148,17 @@ public:
   ///   - common::ERR_UNKNOWN otherwise
   common::Error rotate(int rotations);
 
-  nlohmann::json to_json();
-
   friend std::ostream &operator<<(std::ostream &os, tile::Area const &a);
+  friend void to_json(nlohmann::json &j, const Area &area);
+  friend void from_json(const nlohmann::json &j, Area &area);
 
 protected:
 private:
-  uuids::uuid m_p_id;
-  std::set<Border> m_p_borders;
-  std::set<Border> m_p_roads;
-  std::shared_ptr<building::Building> m_p_building;
-  uint16_t m_p_resources[portable::RESOURCE_NAMES_SIZE];
+  std::set<Border> m_borders;
+  std::set<Border> m_roads;
+  std::shared_ptr<building::Building> m_building;
+  uint16_t m_resources[portable::RESOURCE_NAMES_SIZE];
 };
-
-/// Create an Area object using the input json.
-/// @param[in] j Input json
-/// @param[out] a Pointer to created Area object. Null on invalid json input.
-/// @return
-///   - common::ERR_NONE on success
-///   - common::ERR_FAIL on invalid json object
-static common::Error from_json(const nlohmann::json j,
-                               std::shared_ptr<Area> &a);
 } // namespace tile
 
 #endif
