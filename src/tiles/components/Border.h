@@ -24,13 +24,14 @@ enum Direction
 static const uint8_t MAX_DIRECTIONS = 6;
 static const std::string DIRECTION_NAMES[MAX_DIRECTIONS]{
     "north_west", "north_east", "east", "south_east", "south_west", "west"};
-NLOHMANN_JSON_SERIALIZE_ENUM(Direction, {{invalid_direction, nullptr},
-                                         {north_west, "north_west"},
-                                         {north_east, "north_east"},
-                                         {east, "east"},
-                                         {south_east, "south_east"},
-                                         {south_west, "south_west"},
-                                         {west, "west"}});
+NLOHMANN_JSON_SERIALIZE_ENUM(Direction,
+                             {{invalid_direction, nullptr},
+                              {north_west, DIRECTION_NAMES[north_west]},
+                              {north_east, DIRECTION_NAMES[north_east]},
+                              {east, DIRECTION_NAMES[east]},
+                              {south_east, DIRECTION_NAMES[south_east]},
+                              {south_west, DIRECTION_NAMES[south_west]},
+                              {west, DIRECTION_NAMES[west]}});
 static bool is_valid(const Direction d)
 {
   return ((0 <= d) && (MAX_DIRECTIONS > d));
@@ -87,18 +88,18 @@ static const std::set<Border> ALL_BORDERS = {
     NW_left, NW_right, NE_left, NE_right, E_left, E_right,
     SE_left, SE_right, SW_left, SW_right, W_left, W_right};
 NLOHMANN_JSON_SERIALIZE_ENUM(Border, {{invalid_border, nullptr},
-                                      {NW_left, "north_west_left"},
-                                      {NW_right, "north_west_right"},
-                                      {NE_left, "north_east_left"},
-                                      {NE_right, "north_east_right"},
-                                      {E_left, "east_left"},
-                                      {E_right, "east_right"},
-                                      {SE_left, "south_east_left"},
-                                      {SE_right, "south_east_right"},
-                                      {SW_left, "south_west_left"},
-                                      {SW_right, "south_west_right"},
-                                      {W_left, "west_left"},
-                                      {W_right, "west_right"}});
+                                      {NW_left, BORDER_NAMES[NW_left]},
+                                      {NW_right, BORDER_NAMES[NW_right]},
+                                      {NE_left, BORDER_NAMES[NE_left]},
+                                      {NE_right, BORDER_NAMES[NE_right]},
+                                      {E_left, BORDER_NAMES[E_left]},
+                                      {E_right, BORDER_NAMES[E_right]},
+                                      {SE_left, BORDER_NAMES[SE_left]},
+                                      {SE_right, BORDER_NAMES[SE_right]},
+                                      {SW_left, BORDER_NAMES[SW_left]},
+                                      {SW_right, BORDER_NAMES[SW_right]},
+                                      {W_left, BORDER_NAMES[W_left]},
+                                      {W_right, BORDER_NAMES[W_right]}});
 static bool is_valid(const Border b) { return ((0 <= b) && (MAX_BORDERS > b)); }
 static std::string to_string(const Border b)
 {

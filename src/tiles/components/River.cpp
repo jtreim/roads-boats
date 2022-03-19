@@ -30,7 +30,14 @@ River::~River()
 
 void River::reset() { m_bridges.clear(); }
 
-River River::operator=(const River &other)
+River River::operator=(River const &other)
+{
+  m_points = other.m_points;
+  m_bridges = other.m_bridges;
+  return (*this);
+}
+
+River River::operator=(River &other)
 {
   m_points = other.m_points;
   m_bridges = other.m_bridges;
@@ -196,20 +203,29 @@ std::ostream &operator<<(std::ostream &os, tile::River const &river)
 
 void to_json(nlohmann::json &j, const River &river)
 {
-  std::vector<std::string> points;
-  for (Direction d : river.m_points)
+  if (river.m_points.size() == 0)
   {
-    points.push_back(to_string(d));
+    j["points"] = nlohmann::json::array();
+  }
+  else
+  {
+    for (Direction d : river.m_points)
+    {
+      j["points"].push_back(to_string(d));
+    }
   }
 
-  j["points"] = points;
-
-  std::vector<std::string> bridges;
-  for (auto bridge : river.m_bridges)
+  if (river.m_bridges.size() == 0)
   {
-    bridges.push_back(to_string(bridge));
+    j["bridges"] = nlohmann::json::array();
   }
-  j["bridges"] = bridges;
+  else
+  {
+    for (auto bridge : river.m_bridges)
+    {
+      j["bridges"].push_back(to_string(bridge));
+    }
+  }
 }
 
 void from_json(const nlohmann::json &j, River &river)

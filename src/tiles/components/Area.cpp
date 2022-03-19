@@ -468,9 +468,16 @@ void to_json(nlohmann::json &j, const Area &area)
     nlohmann::json b;
     to_json(b, border);
     j["borders"].push_back(border);
-    if (area.m_roads.contains(border))
+  }
+  if (area.m_roads.size() == 0)
+  {
+    j["roads"] = nlohmann::json::array();
+  }
+  else
+  {
+    for (auto road : area.m_roads)
     {
-      j["roads"].push_back(b);
+      j["roads"].push_back(to_string(road));
     }
   }
 
@@ -485,11 +492,13 @@ void to_json(nlohmann::json &j, const Area &area)
   // }
 
   // List resources
+  nlohmann::json res_map;
   for (uint8_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
   {
     portable::Resource r = static_cast<portable::Resource>(i);
-    j["resources"][to_string(r)] = area.m_resources[i];
+    res_map[to_string(r)] = area.m_resources[i];
   }
+  j["resources"] = res_map;
 }
 
 void from_json(const nlohmann::json &j, Area &area)

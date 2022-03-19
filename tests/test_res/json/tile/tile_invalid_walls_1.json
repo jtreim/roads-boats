@@ -1,0 +1,154 @@
+{
+  "hex": {
+    "q": 1,
+    "r": 0
+  },
+  "terrain": "forest",
+  "rot_locked": true,
+  "hex_set": true,
+  "neighbors": [
+    "west"
+  ],
+  "rivers": [
+    {
+      "points": [
+        "north_west",
+        "south_east",
+        "west"
+      ],
+      "bridges": [
+        "south_east"
+      ]
+    }
+  ],
+  "areas": [
+    {
+      "borders": [
+        "north_west_right",
+        "north_east_left",
+        "north_east_right",
+        "east_left",
+        "east_right",
+        "south_east_left"
+      ],
+      "roads": [],
+      "building": null,
+      "resources": {
+        "trunks": 0,
+        "boards": 0,
+        "paper": 0,
+        "goose": 0,
+        "clay": 0,
+        "stone": 0,
+        "fuel": 0,
+        "iron": 0,
+        "gold": 0,
+        "coins": 0,
+        "stock": 0,
+        "bomb": 0,
+        "manager": 0,
+        "pearl": 0,
+        "marble": 0,
+        "wood_carving": 0,
+        "ring": 0,
+        "sketch": 0,
+        "pottery": 0,
+        "statue": 0
+      }
+    },
+    {
+      "borders": [
+        "south_east_right",
+        "south_west_left",
+        "south_west_right",
+        "west_left"
+      ],
+      "roads": [],
+      "building": null,
+      "resources": {
+        "trunks": 0,
+        "boards": 0,
+        "paper": 0,
+        "goose": 0,
+        "clay": 0,
+        "stone": 0,
+        "fuel": 0,
+        "iron": 0,
+        "gold": 0,
+        "coins": 0,
+        "stock": 0,
+        "bomb": 0,
+        "manager": 0,
+        "pearl": 0,
+        "marble": 0,
+        "wood_carving": 0,
+        "ring": 0,
+        "sketch": 0,
+        "pottery": 0,
+        "statue": 0
+      }
+    },
+    {
+      "borders": [
+        "north_west_left",
+        "west_right"
+      ],
+      "roads": ["west_right"],
+      "building": null,
+      "resources": {
+        "trunks": 0,
+        "boards": 0,
+        "paper": 0,
+        "goose": 0,
+        "clay": 0,
+        "stone": 0,
+        "fuel": 0,
+        "iron": 0,
+        "gold": 0,
+        "coins": 0,
+        "stock": 0,
+        "bomb": 0,
+        "manager": 0,
+        "pearl": 0,
+        "marble": 0,
+        "wood_carving": 0,
+        "ring": 0,
+        "sketch": 0,
+        "pottery": 0,
+        "statue": 0
+      }
+    }
+  ],
+  "walls": [
+    {
+      "side": "north_west",
+      "color": "neutral",
+      "thickness": 0
+    },
+    {
+      "side": "north_east",
+      "color": "neutral",
+      "thickness": 0
+    },
+    {
+      "side": "east",
+      "color": "neutral",
+      "thickness": 0
+    },
+    {
+      "side": "south_east",
+      "color": "neutral",
+      "thickness": 0
+    },
+    {
+      "side": "south_west",
+      "color": "neutral",
+      "thickness": 0
+    },
+    {
+      "side": "east",
+      "player": "blue",
+      "thickness": 2
+    }
+  ]
+}

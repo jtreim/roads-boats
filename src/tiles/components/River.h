@@ -24,8 +24,8 @@ public:
   // Clears river of bridges
   void reset();
 
-  River operator=(const River &other);
-
+  River operator=(River const &other);
+  River operator=(River &other);
   bool operator==(River const &other) const;
   bool operator==(River &other);
   bool operator!=(River const &other) const;
