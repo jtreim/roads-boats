@@ -25,38 +25,12 @@ TEST(area_test, create_area_test)
   borders.insert(Border::NE_right);
   borders.insert(Border::E_left);
 
-  // When creating areas, an unique ID should be added for each area.
-  std::set<uuids::uuid> ids;
   Area a = Area(borders);
 
-  // New ID should not be empty, and should follow the expected uuid format.
-  uuids::uuid id = a.get_id();
-  ASSERT_TRUE(!id.is_nil());
-  ASSERT_EQ(16, id.as_bytes().size());
-  ASSERT_EQ(uuids::uuid_version::random_number_based, id.version());
-  ASSERT_EQ(uuids::uuid_variant::rfc, id.variant());
+  EXPECT_EQ(borders, a);
 
-  ids.insert(a.get_id());
-
-  // IDs should not be duplicated
-  a = Area(borders);
-  id = a.get_id();
-  ASSERT_FALSE(ids.contains(id));
-  ids.insert(id);
-
-  // Creating with a different input params shouldn't matter
-  borders.insert(Border::E_right);
-  borders.insert(Border::SE_left);
-  a = Area(borders);
-  id = a.get_id();
-  ASSERT_FALSE(ids.contains(id));
-  ids.insert(id);
-
-  // Copying should transfer everything, including the ID
+  // Copying should transfer everything
   Area b = Area(a);
-  uuids::uuid copied_id = b.get_id();
-  ASSERT_TRUE(ids.contains(copied_id));
-  ASSERT_EQ(id, copied_id);
   ASSERT_EQ(a, b);
 }
 

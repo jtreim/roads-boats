@@ -1,6 +1,8 @@
 #ifndef TILE_H
 #define TILE_H
 
+#include <filesystem>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <set>
@@ -35,6 +37,13 @@ enum Terrain
 static const uint8_t MAX_TERRAIN_TYPES = 6;
 static const std::string TERRAIN_NAMES[MAX_TERRAIN_TYPES]{
     "desert", "forest", "mountain", "plains", "rock", "sea"};
+NLOHMANN_JSON_SERIALIZE_ENUM(Terrain, {{invalid, nullptr},
+                                       {desert, TERRAIN_NAMES[desert]},
+                                       {forest, TERRAIN_NAMES[forest]},
+                                       {mountain, TERRAIN_NAMES[mountain]},
+                                       {plains, TERRAIN_NAMES[plains]},
+                                       {rock, TERRAIN_NAMES[rock]},
+                                       {sea, TERRAIN_NAMES[sea]}});
 static bool is_valid(const Terrain t)
 {
   return ((0 <= t) && (MAX_TERRAIN_TYPES > t));
@@ -70,28 +79,34 @@ public:
   /// Clears tile of all buildings/resources/neighbors.
   void reset();
 
-  inline Terrain get_terrain() const { return m_p_terrain; }
-  inline Hex get_hex() const { return m_p_hex; }
-  inline bool has_hex() const { return m_p_hex_set; }
+  inline Terrain get_terrain() const { return m_terrain; }
+  inline Hex get_hex() const { return m_hex; }
+  inline bool has_hex() const { return m_hex_set; }
   inline void set_hex(const Hex hp)
   {
-    m_p_hex = hp;
-    m_p_hex_set = true;
+    m_hex = hp;
+    m_hex_set = true;
   }
-  inline void clear_hex() { m_p_hex_set = false; }
-  inline bool is_rot_locked() const { return m_p_rot_locked; }
+  inline void clear_hex() { m_hex_set = false; }
+  inline bool is_rot_locked() const { return m_rot_locked; }
+  inline bool neighbors_are_current() const { return m_neighbors_are_current; }
+  inline void set_neighbors_are_current(const bool status)
+  {
+    m_neighbors_are_current = status;
+  }
 
   /// Returns the river with a point at the input direction.
   /// @param[in] d Direction to check for a river point.
   /// @return A pointer to the river at the input direction. Null if no river
   /// found with that point.
   std::shared_ptr<River> get_river(const Direction d);
-  inline std::vector<std::shared_ptr<River>> get_rivers() { return m_p_rivers; }
+  inline std::vector<std::shared_ptr<River>> get_rivers() { return m_rivers; }
   inline std::vector<std::shared_ptr<River>> get_rivers() const
   {
-    return m_p_rivers;
+    return m_rivers;
   }
   std::set<Direction> get_river_points() const;
+  std::set<Direction> get_bridges() const;
   std::set<Direction> get_river_points(const Direction d);
 
   /// Returns the area that uses the input border.
@@ -101,10 +116,10 @@ public:
   std::shared_ptr<Area> get_area(const Border b);
   /// Returns all areas of the tile.
   /// @return all of the tile's areas.
-  inline std::vector<std::shared_ptr<Area>> get_areas() { return m_p_areas; }
+  inline std::vector<std::shared_ptr<Area>> get_areas() { return m_areas; }
   inline std::vector<std::shared_ptr<Area>> get_areas() const
   {
-    return m_p_areas;
+    return m_areas;
   }
   /// Returns the areas associated with the input tile side.
   /// @param[in] d side of the tile that areas are associated with.
@@ -123,7 +138,7 @@ public:
   {
     if (is_valid(d))
     {
-      return m_p_walls[d];
+      return m_walls[d];
     }
     return std::make_pair<player::Color, uint8_t>(player::Color::invalid, 0);
   }
@@ -224,21 +239,43 @@ public:
                                const std::shared_ptr<building::Building> &bldg);
 
   /// Builds a bridge at input river point if possible.
-  /// @param[in] point Point to build a bridge.
+  /// @param[in] point  Point to build a bridge.
   /// @return
   ///   - common::ERR_NONE on success
   ///   - common::ERR_FAIL when unable to build bridge at input direction.
   ///   - common::ERR_INVALID on invalid direction.
   common::Error build_bridge(const Direction point);
 
+  /// Checks whether a wall can be built at the input side
+  /// @param[in] side  Side of tile to build wall
+  /// @param[in] color  Player color building the wall
+  /// @param[in] thickness  Thickness of wall to build
+  /// @return true if input side, color, and thickness allow for a wall to be
+  /// built; false otherwise. Will return false if color is neutral
+  bool can_build_wall(const Direction side, const player::Color color,
+                      const uint8_t thickness);
+
+  /// Builds a wall at input side if possible
+  /// @param[in] side  Side of tile to build wall
+  /// @param[in] color  Player color building the wall
+  /// @param[in] thickness  Thickness of wall to build
+  /// @return
+  ///   - common::ERR_NONE on success
+  ///   - common::ERR_INVALID on invalid side, color, or thickness.
+  ///   - common::ERR_FAIL if unable to build input player's wall at input side.
+  common::Error build_wall(const Direction side, const player::Color color,
+                           const uint8_t thickness);
+
   // Helpers
   Tile operator=(const Tile &other);
   bool operator==(Tile &other) const;
+  bool operator==(Tile const &other) const;
   bool operator!=(Tile &other) const;
-
-  nlohmann::json to_json() const;
+  bool operator!=(Tile const &other) const;
 
   friend std::ostream &operator<<(std::ostream &os, const tile::Tile &tile);
+  friend void to_json(nlohmann::json &j, const Tile &tile);
+  friend void from_json(const nlohmann::json &j, Tile &tile);
 
 protected:
 private:
@@ -247,27 +284,29 @@ private:
 
   bool is_neighboring_sea() const;
 
-  Hex m_p_hex;
-  Terrain m_p_terrain;
-  std::shared_ptr<Tile> m_p_neighbors[MAX_DIRECTIONS];
-  std::vector<std::shared_ptr<River>> m_p_rivers;
-  std::vector<std::shared_ptr<Area>> m_p_areas;
-  std::pair<player::Color, uint8_t> m_p_walls[MAX_DIRECTIONS];
+  void load_rivers_json(const nlohmann::json &j);
+  void load_neighbors_json(const nlohmann::json &j);
+  void load_areas_json(const nlohmann::json &j);
+  void load_walls_json(const nlohmann::json &j);
+
+  Hex m_hex;
+  Terrain m_terrain;
+  std::shared_ptr<Tile> m_neighbors[MAX_DIRECTIONS];
+  std::vector<std::shared_ptr<River>> m_rivers;
+  std::vector<std::shared_ptr<Area>> m_areas;
+  std::pair<player::Color, uint8_t> m_walls[MAX_DIRECTIONS];
   // Flag to prevent tile from rotating after placed in a map.
-  bool m_p_rot_locked;
+  bool m_rot_locked;
   // Flag indicating whether the hex point has been set. If not, tile is not
   // fully initialized.
-  bool m_p_hex_set;
-};
+  bool m_hex_set;
 
-/// Create a Tile object using the input json.
-/// @param[in] j Input json
-/// @param[out] t Pointer to created Tile object. Null on invalid json input.
-/// @return
-///   - common::ERR_NONE on success
-///   - common::ERR_FAIL on invalid json object
-static common::Error from_json(const nlohmann::json j,
-                               std::shared_ptr<Tile> &t);
+  // Flag indicating whether neighbor data is current. When loading a tile from
+  // JSON, the tile relies on the tile map to set its neighbors appropriately.
+  // Until that happens, this flag prevents this tile from updating other
+  // fields.
+  bool m_neighbors_are_current;
+};
 } // namespace tile
 
 #endif // end Tile_H

@@ -23,13 +23,13 @@ public:
   Hex(const Hex &other);
   virtual ~Hex();
 
-  inline int q() { return m_p_q; }
-  inline int r() { return m_p_r; }
-  inline int s() { return -m_p_q - m_p_r; }
+  inline int q() { return m_q; }
+  inline int r() { return m_r; }
+  inline int s() { return -m_q - m_r; }
 
-  inline int q() const { return m_p_q; }
-  inline int r() const { return m_p_r; }
-  inline int s() const { return -m_p_q - m_p_r; }
+  inline int q() const { return m_q; }
+  inline int r() const { return m_r; }
+  inline int s() const { return -m_q - m_r; }
 
   Hex operator=(const Hex &other);
   Hex operator+(const Hex &other) const;
@@ -54,19 +54,19 @@ public:
   /// Returns coordinates for moving input amount along q axis
   /// @param[in] amount
   /// @return The resulting coordinates
-  inline Hex move_q(const int amount) { return Hex(m_p_q, m_p_r - amount); }
+  inline Hex move_q(const int amount) { return Hex(m_q, m_r - amount); }
 
   /// Returns coordinates for moving input amount along r axis
   /// @param[in] amount
   /// @return The resulting coordinates
-  inline Hex move_r(const int amount) { return Hex(m_p_q + amount, m_p_r); }
+  inline Hex move_r(const int amount) { return Hex(m_q + amount, m_r); }
 
   /// Returns coordinates for moving input amount along s axis
   /// @param[in] amount
   /// @return The resulting coordinates
   inline Hex move_s(const int amount)
   {
-    return Hex(m_p_q - amount, m_p_r + amount);
+    return Hex(m_q - amount, m_r + amount);
   }
 
   /// Returns coordinates for neighbor in the input direction
@@ -75,8 +75,8 @@ public:
   /// Direction.
   inline Hex neighbor(const Direction d)
   {
-    int q = m_p_q;
-    int r = m_p_r;
+    int q = m_q;
+    int r = m_r;
     switch (d)
     {
     case Direction::north_west:
@@ -112,8 +112,8 @@ public:
   /// Direction.
   inline Hex neighbor(const Direction d) const
   {
-    int q = m_p_q;
-    int r = m_p_r;
+    int q = m_q;
+    int r = m_r;
     switch (d)
     {
     case Direction::north_west:
@@ -143,7 +143,6 @@ public:
     return Hex(q, r);
   }
 
-  nlohmann::json to_json() const;
   inline std::string to_string() const
   {
     std::stringstream ss;
@@ -152,22 +151,14 @@ public:
   }
 
   friend std::ostream &operator<<(std::ostream &os, const Hex &pos);
+  friend void to_json(nlohmann::json &j, const Hex &hex);
+  friend void from_json(const nlohmann::json &j, Hex &hex);
 
 protected:
-  int m_p_q;
-  int m_p_r;
-
 private:
+  int m_q;
+  int m_r;
 };
-
-/// Create a River object using the input json.
-/// @param[in] j Input json
-/// @param[out] hp Pointer to created Hex object. (0,0,0) on invalid
-/// input.
-/// @return
-///   - common::ERR_NONE on success
-///   - common::ERR_FAIL on invalid json object
-static common::Error from_json(const nlohmann::json j, Hex &hp);
 } // namespace tile
 
 template <> struct std::hash<tile::Hex>

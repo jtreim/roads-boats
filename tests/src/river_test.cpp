@@ -17,37 +17,16 @@ TEST(river_test, create_river_test)
   std::set<Direction> points;
   points.insert(Direction::north_west);
   points.insert(Direction::south_west);
-  // When creating rivers, an unique ID should be added for each river.
-  std::set<uuids::uuid> ids;
   River a = River(points);
-
-  // New ID should not be empty, and should follow the expected uuid format.
-  uuids::uuid id = a.get_id();
-  ASSERT_TRUE(!id.is_nil());
-  ASSERT_EQ(16, id.as_bytes().size());
-  ASSERT_EQ(uuids::uuid_version::random_number_based, id.version());
-  ASSERT_EQ(uuids::uuid_variant::rfc, id.variant());
-
-  ids.insert(a.get_id());
-
-  // IDs should not be duplicated
-  a = River(points);
-  id = a.get_id();
-  ASSERT_FALSE(ids.contains(id));
-  ids.insert(id);
+  EXPECT_EQ(points, a.get_points());
 
   // Creating with a different amount of river points shouldn't matter
   points.insert(Direction::east);
   a = River(points);
-  id = a.get_id();
-  ASSERT_FALSE(ids.contains(id));
-  ids.insert(id);
+  EXPECT_EQ(points, a.get_points());
 
-  // Copying should transfer everything, including the ID.
+  // Copying should transfer everything.
   River b = River(a);
-  uuids::uuid copied_id = b.get_id();
-  ASSERT_TRUE(ids.contains(copied_id));
-  ASSERT_EQ(id, copied_id);
   ASSERT_EQ(a, b);
 }
 
