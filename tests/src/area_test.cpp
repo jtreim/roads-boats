@@ -117,7 +117,7 @@ TEST(area_test, area_addition_test)
   std::shared_ptr<building::Building> bldg =
       std::make_shared<building::Building>(building::Building::mine);
   a.build(bldg);
-  a.add_resource(portable::Resource::trunks, 10);
+  a.add_resource(portable::Resource::trunks, player::Color::neutral, 10);
 
   std::set<Border> b_borders;
   b_borders.insert(Border::E_right);
@@ -127,8 +127,8 @@ TEST(area_test, area_addition_test)
   Area b = Area(b_borders);
   b.build(Border::E_right);
   b.build(Border::SE_left);
-  b.add_resource(portable::Resource::trunks, 2);
-  b.add_resource(portable::Resource::goose, 3);
+  b.add_resource(portable::Resource::trunks, player::Color::neutral, 2);
+  b.add_resource(portable::Resource::goose, player::Color::neutral, 3);
 
   // When merging two areas that can be combined, the result should contain all
   // borders, roads, resources, transporters, and whether the merged area

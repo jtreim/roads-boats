@@ -10,7 +10,6 @@
 #include <vector>
 
 #include <nlohmann/json.hpp>
-#include <stduuid/include/uuid.h>
 
 #include <buildings/Building.h>
 #include <common/Errors.h>

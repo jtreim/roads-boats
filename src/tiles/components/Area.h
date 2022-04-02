@@ -11,6 +11,7 @@
 #include <common/Errors.h>
 #include <players/Player.h>
 #include <portables/Resource.h>
+#include <portables/Resource_cache.h>
 #include <portables/Transporter.h>
 #include <tiles/components/Border.h>
 
@@ -22,18 +23,22 @@ public:
   Area(std::set<Border> borders);
   Area(std::set<Border> borders, std::set<Border> roads,
        std::shared_ptr<building::Building> building,
-       uint16_t resources[portable::RESOURCE_NAMES_SIZE]);
+       portable::Resource_cache resources);
   Area(const Area &other);
   Area();
   virtual ~Area();
 
-  // Clears the area of all roads/buildings/resources
+  /// Clears the area of all roads/buildings/resources
+  void clear();
+
+  /// Resets the area for a new round
   void reset();
 
   Area operator=(const Area &other);
   Area operator+(const Area &other) const;
   Area operator+(const std::set<Border> borders) const;
-  Area operator+(const uint16_t resources[portable::RESOURCE_NAMES_SIZE]) const;
+  Area operator+(const portable::Resource_cache resources) const;
+  Area operator+(const std::map<portable::Resource, uint16_t> res_list) const;
 
   bool operator==(std::set<Border> &borders);
   bool operator==(std::set<Border> const &borders) const;
@@ -50,7 +55,8 @@ public:
 
   void operator+=(Area const &other);
   void operator+=(std::set<Border> const borders);
-  void operator+=(uint16_t const resources[portable::RESOURCE_NAMES_SIZE]);
+  void operator+=(portable::Resource_cache const resources);
+  void operator+=(const std::map<portable::Resource, uint16_t> res_list);
 
   inline bool has_border(const Border b) { return m_borders.contains(b); }
   template <typename Iter> bool has_borders(Iter begin, Iter end);
@@ -67,26 +73,25 @@ public:
   {
     return m_building;
   };
-  inline uint16_t *get_resources() { return m_resources; }
+  inline std::map<portable::Resource, uint16_t> get_resources()
+  {
+    return m_resources.all();
+  }
+  inline std::map<portable::Resource, uint16_t>
+  get_moveable_resources(const player::Color player)
+  {
+    return m_resources.all_moveable(player);
+  }
   inline uint16_t get_resource_amount(const portable::Resource res)
   {
-    if (portable::is_valid(res))
-    {
-      return m_resources[res];
-    }
-    return 0;
+    return m_resources.get(res);
   }
   inline uint16_t get_resource_amount(const portable::Resource res) const
   {
-    if (portable::is_valid(res))
-    {
-      return m_resources[res];
-    }
-    return 0;
+    return m_resources.get(res);
   }
 
-  bool has_resources() const;
-  std::map<portable::Resource, uint16_t> list_available_resources() const;
+  inline bool has_resources() const { return m_resources.size() > 0; }
 
   /// Checks to see if input Area is contained within this Area.
   /// @param[in] other
@@ -120,13 +125,47 @@ public:
 
   /// Adds resource to the area
   /// @param[in] res Resource to add
+  /// @param[in] player Player that last moved the resource. Can be neutral.
   /// @param[in] amount Amount of resource to add.
   /// @return
   ///   - common::ERR_NONE on success
   ///   - common::ERR_INVALID if the input is invalid
   ///   - common::ERR_FAIL if unable to add resource
-  common::Error add_resource(const portable::Resource res,
-                             const uint16_t amount = 1);
+  common::Error
+  add_resource(const portable::Resource res,
+               const player::Color player = player::Color::neutral,
+               const uint16_t amount = 1)
+  {
+    return m_resources.add(res, player, amount);
+  }
+
+  /// Removes resource from the area
+  /// @param[in] res Resource to remove
+  /// @param[in] amount Amount of resource to remove
+  /// @return
+  ///   - common::ERR_NONE on success
+  ///   - common::ERR_INVALID on invalid resource specified
+  ///   - common::ERR_FAIL if insufficient resource amount to remove
+  common::Error remove_resource(const portable::Resource res,
+                                const uint16_t amount = 1)
+  {
+    return m_resources.remove(res, amount);
+  }
+
+  /// Allows player transporter to pick up resource from the area
+  /// @param[in] res Resource to remove
+  /// @param[in] player Player to be removing the resource. Can be neutral.
+  /// @param[in] amount Amount of resource to remove
+  /// @return
+  ///   - common::ERR_NONE on success
+  ///   - common::ERR_INVALID on invalid resource specified
+  ///   - common::ERR_FAIL if insufficient resource amount to remove
+  common::Error pickup_resource(const portable::Resource res,
+                                const player::Color player,
+                                const uint16_t amount = 1)
+  {
+    return m_resources.move(res, player, amount);
+  }
 
   /// Combines this area with another to make a single area.
   /// @param other Area to be merged with
@@ -157,7 +196,7 @@ private:
   std::set<Border> m_borders;
   std::set<Border> m_roads;
   std::shared_ptr<building::Building> m_building;
-  uint16_t m_resources[portable::RESOURCE_NAMES_SIZE];
+  portable::Resource_cache m_resources;
 };
 } // namespace tile
 

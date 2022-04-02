@@ -14,8 +14,8 @@
 #include <tiles/components/River.h>
 #include <utils/file_handler.h>
 
-static const std::filesystem::path
-    test_dir(std::filesystem::current_path().append("test_res").append("json"));
+static const std::filesystem::path test_dir(
+    std::filesystem::current_path().append("test_files").append("json"));
 
 TEST(file_handler_test, load_hex_test)
 {
@@ -152,12 +152,12 @@ TEST(file_handler_test, load_area_test)
   ASSERT_EQ(common::ERR_NONE, expected.build(tile::Border::NW_left));
   ASSERT_EQ(common::ERR_NONE, expected.build(tile::Border::E_left));
   ASSERT_EQ(common::ERR_NONE, expected.add_resource(portable::Resource::goose));
-  ASSERT_EQ(common::ERR_NONE,
-            expected.add_resource(portable::Resource::fuel, 2));
-  ASSERT_EQ(common::ERR_NONE,
-            expected.add_resource(portable::Resource::iron, 2));
-  ASSERT_EQ(common::ERR_NONE,
-            expected.add_resource(portable::Resource::gold, 5));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(portable::Resource::fuel,
+                                                    player::Color::neutral, 2));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(portable::Resource::iron,
+                                                    player::Color::neutral, 2));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(portable::Resource::gold,
+                                                    player::Color::neutral, 5));
   test_file = area_test_dir;
   test_file /= "area_sample_2.json";
   EXPECT_EQ(common::ERR_NONE, utils::load_json<tile::Area>(test_file, actual));
@@ -367,9 +367,11 @@ TEST(file_handler_test, dump_area_test)
   exp_borders.insert(tile::Border::W_right);
   tile::Area test_object(exp_borders);
   ASSERT_EQ(common::ERR_NONE,
-            test_object.add_resource(portable::Resource::iron, 3));
+            test_object.add_resource(portable::Resource::iron,
+                                     player::Color::neutral, 3));
   ASSERT_EQ(common::ERR_NONE,
-            test_object.add_resource(portable::Resource::goose, 20));
+            test_object.add_resource(portable::Resource::goose,
+                                     player::Color::neutral, 20));
   ASSERT_EQ(common::ERR_NONE, test_object.build(tile::Border::E_left));
   ASSERT_EQ(common::ERR_NONE, test_object.build(tile::Border::NW_left));
   tile::Area loaded_object;
