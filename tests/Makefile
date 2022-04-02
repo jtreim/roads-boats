@@ -109,6 +109,7 @@ area_test : $(TEST_BUILD_DIR)/area_test.o $(TEST_BUILD_DIR)/gtest_main.a
 			$(BUILD_DIR)/buildings/Building.o \
 			$(BUILD_DIR)/players/Player.o \
 			$(BUILD_DIR)/portables/Transporter.o \
+			$(BUILD_DIR)/portables/Resource_cache.o \
 			$(BUILD_DIR)/tiles/components/Area.o \
 			$^ -o $(TEST_BUILD_DIR)/$@
 	$(TEST_BUILD_DIR)/$@.exe
@@ -118,6 +119,7 @@ tile_test : $(TEST_BUILD_DIR)/tile_test.o $(TEST_BUILD_DIR)/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
 			$(BUILD_DIR)/buildings/Building.o \
 			$(BUILD_DIR)/portables/Transporter.o \
+			$(BUILD_DIR)/portables/Resource_cache.o \
 			$(BUILD_DIR)/tiles/components/Hex.o \
 			$(BUILD_DIR)/tiles/components/Area.o \
 			$(BUILD_DIR)/tiles/components/River.o \
@@ -130,6 +132,7 @@ tile_map_test : $(TEST_BUILD_DIR)/tile_map_test.o $(TEST_BUILD_DIR)/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
 			$(BUILD_DIR)/buildings/Building.o \
 			$(BUILD_DIR)/portables/Transporter.o \
+			$(BUILD_DIR)/portables/Resource_cache.o \
 			$(BUILD_DIR)/tiles/components/Hex.o \
 			$(BUILD_DIR)/tiles/components/Area.o \
 			$(BUILD_DIR)/tiles/components/River.o \
@@ -142,6 +145,7 @@ file_handler_test : $(TEST_BUILD_DIR)/file_handler_test.o $(TEST_BUILD_DIR)/gtes
 	$(MAKE) -C ../
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
 			$(BUILD_DIR)/buildings/Building.o \
+			$(BUILD_DIR)/portables/Resource_cache.o \
 			$(BUILD_DIR)/tiles/components/Hex.o \
 			$(BUILD_DIR)/tiles/components/River.o \
 			$(BUILD_DIR)/tiles/components/Area.o \
