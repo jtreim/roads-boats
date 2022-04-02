@@ -3,9 +3,9 @@ The goal: make a working executable of the Splotter board game **Roads and Boats
 
 Code formatting should follow the .clang-format rules found in the repo.
 
-See references for [condensed rules](https://github.com/jtreim/roads-boats/blob/main/rules_condensed.pdf), [full rulebook](https://github.com/jtreim/roads-boats/blob/main/rules.pdf), and [player aids](https://github.com/jtreim/roads-boats/blob/main/player_aid.pdf) for more info about the game.
+See references for [condensed rules](https://github.com/jtreim/roads-boats/blob/main/misc/rules_condensed.pdf), [full rulebook](https://github.com/jtreim/roads-boats/blob/main/misc/rules.pdf), and [player aids](https://github.com/jtreim/roads-boats/blob/main/misc/player_aid.pdf) for more info about the game.
 
-See [expansion rules](https://github.com/jtreim/roads-boats/blob/main/etcetera.pdf) for any additional rules not in the base game.
+See [expansion rules](https://github.com/jtreim/roads-boats/blob/main/misc/etcetera.pdf) for any additional rules not in the base game.
 
 ## Milestones
 ### Base functionality
