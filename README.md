@@ -12,11 +12,11 @@ See [expansion rules](https://github.com/jtreim/roads-boats/blob/main/etcetera.p
 - [X] A valid map with land and sea tiles can be defined.
   - [x] Rivers flow naturally across land and into sea tiles.
   - [X] Tiles can be organized into a map structure.
-  - [ ] A map can be printed as a JSON structure.
+  - [X] A map can be printed as a JSON structure.
   - [ ] A map can be loaded from a JSON structure.
 - [X] Resources can exist on a map.
   - [X] Resource types are defined.
-  - [ ] Resources can be printed as JSON inside a map's JSON structure.
+  - [X] Resources can be printed as JSON inside a map's JSON structure.
 - [ ] Buildings can exist on a map.
   - [ ] Buildings are restricted to existing on their respective tile types.
   - [ ] Buildings can receive valid input goods and produce accurate outputs.
