@@ -1,0 +1,14 @@
+{
+  "gold": [
+    {
+      "type": "gold",
+      "carriers": ["blue"]
+    }
+  ],
+  "0": [
+    {
+      "type": "trunks",
+      "carriers": []
+    }
+  ]
+}

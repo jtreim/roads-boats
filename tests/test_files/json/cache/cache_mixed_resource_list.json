@@ -1,0 +1,38 @@
+{
+  "goose": [
+    {
+      "type": "goose",
+      "carriers": []
+    },
+    {
+      "type": "goose",
+      "carriers": ["blue"]
+    },
+    {
+      "type": "trunks",
+      "carriers": ["yellow"]
+    },
+    {
+      "type": "trunks",
+      "carriers": []
+    }
+  ],
+  "fuel": [
+    {
+      "type": "fuel",
+      "carriers": ["red", "black", "blue"]
+    }
+  ],
+  "iron": [
+    {
+      "type": "iron",
+      "carriers": []
+    }
+  ],
+  "gold": [
+    {
+      "type": "gold",
+      "carriers": ["blue"]
+    }
+  ]
+}

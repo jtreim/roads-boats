@@ -12,11 +12,13 @@
 #include <buildings/Building.h>
 #include <common/Errors.h>
 #include <players/Player.h>
-#include <portables/Resource.h>
-#include <portables/Transporter.h>
+#include <portables/resources/Cache.h>
+#include <portables/resources/Resource.h>
+#include <portables/transporters/Transporter.h>
 #include <tiles/components/Area.h>
 #include <tiles/components/Border.h>
 #include <utils/id_utils.h>
+
 
 namespace tile
 {
@@ -24,7 +26,7 @@ Area::Area(std::set<Border> borders) : m_borders(borders) {}
 
 Area::Area(std::set<Border> borders, std::set<Border> roads,
            std::shared_ptr<building::Building> building,
-           portable::Resource_cache resources)
+           portable::Cache resources)
     : m_roads(roads), m_borders(borders), m_building(building),
       m_resources(resources)
 {
@@ -94,7 +96,7 @@ Area Area::operator+(const std::set<Border> borders) const
   return new_area;
 }
 
-Area Area::operator+(const portable::Resource_cache resources) const
+Area Area::operator+(const portable::Cache resources) const
 {
   Area new_area(m_borders);
   new_area.m_building = m_building;
@@ -103,8 +105,9 @@ Area Area::operator+(const portable::Resource_cache resources) const
   return new_area;
 }
 
-Area Area::
-operator+(const std::map<portable::Resource, uint16_t> res_list) const
+Area Area::operator+(
+    const std::map<portable::Resource::Type, std::vector<portable::Resource>>
+        res_list) const
 {
   Area new_area(m_borders);
   new_area.m_building = m_building;
@@ -180,12 +183,14 @@ void Area::operator+=(std::set<Border> const borders)
              std::inserter(m_borders, m_borders.begin()));
 }
 
-void Area::operator+=(portable::Resource_cache const resources)
+void Area::operator+=(portable::Cache const resources)
 {
   m_resources += resources;
 }
 
-void Area::operator+=(const std::map<portable::Resource, uint16_t> res_list)
+void Area::
+operator+=(std::map<portable::Resource::Type, std::vector<portable::Resource>>
+               res_list)
 {
   m_resources += res_list;
 }
@@ -290,6 +295,22 @@ common::Error Area::build(const Border border)
 
   m_roads.insert(border);
   return common::ERR_NONE;
+}
+
+common::Error Area::add_resource(const portable::Resource::Type res_type,
+                                 const uint16_t amount)
+{
+  common::Error err = common::ERR_NONE;
+  for (uint16_t i = 0; i < amount; i++)
+  {
+    portable::Resource r(res_type);
+    err = m_resources.add(r);
+    if (err)
+    {
+      break;
+    }
+  }
+  return err;
 }
 
 common::Error Area::merge(Area &other)
@@ -413,9 +434,9 @@ void to_json(nlohmann::json &j, const Area &area)
   // }
 
   // List resources
-  nlohmann::json res_map;
-  to_json(res_map, area.m_resources);
-  j["resources"] = res_map;
+  nlohmann::json res_cache;
+  to_json(res_cache, area.m_resources);
+  j["resources"] = res_cache;
 }
 
 void from_json(const nlohmann::json &j, Area &area)
@@ -445,6 +466,6 @@ void from_json(const nlohmann::json &j, Area &area)
 
   // TODO: Add logic to load a building from json
 
-  area.m_resources = j.at("resources").get<portable::Resource_cache>();
+  area.m_resources = j.at("resources").get<portable::Cache>();
 }
 } // namespace tile

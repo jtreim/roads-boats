@@ -14,8 +14,8 @@
 #include <buildings/Building.h>
 #include <common/Errors.h>
 #include <players/Player.h>
-#include <portables/Resource.h>
-#include <portables/Transporter.h>
+#include <portables/resources/Resource.h>
+#include <portables/transporters/Transporter.h>
 #include <tiles/components/Area.h>
 #include <tiles/components/Border.h>
 #include <tiles/components/Hex.h>
