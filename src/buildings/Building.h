@@ -1,9 +1,14 @@
 #ifndef BUILDING_H
 #define BUILDING_H
 
+#include <memory>
+
 #include <nlohmann/json.hpp>
 
 #include <common/Errors.h>
+#include <portables/Portable.h>
+#include <portables/resources/Resource.h>
+#include <portables/transporters/Transporter.h>
 
 namespace building
 {
@@ -33,23 +38,39 @@ public:
   Building(const Type &r);
   ~Building();
 
-  inline Type get_type() const { return m_p_type; };
+  inline Type get_type() const { return m_type; };
   inline std::string get_name() const;
 
-  Building operator=(const Building &other);
-  Building operator=(const Type &other);
   bool operator==(Building const &other) const;
   bool operator==(Type const &t) const;
+  bool operator!=(Building const &other) const;
+  bool operator!=(Type const &t) const;
+
+  /// Determines whether the building can produce with the given resources
+  /// @param[in] input  List of resources available to the building
+  virtual bool can_produce(const std::vector<portable::Resource> input) = 0;
+
+  /// Produces resource/transporter with the input resources.
+  /// @param[in] input  Resources building can use to produce.
+  /// @param[in] nearby_transporters  Transporters that currently have access to
+  /// this building.
+  /// @param[out] output  Result of production. null on failure to produce
+  /// @return
+  ///   - common::ERR_NONE on success.
+  ///   - common::ERR_INVALID on invalid resource or transporter input.
+  ///   - common::ERR_FAIL on insufficient resources given as input.
+  virtual common::Error produce(
+      std::vector<portable::Resource> &input,
+      std::vector<std::shared_ptr<portable::Transporter>> &nearby_transporters,
+      std::shared_ptr<portable::Portable> &output) = 0;
 
   // helpers
-  nlohmann::json to_json() const;
-
   friend std::ostream &operator<<(std::ostream &os,
                                   const building::Building &b);
 
 protected:
 private:
-  Type m_p_type;
+  Type m_type;
 };
 
 } // namespace building

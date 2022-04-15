@@ -1,5 +1,6 @@
-#include <common/Errors.h>
 #include <gtest/gtest.h>
+
+#include <common/Errors.h>
 
 TEST(base_test, generic)
 {

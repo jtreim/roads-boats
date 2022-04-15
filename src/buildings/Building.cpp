@@ -18,43 +18,30 @@ static const std::string BUILDING_NAMES[] = {
 static const size_t BUILDING_NAMES_SIZE =
     sizeof BUILDING_NAMES / sizeof BUILDING_NAMES[0];
 
-Building::Building(const Building &other) : m_p_type(other.get_type()) {}
-Building::Building(const Type &type) : m_p_type(type) {}
+Building::Building(const Building &other) : m_type(other.get_type()) {}
+Building::Building(const Type &type) : m_type(type) {}
 Building::~Building() {}
 
 std::string Building::get_name() const
 {
   std::string retval = "unknown";
-  if (BUILDING_NAMES_SIZE > m_p_type)
+  if (BUILDING_NAMES_SIZE > m_type)
   {
-    retval = BUILDING_NAMES[m_p_type];
+    retval = BUILDING_NAMES[m_type];
   }
   return retval;
 }
 
-Building Building::operator=(const Building &other)
-{
-  m_p_type = other.m_p_type;
-  return (*this);
-}
-Building Building::operator=(const Type &other)
-{
-  m_p_type = other;
-  return (*this);
-}
 bool Building::operator==(Building const &other) const
 {
-  return m_p_type == other.get_type();
+  return m_type == other.get_type();
 }
-
-bool Building::operator==(Type const &t) const { return m_p_type == t; }
-
-nlohmann::json Building::to_json() const
+bool Building::operator==(Type const &t) const { return m_type == t; }
+bool Building::operator!=(Building const &other) const
 {
-  nlohmann::json retval;
-  retval["type"] = get_name();
-  return retval;
+  return !(*this == other);
 }
+bool Building::operator!=(Type const &t) const { return !(*this == t); }
 
 std::ostream &operator<<(std::ostream &os, const building::Building &b)
 {

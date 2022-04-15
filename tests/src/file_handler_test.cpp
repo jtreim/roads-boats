@@ -7,7 +7,8 @@
 #include <buildings/Building.h>
 #include <common/Errors.h>
 #include <players/Player.h>
-#include <portables/Resource.h>
+#include <portables/resources/Cache.h>
+#include <portables/resources/Resource.h>
 #include <tiles/Tile.h>
 #include <tiles/components/Area.h>
 #include <tiles/components/Hex.h>
@@ -16,6 +17,110 @@
 
 static const std::filesystem::path test_dir(
     std::filesystem::current_path().append("test_files").append("json"));
+
+TEST(file_handler_test, load_resource_test)
+{
+  std::filesystem::path res_test_dir = test_dir;
+  res_test_dir.append("resource");
+  std::filesystem::path test_file;
+  portable::Resource actual;
+  std::set<player::Color> expected_carriers;
+  expected_carriers.insert(player::Color::black);
+  portable::Resource expected(portable::Resource::Type::trunks,
+                              expected_carriers);
+
+  // Invalid JSON keys
+  test_file = res_test_dir;
+  test_file /= "res_invalid_key.json";
+  EXPECT_EQ(common::ERR_INVALID,
+            utils::load_json<portable::Resource>(test_file, actual));
+  EXPECT_NE(expected, actual);
+
+  // Invalid field type
+  test_file = res_test_dir;
+  test_file /= "res_invalid_field.json";
+  EXPECT_EQ(common::ERR_INVALID,
+            utils::load_json<portable::Resource>(test_file, actual));
+  EXPECT_NE(expected, actual);
+
+  // Invalid carriers
+  test_file = res_test_dir;
+  test_file /= "res_invalid_carrier1.json";
+  EXPECT_EQ(common::ERR_INVALID,
+            utils::load_json<portable::Resource>(test_file, actual));
+  EXPECT_NE(expected, actual);
+
+  // Invalid carriers
+  test_file = res_test_dir;
+  test_file /= "res_invalid_carrier2.json";
+  EXPECT_EQ(common::ERR_INVALID,
+            utils::load_json<portable::Resource>(test_file, actual));
+  EXPECT_NE(expected, actual);
+
+  // Loading valid json files should be fine
+  test_file = res_test_dir;
+  test_file /= "res_valid.json";
+  EXPECT_EQ(common::ERR_NONE,
+            utils::load_json<portable::Resource>(test_file, actual));
+  EXPECT_EQ(expected, actual);
+}
+
+TEST(file_handler_test, load_cache_test)
+{
+  std::filesystem::path cache_test_dir = test_dir;
+  cache_test_dir.append("cache");
+  std::filesystem::path test_file = cache_test_dir;
+  portable::Cache actual;
+
+  // Match expected to cache_sample.json
+  portable::Cache expected;
+  std::set<player::Color> carriers;
+  carriers.insert(player::Color::blue);
+  ASSERT_EQ(common::ERR_NONE,
+            expected.add(portable::Resource(portable::Resource::Type::iron)));
+  ASSERT_EQ(common::ERR_NONE,
+            expected.add(portable::Resource(portable::Resource::Type::goose)));
+  ASSERT_EQ(common::ERR_NONE,
+            expected.add(portable::Resource(portable::Resource::Type::goose)));
+  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource(
+                                  portable::Resource::Type::goose, carriers)));
+  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource(
+                                  portable::Resource::Type::goose, carriers)));
+  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource(
+                                  portable::Resource::Type::gold, carriers)));
+  carriers.insert(player::red);
+  carriers.insert(player::black);
+  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource(
+                                  portable::Resource::Type::fuel, carriers)));
+
+  // Invalid JSON keys
+  test_file = cache_test_dir;
+  test_file /= "cache_invalid_key.json";
+  EXPECT_EQ(common::ERR_INVALID,
+            utils::load_json<portable::Cache>(test_file, actual));
+  EXPECT_NE(expected, actual);
+
+  // Invalid field type
+  test_file = cache_test_dir;
+  test_file /= "cache_invalid_field_type.json";
+  EXPECT_EQ(common::ERR_INVALID,
+            utils::load_json<portable::Cache>(test_file, actual));
+  EXPECT_NE(expected, actual);
+
+  // Mixed resource within a single list
+  test_file = cache_test_dir;
+  test_file /= "cache_mixed_resource_list.json";
+  EXPECT_EQ(common::ERR_INVALID,
+            utils::load_json<portable::Cache>(test_file, actual));
+  EXPECT_NE(expected, actual);
+
+  // Loading valid json files should be fine
+  test_file = cache_test_dir;
+  test_file /= "cache_sample.json";
+  EXPECT_EQ(common::ERR_NONE,
+            utils::load_json<portable::Cache>(test_file, actual));
+  EXPECT_EQ(expected, actual);
+}
 
 TEST(file_handler_test, load_hex_test)
 {
@@ -149,15 +254,24 @@ TEST(file_handler_test, load_area_test)
   EXPECT_EQ(common::ERR_NONE, utils::load_json<tile::Area>(test_file, actual));
   EXPECT_EQ(expected, actual);
 
+  // Test that resources/roads are loaded as expected
+  portable::Resource goose1 =
+      portable::Resource(portable::Resource::Type::goose);
+  std::set<player::Color> carriers;
+  carriers.insert(player::Color::blue);
+  portable::Resource goose2 =
+      portable::Resource(portable::Resource::Type::goose, carriers);
+  portable::Resource fuel = portable::Resource(portable::Resource::Type::fuel);
+  portable::Resource iron = portable::Resource(portable::Resource::Type::iron);
+  portable::Resource gold =
+      portable::Resource(portable::Resource::Type::gold, carriers);
   ASSERT_EQ(common::ERR_NONE, expected.build(tile::Border::NW_left));
   ASSERT_EQ(common::ERR_NONE, expected.build(tile::Border::E_left));
-  ASSERT_EQ(common::ERR_NONE, expected.add_resource(portable::Resource::goose));
-  ASSERT_EQ(common::ERR_NONE, expected.add_resource(portable::Resource::fuel,
-                                                    player::Color::neutral, 2));
-  ASSERT_EQ(common::ERR_NONE, expected.add_resource(portable::Resource::iron,
-                                                    player::Color::neutral, 2));
-  ASSERT_EQ(common::ERR_NONE, expected.add_resource(portable::Resource::gold,
-                                                    player::Color::neutral, 5));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(goose1));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(goose2));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(fuel));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(iron));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(gold));
   test_file = area_test_dir;
   test_file /= "area_sample_2.json";
   EXPECT_EQ(common::ERR_NONE, utils::load_json<tile::Area>(test_file, actual));
@@ -286,6 +400,70 @@ TEST(file_handler_test, load_tile_map_test)
   tile_map_test_dir.append("tile_map");
 }
 
+TEST(file_handler_test, dump_resource_test)
+{
+  std::filesystem::path res_test_dir = test_dir;
+  res_test_dir.append("resource");
+  std::filesystem::path test_file = res_test_dir;
+  std::set<player::Color> exp_carriers;
+  exp_carriers.insert(player::Color::black);
+  exp_carriers.insert(player::Color::red);
+  portable::Resource test_object(portable::Resource::Type::stone, exp_carriers);
+  portable::Resource loaded_object;
+
+  // Dumping to a file that didn't exist prior should create the file for us.
+  test_file /= "new_resource.json";
+  std::filesystem::remove(test_file);
+  ASSERT_FALSE(std::filesystem::exists(test_file));
+  EXPECT_EQ(common::ERR_NONE,
+            utils::dump_json<portable::Resource>(test_file, test_object));
+  EXPECT_TRUE(std::filesystem::exists(test_file));
+
+  // Dumping a resource should result in a file we can read
+  EXPECT_EQ(common::ERR_NONE,
+            utils::load_json<portable::Resource>(test_file, loaded_object));
+  // Reloading the same file should result in the same object
+  EXPECT_EQ(test_object, loaded_object);
+
+  // Reset testing folder
+  std::filesystem::remove(test_file);
+}
+
+TEST(file_handler_test, dump_cache_test)
+{
+  std::filesystem::path cache_test_dir = test_dir;
+  cache_test_dir.append("cache");
+  std::filesystem::path test_file = cache_test_dir;
+  portable::Cache test_object;
+  std::map<portable::Resource::Type, std::vector<portable::Resource>> cache_map;
+  std::set<player::Color> carriers;
+  carriers.insert(player::Color::blue);
+  ASSERT_EQ(common::ERR_NONE, test_object.add(portable::Resource(
+                                  portable::Resource::Type::bomb)));
+  ASSERT_EQ(common::ERR_NONE, test_object.add(portable::Resource(
+                                  portable::Resource::Type::bomb, carriers)));
+  ASSERT_EQ(common::ERR_NONE, test_object.add(portable::Resource(
+                                  portable::Resource::Type::boards)));
+  portable::Cache loaded_object;
+
+  // Dumping to a file that didn't exist prior should create the file for us.
+  test_file /= "new_cache.json";
+  std::filesystem::remove(test_file);
+  ASSERT_FALSE(std::filesystem::exists(test_file));
+  EXPECT_EQ(common::ERR_NONE,
+            utils::dump_json<portable::Cache>(test_file, test_object));
+  EXPECT_TRUE(std::filesystem::exists(test_file));
+
+  // Dumping a hex should result in a file we can read.
+  EXPECT_EQ(common::ERR_NONE,
+            utils::load_json<portable::Cache>(test_file, loaded_object));
+  // Reloading the same file should result in the same object
+  EXPECT_EQ(test_object, loaded_object);
+
+  // Reset testing folder
+  std::filesystem::remove(test_file);
+}
+
 TEST(file_handler_test, dump_hex_test)
 {
   std::filesystem::path hex_test_dir = test_dir;
@@ -366,12 +544,6 @@ TEST(file_handler_test, dump_area_test)
   exp_borders.insert(tile::Border::E_left);
   exp_borders.insert(tile::Border::W_right);
   tile::Area test_object(exp_borders);
-  ASSERT_EQ(common::ERR_NONE,
-            test_object.add_resource(portable::Resource::iron,
-                                     player::Color::neutral, 3));
-  ASSERT_EQ(common::ERR_NONE,
-            test_object.add_resource(portable::Resource::goose,
-                                     player::Color::neutral, 20));
   ASSERT_EQ(common::ERR_NONE, test_object.build(tile::Border::E_left));
   ASSERT_EQ(common::ERR_NONE, test_object.build(tile::Border::NW_left));
   tile::Area loaded_object;

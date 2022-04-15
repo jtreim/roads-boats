@@ -7,6 +7,7 @@ MODULES   := buildings \
 						 common \
 						 players \
 						 portables \
+						 portables/resources \
 						 portables/transporters \
 						 tiles \
 						 tiles/components \
