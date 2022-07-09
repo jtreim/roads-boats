@@ -4,6 +4,8 @@ LD        := g++
 FLAGS     := -g -Wall -Wextra -pthread -std=c++20
 
 MODULES   := buildings \
+						 buildings/factories \
+						 buildings/producers \
 						 common \
 						 players \
 						 portables \

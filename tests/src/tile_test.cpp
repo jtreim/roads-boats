@@ -89,10 +89,9 @@ TEST(tile_test, create_tile_test)
   for (int i = 0; i < MAX_DIRECTIONS; i++)
   {
     ASSERT_EQ(nullptr, test_object.get_neighbor(static_cast<Direction>(i)));
-    std::pair<player::Color, uint8_t> wall =
-        test_object.get_wall(static_cast<Direction>(i));
-    ASSERT_EQ(player::Color::neutral, wall.first);
-    ASSERT_EQ(0, wall.second);
+    building::Wall wall = test_object.get_wall(static_cast<Direction>(i));
+    ASSERT_EQ(player::Color::neutral, wall.color);
+    ASSERT_EQ(0, wall.thickness);
   }
 
   ASSERT_EQ(ALL_BORDERS, (*test_object.get_areas().at(0)));
@@ -392,7 +391,7 @@ TEST(tile_test, build_bridge_test)
   EXPECT_TRUE(test_object->get_river(Direction::north_east)
                   ->has_bridge(Direction::north_east));
 
-  // Don't allow building at the same location
+  // Don't allow building at a location twice
   EXPECT_EQ(common::ERR_FAIL, test_object->build_bridge(Direction::north_east));
 
   // Building at another point on a river fork should be fine

@@ -38,7 +38,15 @@ CXXFLAGS += -g -Wall -Wextra -pthread -std=c++20
 
 # All tests produced by this Makefile.  Remember to add new tests you
 # created to the list.
-TESTS = base_test resource_test hex_test river_test area_test tile_test tile_map_test file_handler_test
+TESTS = base_test \
+				resource_test \
+				building_test \
+				hex_test \
+				river_test \
+				area_test \
+				tile_test \
+				tile_map_test \
+				file_handler_test
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
@@ -97,6 +105,33 @@ resource_test : $(TEST_BUILD_DIR)/resource_test.o $(TEST_BUILD_DIR)/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $(TEST_BUILD_DIR)/$@
 	$(TEST_BUILD_DIR)/$@.exe
 
+building_test : $(TEST_BUILD_DIR)/building_test.o $(TEST_BUILD_DIR)/gtest_main.a
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
+	$(BUILD_DIR)/portables/resources/Cache.o \
+	$(BUILD_DIR)/buildings/factories/Raft_factory.o \
+	$(BUILD_DIR)/buildings/factories/Rowboat_factory.o \
+	$(BUILD_DIR)/buildings/factories/Steamer_factory.o \
+	$(BUILD_DIR)/buildings/factories/Truck_factory.o \
+	$(BUILD_DIR)/buildings/factories/Wagon_factory.o \
+	$(BUILD_DIR)/buildings/producers/Clay_pit.o \
+	$(BUILD_DIR)/buildings/producers/Coal_burner.o \
+	$(BUILD_DIR)/buildings/producers/Mine.o \
+	$(BUILD_DIR)/buildings/producers/Mint.o \
+	$(BUILD_DIR)/buildings/producers/Oil_rig.o \
+	$(BUILD_DIR)/buildings/producers/Papermill.o \
+	$(BUILD_DIR)/buildings/producers/Quarry.o \
+	$(BUILD_DIR)/buildings/producers/Sawmill.o \
+	$(BUILD_DIR)/buildings/producers/Stock_exchange.o \
+	$(BUILD_DIR)/buildings/producers/Stone_factory.o \
+	$(BUILD_DIR)/buildings/producers/Woodcutter.o \
+	$(BUILD_DIR)/portables/transporters/Transporter.o \
+	$(BUILD_DIR)/tiles/components/Hex.o \
+	$(BUILD_DIR)/tiles/components/Area.o \
+	$(BUILD_DIR)/tiles/components/River.o \
+	$(BUILD_DIR)/tiles/Tile.o \
+	$^ -o $(TEST_BUILD_DIR)/$@
+	$(TEST_BUILD_DIR)/$@.exe
+
 hex_test : $(TEST_BUILD_DIR)/hex_test.o $(TEST_BUILD_DIR)/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $(BUILD_DIR)/tiles/components/Hex.o $^ -o $(TEST_BUILD_DIR)/$@
 	$(TEST_BUILD_DIR)/$@.exe
@@ -110,18 +145,51 @@ river_test : $(TEST_BUILD_DIR)/river_test.o $(TEST_BUILD_DIR)/gtest_main.a
 
 area_test : $(TEST_BUILD_DIR)/area_test.o $(TEST_BUILD_DIR)/gtest_main.a
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
-			$(BUILD_DIR)/buildings/Building.o \
+			$(BUILD_DIR)/buildings/factories/Raft_factory.o \
+			$(BUILD_DIR)/buildings/factories/Rowboat_factory.o \
+			$(BUILD_DIR)/buildings/factories/Steamer_factory.o \
+			$(BUILD_DIR)/buildings/factories/Truck_factory.o \
+			$(BUILD_DIR)/buildings/factories/Wagon_factory.o \
+			$(BUILD_DIR)/buildings/producers/Clay_pit.o \
+			$(BUILD_DIR)/buildings/producers/Coal_burner.o \
+			$(BUILD_DIR)/buildings/producers/Mine.o \
+			$(BUILD_DIR)/buildings/producers/Mint.o \
+			$(BUILD_DIR)/buildings/producers/Oil_rig.o \
+			$(BUILD_DIR)/buildings/producers/Papermill.o \
+			$(BUILD_DIR)/buildings/producers/Quarry.o \
+			$(BUILD_DIR)/buildings/producers/Sawmill.o \
+			$(BUILD_DIR)/buildings/producers/Stock_exchange.o \
+			$(BUILD_DIR)/buildings/producers/Stone_factory.o \
+			$(BUILD_DIR)/buildings/producers/Woodcutter.o \
 			$(BUILD_DIR)/players/Player.o \
 			$(BUILD_DIR)/portables/transporters/Transporter.o \
 			$(BUILD_DIR)/portables/resources/Cache.o \
+			$(BUILD_DIR)/tiles/components/Hex.o \
+			$(BUILD_DIR)/tiles/components/River.o \
 			$(BUILD_DIR)/tiles/components/Area.o \
+			$(BUILD_DIR)/tiles/Tile.o \
 			$^ -o $(TEST_BUILD_DIR)/$@
 	$(TEST_BUILD_DIR)/$@.exe
 
 tile_test : $(TEST_BUILD_DIR)/tile_test.o $(TEST_BUILD_DIR)/gtest_main.a
 	$(MAKE) -C ../
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
-			$(BUILD_DIR)/buildings/Building.o \
+			$(BUILD_DIR)/buildings/factories/Raft_factory.o \
+			$(BUILD_DIR)/buildings/factories/Rowboat_factory.o \
+			$(BUILD_DIR)/buildings/factories/Steamer_factory.o \
+			$(BUILD_DIR)/buildings/factories/Truck_factory.o \
+			$(BUILD_DIR)/buildings/factories/Wagon_factory.o \
+			$(BUILD_DIR)/buildings/producers/Clay_pit.o \
+			$(BUILD_DIR)/buildings/producers/Coal_burner.o \
+			$(BUILD_DIR)/buildings/producers/Mine.o \
+			$(BUILD_DIR)/buildings/producers/Mint.o \
+			$(BUILD_DIR)/buildings/producers/Oil_rig.o \
+			$(BUILD_DIR)/buildings/producers/Papermill.o \
+			$(BUILD_DIR)/buildings/producers/Quarry.o \
+			$(BUILD_DIR)/buildings/producers/Sawmill.o \
+			$(BUILD_DIR)/buildings/producers/Stock_exchange.o \
+			$(BUILD_DIR)/buildings/producers/Stone_factory.o \
+			$(BUILD_DIR)/buildings/producers/Woodcutter.o \
 			$(BUILD_DIR)/portables/transporters/Transporter.o \
 			$(BUILD_DIR)/portables/resources/Cache.o \
 			$(BUILD_DIR)/tiles/components/Hex.o \
@@ -134,7 +202,22 @@ tile_test : $(TEST_BUILD_DIR)/tile_test.o $(TEST_BUILD_DIR)/gtest_main.a
 tile_map_test : $(TEST_BUILD_DIR)/tile_map_test.o $(TEST_BUILD_DIR)/gtest_main.a
 	$(MAKE) -C ../
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
-			$(BUILD_DIR)/buildings/Building.o \
+			$(BUILD_DIR)/buildings/factories/Raft_factory.o \
+			$(BUILD_DIR)/buildings/factories/Rowboat_factory.o \
+			$(BUILD_DIR)/buildings/factories/Steamer_factory.o \
+			$(BUILD_DIR)/buildings/factories/Truck_factory.o \
+			$(BUILD_DIR)/buildings/factories/Wagon_factory.o \
+			$(BUILD_DIR)/buildings/producers/Clay_pit.o \
+			$(BUILD_DIR)/buildings/producers/Coal_burner.o \
+			$(BUILD_DIR)/buildings/producers/Mine.o \
+			$(BUILD_DIR)/buildings/producers/Mint.o \
+			$(BUILD_DIR)/buildings/producers/Oil_rig.o \
+			$(BUILD_DIR)/buildings/producers/Papermill.o \
+			$(BUILD_DIR)/buildings/producers/Quarry.o \
+			$(BUILD_DIR)/buildings/producers/Sawmill.o \
+			$(BUILD_DIR)/buildings/producers/Stock_exchange.o \
+			$(BUILD_DIR)/buildings/producers/Stone_factory.o \
+			$(BUILD_DIR)/buildings/producers/Woodcutter.o \
 			$(BUILD_DIR)/portables/transporters/Transporter.o \
 			$(BUILD_DIR)/portables/resources/Cache.o \
 			$(BUILD_DIR)/tiles/components/Hex.o \
@@ -148,7 +231,22 @@ tile_map_test : $(TEST_BUILD_DIR)/tile_map_test.o $(TEST_BUILD_DIR)/gtest_main.a
 file_handler_test : $(TEST_BUILD_DIR)/file_handler_test.o $(TEST_BUILD_DIR)/gtest_main.a
 	$(MAKE) -C ../
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
-			$(BUILD_DIR)/buildings/Building.o \
+			$(BUILD_DIR)/buildings/factories/Raft_factory.o \
+			$(BUILD_DIR)/buildings/factories/Rowboat_factory.o \
+			$(BUILD_DIR)/buildings/factories/Steamer_factory.o \
+			$(BUILD_DIR)/buildings/factories/Truck_factory.o \
+			$(BUILD_DIR)/buildings/factories/Wagon_factory.o \
+			$(BUILD_DIR)/buildings/producers/Clay_pit.o \
+			$(BUILD_DIR)/buildings/producers/Coal_burner.o \
+			$(BUILD_DIR)/buildings/producers/Mine.o \
+			$(BUILD_DIR)/buildings/producers/Mint.o \
+			$(BUILD_DIR)/buildings/producers/Oil_rig.o \
+			$(BUILD_DIR)/buildings/producers/Papermill.o \
+			$(BUILD_DIR)/buildings/producers/Quarry.o \
+			$(BUILD_DIR)/buildings/producers/Sawmill.o \
+			$(BUILD_DIR)/buildings/producers/Stock_exchange.o \
+			$(BUILD_DIR)/buildings/producers/Stone_factory.o \
+			$(BUILD_DIR)/buildings/producers/Woodcutter.o \
 			$(BUILD_DIR)/portables/resources/Cache.o \
 			$(BUILD_DIR)/tiles/components/Hex.o \
 			$(BUILD_DIR)/tiles/components/River.o \

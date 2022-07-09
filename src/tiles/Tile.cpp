@@ -98,8 +98,7 @@ void Tile::init()
 {
   for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
-    m_walls[i] =
-        std::make_pair<player::Color, uint8_t>(player::Color::neutral, 0);
+    m_walls[i] = building::Wall(player::Color::neutral, 0);
   }
 
   if (Terrain::sea == m_terrain)
@@ -128,7 +127,7 @@ void Tile::reset()
   clear_neighbors();
   for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
-    m_walls[i] = std::make_pair<player::Color, uint8_t>(player::neutral, 0);
+    m_walls[i] = building::Wall(player::neutral, 0);
   }
   m_rot_locked = false;
   m_hex_set = false;
@@ -320,13 +319,12 @@ std::shared_ptr<Tile> Tile::get_neighbor(Direction direction)
 
 std::shared_ptr<Tile> *Tile::get_neighbors() { return m_neighbors; }
 
-std::map<Direction, std::pair<player::Color, uint8_t>>
-Tile::get_built_walls() const
+std::map<Direction, building::Wall> Tile::get_built_walls() const
 {
-  std::map<Direction, std::pair<player::Color, uint8_t>> retval;
+  std::map<Direction, building::Wall> retval;
   for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
-    if (m_walls[i].second > 0)
+    if (m_walls[i].thickness > 0)
     {
       retval.at(static_cast<Direction>(i)) = m_walls[i];
     }
@@ -382,9 +380,9 @@ common::Error Tile::remove_neighbor(Direction direction)
   return common::ERR_NONE;
 }
 
-std::shared_ptr<building::Building> Tile::get_building() const
+building::Building *Tile::get_building() const
 {
-  std::shared_ptr<building::Building> retval;
+  building::Building *retval;
   for (auto area : m_areas)
   {
     if (area->get_building())
@@ -395,11 +393,31 @@ std::shared_ptr<building::Building> Tile::get_building() const
   return retval;
 }
 
-std::map<std::string, std::pair<portable::Resource, uint8_t>>
+std::map<portable::Resource::Type, std::vector<portable::Resource *>>
 Tile::get_all_resources() const
 {
-  // TODO: query all areas, return all resources found in each area (if any)
-  return std::map<std::string, std::pair<portable::Resource, uint8_t>>();
+  std::map<portable::Resource::Type, std::vector<portable::Resource *>> result;
+  for (const auto &area : m_areas)
+  {
+    auto area_res = area->get_resources();
+    for (auto res : area_res)
+    {
+      if (nullptr == res)
+      {
+        continue;
+      }
+
+      portable::Resource::Type key = res->get_type();
+      if (!result.contains(key))
+      {
+        std::vector<portable::Resource *> list;
+        result.insert({key, list});
+      }
+      portable::Resource *copy = res;
+      result.at(key).push_back(copy);
+    }
+  }
+  return result;
 }
 
 bool Tile::has_road(const Border border)
@@ -417,7 +435,7 @@ bool Tile::has_wall() const
 {
   for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
-    if (m_walls[i].second != 0)
+    if (m_walls[i].thickness != 0)
     {
       return true;
     }
@@ -586,9 +604,8 @@ common::Error Tile::build_road(const Border border)
   return err;
 }
 
-common::Error
-Tile::build_building(const std::shared_ptr<Area> &area,
-                     const std::shared_ptr<building::Building> &bldg)
+template <class Bldg>
+common::Error Tile::build_building(const std::shared_ptr<Area> &area)
 {
   common::Error err = common::ERR_FAIL;
   // Don't allow buildings before having a hex point or all the neighbors' data
@@ -599,7 +616,7 @@ Tile::build_building(const std::shared_ptr<Area> &area,
   Border b = (*area->get_borders().begin());
   if ((area == get_area(b)) && (nullptr == get_building()))
   {
-    err = get_area(b)->build(bldg);
+    err = get_area(b)->build<Bldg>();
   }
   if (!err)
   {
@@ -637,14 +654,14 @@ bool Tile::can_build_wall(const Direction side, const player::Color color,
     return false;
   }
   // If the current wall isn't neutral, we can only add the same color wall
-  if ((player::Color::neutral != m_walls[side].first) &&
-      (color != m_walls[side].first))
+  if ((player::Color::neutral != m_walls[side].color) &&
+      (color != m_walls[side].color))
   {
     return false;
   }
   // If there was a wall that has since been destroyed, return false
-  if ((player::Color::neutral == m_walls[side].first) &&
-      (0 < m_walls[side].second))
+  if ((player::Color::neutral == m_walls[side].color) &&
+      (0 < m_walls[side].thickness))
   {
     return false;
   }
@@ -662,8 +679,8 @@ common::Error Tile::build_wall(const Direction side, const player::Color color,
   {
     return common::ERR_FAIL;
   }
-  m_walls[side].first = color;
-  m_walls[side].second += thickness;
+  m_walls[side].color = color;
+  m_walls[side].thickness += thickness;
   return common::ERR_NONE;
 }
 
@@ -720,12 +737,10 @@ std::ostream &operator<<(std::ostream &os, const tile::Tile &tile)
   {
     os << ", walls={";
     auto walls = tile.get_built_walls();
-    for (std::map<tile::Direction, std::pair<player::Color, uint8_t>>::iterator
-             it = walls.begin();
-         it != walls.end(); ++it)
+    for (auto it = walls.begin(); it != walls.end(); ++it)
     {
-      os << it->first << ":{" << player::to_string(it->second.first) << ", "
-         << it->second.second << "}";
+      os << it->first << ":{" << player::to_string(it->second.color) << ", "
+         << it->second.thickness << "}";
     }
     os << "}";
   }
@@ -856,8 +871,8 @@ void Tile::load_walls_json(const nlohmann::json &j)
     }
     else
     {
-      m_walls[d].first = color;
-      m_walls[d].second = thickness;
+      m_walls[d].color = color;
+      m_walls[d].thickness = thickness;
     }
   }
 }
@@ -894,11 +909,11 @@ void to_json(nlohmann::json &j, const Tile &tile)
 
   for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
   {
-    std::pair<player::Color, uint8_t> wall = tile.m_walls[i];
+    building::Wall wall = tile.m_walls[i];
     Direction d = static_cast<Direction>(i);
     nlohmann::json wall_json;
-    wall_json["color"] = to_string(wall.first);
-    wall_json["thickness"] = wall.second;
+    wall_json["color"] = to_string(wall.color);
+    wall_json["thickness"] = wall.thickness;
     wall_json["side"] = to_string(d);
     j["walls"].push_back(wall_json);
   }

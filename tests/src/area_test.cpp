@@ -119,7 +119,7 @@ TEST(area_test, area_addition_test)
   // std::shared_ptr<building::Building> bldg =
   //     std::make_shared<building::Building>(building::Building::mine);
   // a.build(bldg);
-  a.add_resource(portable::Resource::Type::trunks);
+  a.add_resource(new portable::Resource(portable::Resource::Type::trunks));
 
   std::set<Border> b_borders;
   b_borders.insert(Border::E_right);
@@ -129,8 +129,8 @@ TEST(area_test, area_addition_test)
   Area b = Area(b_borders);
   b.build(Border::E_right);
   b.build(Border::SE_left);
-  b.add_resource(portable::Resource::Type::trunks);
-  b.add_resource(portable::Resource::Type::goose);
+  b.add_resource(new portable::Resource(portable::Resource::Type::trunks));
+  b.add_resource(new portable::Resource(portable::Resource::Type::goose));
 
   // When merging two areas that can be combined, the result should contain all
   // borders, roads, resources, transporters, and whether the merged area
@@ -156,7 +156,7 @@ TEST(area_test, area_addition_test)
   }
   for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
   {
-    portable::Resource::Type r = static_cast<portable::Resource::Type>(r);
+    portable::Resource::Type r = static_cast<portable::Resource::Type>(i);
     uint16_t amount = a.get_resource_amount(r) + b.get_resource_amount(r);
     ASSERT_EQ(amount, c.get_resource_amount(r));
   }
@@ -185,7 +185,7 @@ TEST(area_test, area_addition_test)
   }
   for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
   {
-    portable::Resource::Type r = static_cast<portable::Resource::Type>(r);
+    portable::Resource::Type r = static_cast<portable::Resource::Type>(i);
     uint16_t amount = a.get_resource_amount(r) + b.get_resource_amount(r);
     ASSERT_EQ(amount, c.get_resource_amount(r));
   }
@@ -206,7 +206,7 @@ TEST(area_test, area_addition_test)
   }
   for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
   {
-    portable::Resource::Type r = static_cast<portable::Resource::Type>(r);
+    portable::Resource::Type r = static_cast<portable::Resource::Type>(i);
     ASSERT_EQ(a.get_resource_amount(r), c.get_resource_amount(r));
   }
   // ASSERT_EQ(bldg, c.get_building());
@@ -225,56 +225,55 @@ TEST(area_test, area_addition_test)
   }
   for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
   {
-    portable::Resource::Type r = static_cast<portable::Resource::Type>(r);
+    portable::Resource::Type r = static_cast<portable::Resource::Type>(i);
     ASSERT_EQ(a.get_resource_amount(r), c.get_resource_amount(r));
-    // }
-    // ASSERT_EQ(bldg, c.get_building());
-
-    // Adding a list of resources should only merge in those to the area.
-    c = a + b.get_resources();
-    ASSERT_EQ(a.get_borders(), c.get_borders());
-    ASSERT_EQ(a.get_roads(), c.get_roads());
-    for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
-    {
-      portable::Resource::Type r = static_cast<portable::Resource::Type>(r);
-      ASSERT_EQ(a.get_resource_amount(r) + b.get_resource_amount(r),
-                c.get_resource_amount(r));
-    }
-    // ASSERT_EQ(bldg, c.get_building());
-
-    c = a;
-    c += b.get_resources();
-    ASSERT_EQ(a.get_borders(), c.get_borders());
-    ASSERT_EQ(a.get_roads(), c.get_roads());
-    for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
-    {
-      portable::Resource::Type r = static_cast<portable::Resource::Type>(r);
-      ASSERT_EQ(a.get_resource_amount(r) + b.get_resource_amount(r),
-                c.get_resource_amount(r));
-    }
-    // ASSERT_EQ(bldg, c.get_building());
-
-    // the merge function should act like the += operator
-    c = a;
-    c += b;
-    Area d = a;
-    ASSERT_EQ(common::ERR_NONE, d.merge(b));
-    ASSERT_EQ(c, d);
-
-    // if the both areas that are being combined have buildings, don't merge
-    // them Report error for merge
-    // b.build(bldg);
-    // d = a + b;
-    // ASSERT_EQ(a, d);
-
-    // d = Area(a);
-    // d += b;
-    // ASSERT_EQ(a + b, d);
-
-    // d = Area(a);
-    // ASSERT_EQ(common::ERR_FAIL, d.merge(b));
-    // ASSERT_EQ(a, d);
   }
+  // ASSERT_EQ(bldg, c.get_building());
+
+  // Adding a list of resources should only merge in those to the area.
+  c = a + b.get_resources();
+  ASSERT_EQ(a.get_borders(), c.get_borders());
+  ASSERT_EQ(a.get_roads(), c.get_roads());
+  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
+  {
+    portable::Resource::Type r = static_cast<portable::Resource::Type>(i);
+    ASSERT_EQ(a.get_resource_amount(r) + b.get_resource_amount(r),
+              c.get_resource_amount(r));
+  }
+  // ASSERT_EQ(bldg, c.get_building());
+
+  c = a;
+  c += b.get_resources();
+  ASSERT_EQ(a.get_borders(), c.get_borders());
+  ASSERT_EQ(a.get_roads(), c.get_roads());
+  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
+  {
+    portable::Resource::Type r = static_cast<portable::Resource::Type>(i);
+    ASSERT_EQ(a.get_resource_amount(r) + b.get_resource_amount(r),
+              c.get_resource_amount(r));
+  }
+  // ASSERT_EQ(bldg, c.get_building());
+
+  // the merge function should act like the += operator
+  c = a;
+  c += b;
+  Area d = a;
+  ASSERT_EQ(common::ERR_NONE, d.merge(b));
+  ASSERT_TRUE(c == d);
+
+  // if the both areas that are being combined have buildings, don't merge
+  // them Report error for merge
+  // b.build(bldg);
+  // d = a + b;
+  // ASSERT_EQ(a, d);
+
+  // d = Area(a);
+  // d += b;
+  // ASSERT_EQ(a + b, d);
+
+  // d = Area(a);
+  // ASSERT_EQ(common::ERR_FAIL, d.merge(b));
+  // ASSERT_EQ(a, d);
 }
 
 TEST(area_test, rotate_area_test)
