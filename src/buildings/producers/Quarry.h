@@ -36,7 +36,7 @@ public:
   common::Error
   produce(portable::Cache &input,
           std::vector<portable::Transporter *> &nearby_transporters,
-          std::vector<std::unique_ptr<portable::Portable>> &output);
+          std::vector<portable::Portable *> &output);
 
   /// Determines whether the building can be placed on the input tile. Does not
   /// check tile for existing buildings, or if the constructing transporter has

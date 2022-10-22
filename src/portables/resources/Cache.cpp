@@ -450,6 +450,26 @@ common::Error Cache::add(std::vector<Resource *> &res_list)
   return common::ERR_NONE;
 }
 
+common::Error Cache::add(std::vector<Portable *> &res_list)
+{
+  std::vector<Resource *> res_to_add;
+  common::Error err = common::ERR_FAIL;
+  // Convert all resource pointers from input to something usable.
+  for (size_t i = 0; i < res_list.size(); i++)
+  {
+    if (res_list.at(i)->get_object() == Portable::Object::resource)
+    {
+      res_to_add.push_back(static_cast<Resource *>(res_list.at(i)));
+    }
+  }
+
+  if (res_to_add.size() > 0)
+  {
+    err = add(res_to_add);
+  }
+  return err;
+}
+
 common::Error Cache::remove(const Resource::Type res, const uint16_t amount)
 {
   if (!Resource::is_valid(res))

@@ -37,8 +37,6 @@ public:
   void reset();
 
   Area operator=(const Area &other);
-  Area operator+(const Area &other) const;
-  Area operator+(const std::set<Border> borders) const;
   Area operator+(std::vector<portable::Resource *> res_list) const;
 
   bool operator==(std::set<Border> &borders);
@@ -54,8 +52,6 @@ public:
   bool operator>(Area const &other) const;
   bool operator>(Area &other);
 
-  void operator+=(Area const &other);
-  void operator+=(std::set<Border> const borders);
   void operator+=(const std::vector<portable::Resource *> &res_list);
 
   inline void set_parent(tile::Tile *parent) { m_parent = parent; }
@@ -98,10 +94,18 @@ public:
   /// @return boolean for whether the area does include the input direction
   bool does_share_direction(const Direction dir);
 
-  template <class B> bool can_build();
+  /// Checks to see if building can be built with the given resources on the
+  /// input tile.
+  /// @return
+  ///   - common::ERR_NONE on succes
+  ///   - common::ERR_INVALID if area's tile is null
+  ///   - common::ERR_FAIL otherwise
+  template <class B> bool can_build()
+  {
+    return B::can_build(m_resources, m_parent);
+  }
+
   bool can_build_road(const Border b);
-  bool can_merge(Area &other);
-  bool can_merge(Area const &other) const;
 
   /// Adds building to this area
   /// @param[in] bldg Desired building to add to the area.
@@ -109,7 +113,20 @@ public:
   ///   - common::ERR_NONE on success
   ///   - common::ERR_INVALID if bldg is null
   ///   - common::ERR_FAIL otherwise
-  template <class B> common::Error build();
+  template <class B> common::Error build()
+  {
+    if (!can_build<B>())
+    {
+      return common::ERR_FAIL;
+    }
+
+    common::Error err = B::remove_construction_resources(m_resources);
+    if (!err)
+    {
+      m_building = std::make_unique<B>();
+    }
+    return err;
+  }
 
   /// Adds road to the input border
   /// @param[in] border Desired border to build a road
@@ -184,14 +201,6 @@ public:
   {
     return m_resources.get(res_type, clr, result, amount);
   }
-
-  /// Combines this area with another to make a single area.
-  /// @param other Area to be merged with
-  /// @return
-  ///   - common::ERR_INVALID on invalid input
-  ///   - common::ERR_FAIL on failure to merge areas
-  ///   - common::ERR_NONE on success. This area will be merged with other
-  common::Error merge(Area &other);
 
   bool can_rotate() const;
 

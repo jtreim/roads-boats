@@ -106,7 +106,7 @@ void Tile::init()
     // Don't allow sea tiles to have rivers. Sea tiles always have just one
     // area, which covers the entire tile.
     m_rivers.clear();
-    m_areas.push_back(std::make_shared<Area>(ALL_BORDERS));
+    m_areas.push_back(std::make_shared<Area>(ALL_BORDERS, this));
     return;
   }
 
@@ -604,27 +604,6 @@ common::Error Tile::build_road(const Border border)
   return err;
 }
 
-template <class Bldg>
-common::Error Tile::build_building(const std::shared_ptr<Area> &area)
-{
-  common::Error err = common::ERR_FAIL;
-  // Don't allow buildings before having a hex point or all the neighbors' data
-  if ((!m_hex_set) || (!m_neighbors_are_current))
-  {
-    return err;
-  }
-  Border b = (*area->get_borders().begin());
-  if ((area == get_area(b)) && (nullptr == get_building()))
-  {
-    err = get_area(b)->build<Bldg>();
-  }
-  if (!err)
-  {
-    m_rot_locked = true;
-  }
-  return err;
-}
-
 common::Error Tile::build_bridge(const Direction point)
 {
   common::Error err = common::ERR_FAIL;
@@ -720,7 +699,7 @@ void Tile::split_by_rivers()
   // We've now defined each area's borders; make 'em.
   for (auto borders : remaining_borders)
   {
-    m_areas.push_back(std::make_shared<Area>(borders));
+    m_areas.push_back(std::make_shared<Area>(borders, this));
   }
 }
 

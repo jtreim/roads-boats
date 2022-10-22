@@ -52,7 +52,7 @@ public:
   common::Error
   produce(portable::Cache &input,
           std::vector<portable::Transporter *> &nearby_transporters,
-          std::vector<std::unique_ptr<portable::Portable>> &output);
+          std::vector<portable::Portable *> &output);
 
   /// Returns a count of the specified resource this mine has yet to produce
   /// @param[in] t  Type of resource to count

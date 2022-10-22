@@ -25,6 +25,18 @@ public:
   {
   }
 
+  /// Resets the building for the next production phase.
+  void reset() {
+    m_production_current = 0;
+    m_is_powered = false;
+  }
+
+  uint8_t count_remaining_production() const
+  {
+    uint8_t max = (m_is_powered ? m_production_max * 2 : m_production_max);
+    return (max - m_production_current);
+  }
+
   /// Determines whether the building's production can be doubled with
   /// electricity
   bool can_add_electricity() const { return !m_is_powered; }
@@ -39,7 +51,6 @@ public:
     if (can_add_electricity())
     {
       m_is_powered = true;
-      m_production_max *= 2;
       result = common::ERR_NONE;
     }
     return result;
@@ -52,10 +63,9 @@ public:
   common::Error remove_electricity()
   {
     common::Error result = common::ERR_FAIL;
-    if (m_is_powered)
+    if ((m_is_powered) && (0 == m_production_current))
     {
       m_is_powered = false;
-      m_production_max /= 2;
       result = common::ERR_NONE;
     }
     return result;
@@ -83,7 +93,8 @@ public:
   can_produce(const portable::Cache &input,
               const std::vector<portable::Transporter *> nearby_transporters)
   {
-    return (m_production_current < m_production_max);
+    uint8_t max = (m_is_powered ? m_production_max * 2 : m_production_max);
+    return (m_production_current < max);
   }
 
   /// Produces resource/transporter with the input resources.
@@ -98,7 +109,7 @@ public:
   virtual common::Error
   produce(portable::Cache &input,
           std::vector<portable::Transporter *> &nearby_transporters,
-          std::vector<std::unique_ptr<portable::Portable>> &output) = 0;
+          std::vector<portable::Portable *> &output) = 0;
 
   virtual std::string to_string() const = 0;
   virtual nlohmann::json to_json() const = 0;

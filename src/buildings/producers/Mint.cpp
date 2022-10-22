@@ -33,7 +33,8 @@ bool Mint::can_produce(
     const portable::Cache &input,
     const std::vector<portable::Transporter *> nearby_transporters)
 {
-  if (m_production_max - m_production_current == 0)
+  uint8_t max = (m_has_manager ? m_production_max * 2 : m_production_max);
+  if (max - m_production_current <= 0)
   {
     return false;
   }
@@ -45,7 +46,7 @@ bool Mint::can_produce(
 common::Error
 Mint::produce(portable::Cache &input,
               std::vector<portable::Transporter *> &nearby_transporters,
-              std::vector<std::unique_ptr<portable::Portable>> &output)
+              std::vector<portable::Portable *> &output)
 {
   if (!can_produce(input, nearby_transporters))
   {
@@ -55,13 +56,14 @@ Mint::produce(portable::Cache &input,
   // Determine minimum factor between fuel, gold, and # of coins that can
   // still be produced this turn
   // 1 coin requires 1 fuel
+  uint8_t max = (m_has_manager ? m_production_max * 2 : m_production_max);
   uint8_t to_produce = static_cast<uint8_t>(
       std::min((int)input.count(portable::Resource::Type::fuel),
-               (int)(m_production_max - m_production_current)));
+               (int)(max - m_production_current)));
   // 1 coin requires 2 gold
   to_produce = static_cast<uint8_t>(
       std::min((int)(input.count(portable::Resource::Type::gold) / 2),
-               (int)(m_production_max - m_production_current)));
+               (int)to_produce));
 
   common::Error err = input.remove(portable::Resource::Type::fuel, to_produce);
   if (!err)
@@ -73,7 +75,7 @@ Mint::produce(portable::Cache &input,
   {
     for (uint8_t i = 0; i < to_produce; i++)
     {
-      output.push_back(std::make_unique<portable::Resource>(
+      output.push_back(new portable::Resource(
           portable::Resource::Type::coins));
     }
 

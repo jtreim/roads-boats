@@ -76,14 +76,11 @@ public:
   bool operator!=(Type const &t) const { return m_type == t; }
 
   /// Resets the building for the next production phase.
-  virtual void reset() { m_production_current = 0; }
+  virtual void reset() = 0;
 
   /// Returns a count of how many more resources the building can produce before
   /// resetting.
-  uint8_t count_remaining_production() const
-  {
-    return (m_production_max - m_production_current);
-  }
+  virtual uint8_t count_remaining_production() const = 0;
 
   /// Determines whether the building's production can be doubled with
   /// electricity
@@ -134,7 +131,7 @@ public:
   virtual common::Error
   produce(portable::Cache &input,
           std::vector<portable::Transporter *> &nearby_transporters,
-          std::vector<std::unique_ptr<portable::Portable>> &output) = 0;
+          std::vector<portable::Portable *> &output) = 0;
 
   // Helpers
   virtual std::string to_string() const = 0;

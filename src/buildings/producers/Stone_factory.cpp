@@ -35,7 +35,8 @@ bool Stone_factory::can_produce(
     const portable::Cache &input,
     const std::vector<portable::Transporter *> nearby_transporters)
 {
-  if (m_production_max - m_production_current == 0)
+  uint8_t max = (m_has_manager ? m_production_max * 2 : m_production_max);
+  if (max - m_production_current == 0)
   {
     return false;
   }
@@ -46,7 +47,7 @@ bool Stone_factory::can_produce(
 common::Error Stone_factory::produce(
     portable::Cache &input,
     std::vector<portable::Transporter *> &nearby_transporters,
-    std::vector<std::unique_ptr<portable::Portable>> &output)
+    std::vector<portable::Portable *> &output)
 {
   if (!can_produce(input, nearby_transporters))
   {
@@ -55,9 +56,10 @@ common::Error Stone_factory::produce(
 
   // Determine minimum factor between input and stone that can still be
   // produced this turn. 1 clay makes 2 stone
+  uint8_t max = (m_has_manager ? m_production_max * 2 : m_production_max);
   uint8_t to_produce = static_cast<uint8_t>(
       std::min((int)(input.count(portable::Resource::Type::clay) * 2),
-               (int)(m_production_max - m_production_current)));
+               (int)(max - m_production_current)));
 
   common::Error err =
       input.remove(portable::Resource::Type::clay, to_produce / 2);
@@ -66,7 +68,7 @@ common::Error Stone_factory::produce(
   {
     for (uint8_t i = 0; i < to_produce; i++)
     {
-      output.push_back(std::make_unique<portable::Resource>(
+      output.push_back(new portable::Resource(
           portable::Resource::Type::stone));
     }
     m_production_current += to_produce;

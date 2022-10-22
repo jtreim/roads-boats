@@ -35,7 +35,8 @@ bool Raft_factory::can_produce(
     const portable::Cache &input,
     const std::vector<portable::Transporter *> nearby_transporters)
 {
-  if (m_production_max - m_production_current == 0)
+  uint8_t max = (m_has_manager ? m_production_max * 2 : m_production_max);
+  if (max - m_production_current <= 0)
   {
     return false;
   }
@@ -46,7 +47,7 @@ bool Raft_factory::can_produce(
 common::Error
 Raft_factory::produce(portable::Cache &input,
                       std::vector<portable::Transporter *> &nearby_transporters,
-                      std::vector<std::unique_ptr<portable::Portable>> &output)
+                      std::vector<portable::Portable *> &output)
 {
   if (!can_produce(input, nearby_transporters))
   {
@@ -55,9 +56,10 @@ Raft_factory::produce(portable::Cache &input,
 
   // Determine minimum factor between input and Rafts that can still be
   // produced this turn. 2 trunks makes 1 Raft
+  uint8_t max = (m_has_manager ? m_production_max * 2 : m_production_max);
   uint8_t to_produce = static_cast<uint8_t>(
       std::min((int)(input.count(portable::Resource::Type::trunks) / 2),
-               (int)(m_production_max - m_production_current)));
+               (int)(max - m_production_current)));
 
   common::Error err =
       input.remove(portable::Resource::Type::boards, to_produce * 2);

@@ -98,11 +98,18 @@ public:
   common::Error add(const Resource::Type res);
 
   /// Adds resources to the cache
-  /// @param[in] res  Resources to add
+  /// @param[in] res_list  Resources to add
   /// @return
   ///   - common::ERR_NONE on success
   ///   - common::ERR_INVALID on invalid resource
   common::Error add(std::vector<Resource *> &res_list);
+
+  /// Adds resources to the cache
+  /// @param[in] res_list  Resources to add
+  /// @return
+  ///   - common::ERR_NONE on success
+  ///   - common::ERR_FAIL on failure to add anything
+  common::Error add(std::vector<Portable *> &res_list);
 
   /// Removes resource from the cache
   /// @param[in] res  Resource to remove

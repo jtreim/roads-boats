@@ -41,28 +41,30 @@ bool Mine::can_produce(
     const portable::Cache &input,
     const std::vector<portable::Transporter *> nearby_transporters)
 {
+  uint8_t max = (m_is_powered ? m_production_max * 2 : m_production_max);
   return ((m_remaining_resources.size() > 0) &&
-          (m_production_max > m_production_current));
+          (max > m_production_current));
 }
 
 common::Error
 Mine::produce(portable::Cache &input,
               std::vector<portable::Transporter *> &nearby_transporters,
-              std::vector<std::unique_ptr<portable::Portable>> &output)
+              std::vector<portable::Portable *> &output)
 {
   if (!can_produce(input, nearby_transporters))
   {
     return common::ERR_FAIL;
   }
 
-  uint8_t to_produce = m_production_max - m_production_current;
+  uint8_t max = (m_is_powered ? m_production_max * 2 : m_production_max);
+  uint8_t to_produce = max - m_production_current;
   to_produce = static_cast<uint8_t>(
       std::min((int)to_produce, (int)m_remaining_resources.size()));
 
   for (uint8_t i = 0; i < to_produce; i++)
   {
     portable::Resource::Type next = m_remaining_resources.back();
-    output.push_back(std::make_unique<portable::Resource>(next));
+    output.push_back(new portable::Resource(next));
     m_remaining_resources.pop_back();
   }
   m_production_current += to_produce;

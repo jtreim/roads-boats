@@ -36,7 +36,8 @@ bool Steamer_factory::can_produce(
     const portable::Cache &input,
     const std::vector<portable::Transporter *> nearby_transporters)
 {
-  if (m_production_max - m_production_current == 0)
+  uint8_t max = (m_has_manager ? m_production_max * 2 : m_production_max);
+  if (max - m_production_current <= 0)
   {
     return false;
   }
@@ -48,7 +49,7 @@ bool Steamer_factory::can_produce(
 common::Error Steamer_factory::produce(
     portable::Cache &input,
     std::vector<portable::Transporter *> &nearby_transporters,
-    std::vector<std::unique_ptr<portable::Portable>> &output)
+    std::vector<portable::Portable *> &output)
 {
   if (!can_produce(input, nearby_transporters))
   {
@@ -57,9 +58,10 @@ common::Error Steamer_factory::produce(
 
   // Determine minimum factor between input and Steamers that can still be
   // produced this turn. 1 iron & 2 fuel makes 1 Steamer
+  uint8_t max = (m_has_manager ? m_production_max * 2 : m_production_max);
   uint8_t to_produce = static_cast<uint8_t>(
       std::min((int)(input.count(portable::Resource::Type::iron)),
-               (int)(m_production_max - m_production_current)));
+               (int)(max - m_production_current)));
   to_produce = static_cast<uint8_t>(std::min(
       (int)(input.count(portable::Resource::Type::fuel) / 2), (int)to_produce));
 

@@ -36,7 +36,8 @@ bool Wagon_factory::can_produce(
     const portable::Cache &input,
     const std::vector<portable::Transporter *> nearby_transporters)
 {
-  if (m_production_max - m_production_current == 0)
+  uint8_t max = (m_has_manager ? m_production_max * 2 : m_production_max);
+  if (max - m_production_current == 0)
   {
     return false;
   }
@@ -61,7 +62,7 @@ bool Wagon_factory::can_produce(
 common::Error Wagon_factory::produce(
     portable::Cache &input,
     std::vector<portable::Transporter *> &nearby_transporters,
-    std::vector<std::unique_ptr<portable::Portable>> &output)
+    std::vector<portable::Portable *> &output)
 {
   if (!can_produce(input, nearby_transporters))
   {
@@ -70,9 +71,10 @@ common::Error Wagon_factory::produce(
 
   // Determine minimum factor between input and wagons that can still be
   // produced this turn. 2 boards & 1 donkey makes 1 wagon
+  uint8_t max = (m_has_manager ? m_production_max * 2 : m_production_max);
   uint8_t to_produce = static_cast<uint8_t>(
       std::min((int)(input.count(portable::Resource::Type::boards) / 2),
-               (int)(m_production_max - m_production_current)));
+               (int)(max - m_production_current)));
 
   uint8_t donkey_count = 0;
   for (auto t : nearby_transporters)

@@ -34,18 +34,18 @@ Woodcutter Woodcutter::operator=(const Woodcutter &other)
 common::Error
 Woodcutter::produce(portable::Cache &input,
                     std::vector<portable::Transporter *> &nearby_transporters,
-                    std::vector<std::unique_ptr<portable::Portable>> &output)
+                    std::vector<portable::Portable *> &output)
 {
   if (!can_produce(input, nearby_transporters))
   {
     return common::ERR_FAIL;
   }
 
-  uint8_t to_produce = m_production_max - m_production_current;
+  uint8_t max = (m_is_powered ? m_production_max * 2 : m_production_max);
+  uint8_t to_produce = max - m_production_current;
   for (uint8_t i = 0; i < to_produce; i++)
   {
-    output.push_back(
-        std::make_unique<portable::Resource>(portable::Resource::Type::trunks));
+    output.push_back(new portable::Resource(portable::Resource::Type::trunks));
   }
   m_production_current += to_produce;
 

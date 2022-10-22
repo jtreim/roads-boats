@@ -76,63 +76,6 @@ Area Area::operator=(const Area &other)
   return (*this);
 }
 
-Area Area::operator+(const Area &other) const
-{
-  Area merged = Area(*this);
-  if (merged.can_merge(other))
-  {
-    merged.m_borders.insert(other.m_borders.begin(), other.m_borders.end());
-    merged.m_roads.insert(other.m_roads.begin(), other.m_roads.end());
-
-    if ((!merged.m_building) && (other.m_building))
-    {
-      building::Building::Type bldg_type = other.m_building->get_type();
-      (void)building::make_building(bldg_type, merged.m_building,
-                                    other.m_building.get());
-    }
-
-    merged.m_resources += other.m_resources;
-    merged.m_parent = other.m_parent;
-  }
-
-  return merged;
-}
-
-Area Area::operator+(const std::set<Border> borders) const
-{
-  std::set<Border> merged_borders;
-  std::merge(m_borders.begin(), m_borders.end(), borders.begin(), borders.end(),
-             std::inserter(merged_borders, merged_borders.begin()));
-
-  Area new_area(merged_borders);
-  if (m_building)
-  {
-    building::Building::Type bldg_type = m_building->get_type();
-    (void)building::make_building(bldg_type, new_area.m_building,
-                                  m_building.get());
-  }
-  new_area.m_roads.insert(m_roads.begin(), m_roads.end());
-  new_area.m_resources = m_resources;
-  new_area.m_parent = m_parent;
-  return new_area;
-}
-
-Area Area::operator+(const std::vector<portable::Resource *> res_list) const
-{
-  Area new_area(m_borders);
-  if (m_building)
-  {
-    building::Building::Type bldg_type = m_building->get_type();
-    (void)building::make_building(bldg_type, new_area.m_building,
-                                  m_building.get());
-  }
-  new_area.m_roads.insert(m_roads.begin(), m_roads.end());
-  new_area.m_resources = m_resources;
-  new_area += res_list;
-  new_area.m_parent = m_parent;
-  return new_area;
-}
-
 bool Area::operator==(Area &other)
 {
   return ((other.m_borders == m_borders) && (other.m_roads == m_roads) &&
@@ -177,34 +120,6 @@ bool Area::operator>(Area &other)
   return m_borders.size() > other.m_borders.size();
 }
 
-void Area::operator+=(Area const &other)
-{
-  if (can_merge(other))
-  {
-    m_borders.insert(other.m_borders.begin(), other.m_borders.end());
-    m_roads.insert(other.m_roads.begin(), other.m_roads.end());
-
-    if ((nullptr == m_building) && (nullptr != other.m_building))
-    {
-      building::Building::Type bldg_type = other.m_building->get_type();
-      (void)building::make_building(bldg_type, m_building,
-                                    other.m_building.get());
-    }
-
-    m_resources += other.m_resources;
-    if (nullptr == m_parent)
-    {
-      m_parent = other.m_parent;
-    }
-  }
-}
-
-void Area::operator+=(std::set<Border> const borders)
-{
-  std::merge(m_borders.begin(), m_borders.end(), borders.begin(), borders.end(),
-             std::inserter(m_borders, m_borders.begin()));
-}
-
 void Area::operator+=(const std::vector<portable::Resource *> &res_list)
 {
   m_resources += res_list;
@@ -245,11 +160,6 @@ bool Area::does_share_direction(const Direction dir)
   return false;
 }
 
-template <class B> bool Area::can_build()
-{
-  return B::can_build(m_resources, m_parent);
-}
-
 bool Area::can_build_road(const Border b)
 {
   if ((!m_borders.contains(b)) || (m_roads.contains(b)))
@@ -274,37 +184,6 @@ bool Area::can_build_road(const Border b)
   return true;
 }
 
-bool Area::can_merge(Area &other)
-{
-  return (((*this) != other) &&
-          ((nullptr == m_building) || (nullptr == other.m_building)) &&
-          ((nullptr == m_parent) || (nullptr == other.m_parent) ||
-           (m_parent == other.m_parent)));
-}
-
-bool Area::can_merge(Area const &other) const
-{
-  return (((*this) != other) &&
-          ((nullptr == m_building) || (nullptr == other.m_building)) &&
-          ((nullptr == m_parent) || (nullptr == other.m_parent) ||
-           (m_parent == other.m_parent)));
-}
-
-template <class B> common::Error Area::build()
-{
-  if (!can_build<B>())
-  {
-    return common::ERR_FAIL;
-  }
-
-  common::Error err = B::remove_construction_resources(m_resources);
-  if (!err)
-  {
-    m_building = std::make_unique<B>();
-  }
-  return err;
-}
-
 common::Error Area::build(const Border border)
 {
   if (!is_valid(border))
@@ -318,18 +197,6 @@ common::Error Area::build(const Border border)
 
   m_roads.insert(border);
   return common::ERR_NONE;
-}
-
-common::Error Area::merge(Area &other)
-{
-  common::Error err = common::ERR_NONE;
-  if (can_merge(other))
-  {
-    (*this) += other;
-    return common::ERR_NONE;
-  }
-
-  return common::ERR_FAIL;
 }
 
 bool Area::can_rotate() const

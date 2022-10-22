@@ -33,7 +33,8 @@ bool Coal_burner::can_produce(
     const portable::Cache &input,
     const std::vector<portable::Transporter *> nearby_transporters)
 {
-  if (m_production_max - m_production_current == 0)
+  uint8_t max = (m_has_manager ? m_production_max * 2 : m_production_max);
+  if (max - m_production_current == 0)
   {
     return false;
   }
@@ -45,7 +46,7 @@ bool Coal_burner::can_produce(
 common::Error
 Coal_burner::produce(portable::Cache &input,
                      std::vector<portable::Transporter *> &nearby_transporters,
-                     std::vector<std::unique_ptr<portable::Portable>> &output)
+                     std::vector<portable::Portable *> &output)
 {
   if (!can_produce(input, nearby_transporters))
   {
@@ -56,9 +57,10 @@ Coal_burner::produce(portable::Cache &input,
   // this turn. 1 fuel requires 2 trunks or 2 boards
   //
   // boards are used first, then trunks
+  uint8_t max = (m_has_manager ? m_production_max * 2 : m_production_max);
   uint8_t board_production = static_cast<uint8_t>(
       std::min((int)(input.count(portable::Resource::Type::boards) / 2),
-               (int)(m_production_max - m_production_current)));
+               (int)(max - m_production_current)));
 
   common::Error err = common::ERR_NONE;
 
@@ -69,8 +71,7 @@ Coal_burner::produce(portable::Cache &input,
     {
       for (uint8_t i = 0; i < board_production; i++)
       {
-        output.push_back(
-            std::make_unique<portable::Resource>(portable::Resource::fuel));
+        output.push_back(new portable::Resource(portable::Resource::fuel));
       }
       m_production_current += board_production;
     }
@@ -88,8 +89,7 @@ Coal_burner::produce(portable::Cache &input,
     {
       for (uint8_t i = 0; i < trunk_production; i++)
       {
-        output.push_back(
-            std::make_unique<portable::Resource>(portable::Resource::fuel));
+        output.push_back(new portable::Resource(portable::Resource::fuel));
       }
       m_production_current += trunk_production;
     }
