@@ -10,31 +10,37 @@
 #include <stduuid/include/uuid.h>
 
 #include <buildings/Building.h>
+#include <buildings/utils.h>
+
 #include <common/Errors.h>
 #include <players/Player.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
 #include <portables/transporters/Transporter.h>
+#include <tiles/Tile.h>
 #include <tiles/components/Area.h>
 #include <tiles/components/Border.h>
 #include <utils/id_utils.h>
 
-
 namespace tile
 {
-Area::Area(std::set<Border> borders) : m_borders(borders) {}
+Area::Area(std::set<Border> borders, tile::Tile *parent)
+    : m_borders(borders), m_parent(parent)
+{
+}
 
 Area::Area(std::set<Border> borders, std::set<Border> roads,
-           std::shared_ptr<building::Building> building,
-           portable::Cache resources)
-    : m_roads(roads), m_borders(borders), m_building(building),
-      m_resources(resources)
+           std::unique_ptr<building::Building> &building,
+           portable::Cache &resources, tile::Tile *parent)
+    : m_roads(roads), m_borders(borders), m_building(std::move(building)),
+      m_resources(resources), m_parent(parent)
 {
 }
 
 Area::Area(const Area &other)
     : m_borders(other.m_borders), m_roads(other.m_roads),
-      m_building(other.m_building), m_resources(other.m_resources)
+      m_building(std::move(other.m_building.get())),
+      m_resources(other.m_resources), m_parent(other.m_parent)
 {
 }
 
@@ -59,75 +65,28 @@ Area Area::operator=(const Area &other)
 {
   m_borders = other.m_borders;
   m_roads = other.m_roads;
-  m_building = other.m_building;
-  m_resources = other.m_resources;
-  return (*this);
-}
-
-Area Area::operator+(const Area &other) const
-{
-  Area merged = Area(*this);
-  if (merged.can_merge(other))
+  if (other.m_building)
   {
-    merged.m_borders.insert(other.m_borders.begin(), other.m_borders.end());
-    merged.m_roads.insert(other.m_roads.begin(), other.m_roads.end());
-
-    if (!merged.m_building)
-    {
-      merged.m_building = other.m_building;
-    }
-
-    merged.m_resources += other.m_resources;
+    building::Building::Type bldg_type = other.m_building->get_type();
+    (void)building::make_building(bldg_type, m_building,
+                                  other.m_building.get());
   }
-
-  return merged;
-}
-
-Area Area::operator+(const std::set<Border> borders) const
-{
-  std::set<Border> merged_borders;
-  std::merge(m_borders.begin(), m_borders.end(), borders.begin(), borders.end(),
-             std::inserter(merged_borders, merged_borders.begin()));
-
-  Area new_area(merged_borders);
-  new_area.m_building = m_building;
-  new_area.m_roads.insert(m_roads.begin(), m_roads.end());
-  new_area.m_resources = m_resources;
-  return new_area;
-}
-
-Area Area::operator+(const portable::Cache resources) const
-{
-  Area new_area(m_borders);
-  new_area.m_building = m_building;
-  new_area.m_roads.insert(m_roads.begin(), m_roads.end());
-  new_area.m_resources = m_resources + resources;
-  return new_area;
-}
-
-Area Area::operator+(
-    const std::map<portable::Resource::Type, std::vector<portable::Resource>>
-        res_list) const
-{
-  Area new_area(m_borders);
-  new_area.m_building = m_building;
-  new_area.m_roads.insert(m_roads.begin(), m_roads.end());
-  new_area.m_resources = m_resources;
-  new_area += res_list;
-  return new_area;
+  m_resources = other.m_resources;
+  m_parent = other.m_parent;
+  return (*this);
 }
 
 bool Area::operator==(Area &other)
 {
   return ((other.m_borders == m_borders) && (other.m_roads == m_roads) &&
           (other.m_building == m_building) &&
-          (other.m_resources == m_resources));
+          (other.m_resources == m_resources) && (other.m_parent == m_parent));
 }
 bool Area::operator==(Area const &other) const
 {
   return ((other.m_borders == m_borders) && (other.m_roads == m_roads) &&
           (other.m_building == m_building) &&
-          (other.m_resources == m_resources));
+          (other.m_resources == m_resources) && (other.m_parent == m_parent));
 }
 bool Area::operator==(std::set<Border> &borders)
 {
@@ -161,36 +120,7 @@ bool Area::operator>(Area &other)
   return m_borders.size() > other.m_borders.size();
 }
 
-void Area::operator+=(Area const &other)
-{
-  if (can_merge(other))
-  {
-    m_borders.insert(other.m_borders.begin(), other.m_borders.end());
-    m_roads.insert(other.m_roads.begin(), other.m_roads.end());
-
-    if (nullptr == m_building)
-    {
-      m_building = other.m_building;
-    }
-
-    m_resources += other.m_resources;
-  }
-}
-
-void Area::operator+=(std::set<Border> const borders)
-{
-  std::merge(m_borders.begin(), m_borders.end(), borders.begin(), borders.end(),
-             std::inserter(m_borders, m_borders.begin()));
-}
-
-void Area::operator+=(portable::Cache const resources)
-{
-  m_resources += resources;
-}
-
-void Area::
-operator+=(std::map<portable::Resource::Type, std::vector<portable::Resource>>
-               res_list)
+void Area::operator+=(const std::vector<portable::Resource *> &res_list)
 {
   m_resources += res_list;
 }
@@ -254,34 +184,6 @@ bool Area::can_build_road(const Border b)
   return true;
 }
 
-bool Area::can_merge(Area &other)
-{
-  return (((*this) != other) &&
-          ((nullptr == m_building) || (nullptr == other.m_building)));
-}
-
-bool Area::can_merge(Area const &other) const
-{
-  return (((*this) != other) &&
-          ((nullptr == m_building) || (nullptr == other.m_building)));
-}
-
-common::Error Area::build(std::shared_ptr<building::Building> bldg)
-{
-  if (!bldg)
-  {
-    return common::ERR_INVALID;
-  }
-
-  if (m_building)
-  {
-    return common::ERR_FAIL;
-  }
-
-  m_building = bldg;
-  return common::ERR_NONE;
-}
-
 common::Error Area::build(const Border border)
 {
   if (!is_valid(border))
@@ -295,34 +197,6 @@ common::Error Area::build(const Border border)
 
   m_roads.insert(border);
   return common::ERR_NONE;
-}
-
-common::Error Area::add_resource(const portable::Resource::Type res_type,
-                                 const uint16_t amount)
-{
-  common::Error err = common::ERR_NONE;
-  for (uint16_t i = 0; i < amount; i++)
-  {
-    portable::Resource r(res_type);
-    err = m_resources.add(r);
-    if (err)
-    {
-      break;
-    }
-  }
-  return err;
-}
-
-common::Error Area::merge(Area &other)
-{
-  common::Error err = common::ERR_NONE;
-  if (can_merge(other))
-  {
-    (*this) += other;
-    return common::ERR_NONE;
-  }
-
-  return common::ERR_FAIL;
 }
 
 bool Area::can_rotate() const
@@ -364,6 +238,34 @@ common::Error Area::rotate(int rotations)
   return common::ERR_NONE;
 }
 
+common::Error Area::load_building(const nlohmann::json &j)
+{
+  common::Error err = common::ERR_FAIL;
+  if (!j.contains("type"))
+  {
+    return common::ERR_INVALID;
+  }
+
+  building::Building::Type to_build = building::Building::Type::invalid;
+
+  for (size_t i = 0; i < building::BUILDING_NAMES_SIZE; i++)
+  {
+    if (building::BUILDING_NAMES[i] == j.at("type").get<std::string>())
+    {
+      to_build = static_cast<building::Building::Type>(i);
+      err = building::make_building(to_build, m_building);
+      break;
+    }
+  }
+
+  if ((!err) && (nullptr != m_building))
+  {
+    m_building->from_json(j);
+    err = common::ERR_NONE;
+  }
+  return err;
+}
+
 std::ostream &operator<<(std::ostream &os, tile::Area const &a)
 {
   std::set<tile::Border> bdrs = a.get_borders();
@@ -391,7 +293,7 @@ std::ostream &operator<<(std::ostream &os, tile::Area const &a)
   if (a.get_building())
   {
     os << ", building=";
-    os << (*a.get_building()).get_name();
+    os << (*a.get_building()).to_string();
   }
 
   if (a.has_resources())
@@ -424,14 +326,14 @@ void to_json(nlohmann::json &j, const Area &area)
   }
 
   // List building if found
-  // if (area.m_building)
-  // {
-  //   j["building"] = area.m_building->to_json();
-  // }
-  // else
-  // {
-  //   j["building"] = nullptr;
-  // }
+  if (nullptr != area.m_building)
+  {
+    j["building"] = area.m_building->to_json();
+  }
+  else
+  {
+    j["building"] = nullptr;
+  }
 
   // List resources
   nlohmann::json res_cache;
@@ -464,7 +366,16 @@ void from_json(const nlohmann::json &j, Area &area)
     }
   }
 
-  // TODO: Add logic to load a building from json
+  if ((j.contains("building")) && (!j.at("building").is_null()))
+  {
+    building::Building *bldg;
+    if (common::ERR_NONE !=
+        area.load_building(j.at("building").get<nlohmann::json>()))
+    {
+      area = Area();
+      throw nlohmann::json::type_error::create(501, "Invalid building JSON", j);
+    }
+  }
 
   area.m_resources = j.at("resources").get<portable::Cache>();
 }

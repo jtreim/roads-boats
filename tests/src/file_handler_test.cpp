@@ -76,22 +76,17 @@ TEST(file_handler_test, load_cache_test)
   portable::Cache expected;
   std::set<player::Color> carriers;
   carriers.insert(player::Color::blue);
-  ASSERT_EQ(common::ERR_NONE,
-            expected.add(portable::Resource(portable::Resource::Type::iron)));
-  ASSERT_EQ(common::ERR_NONE,
-            expected.add(portable::Resource(portable::Resource::Type::goose)));
-  ASSERT_EQ(common::ERR_NONE,
-            expected.add(portable::Resource(portable::Resource::Type::goose)));
-  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource(
-                                  portable::Resource::Type::goose, carriers)));
-  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource(
-                                  portable::Resource::Type::goose, carriers)));
-  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource(
-                                  portable::Resource::Type::gold, carriers)));
+  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource::Type::iron));
+  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource::Type::goose));
+  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource::Type::goose));
+  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource::Type::goose));
+  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource::Type::goose));
+  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource::Type::gold));
   carriers.insert(player::red);
   carriers.insert(player::black);
-  ASSERT_EQ(common::ERR_NONE, expected.add(portable::Resource(
-                                  portable::Resource::Type::fuel, carriers)));
+  portable::Resource *fuel =
+      new portable::Resource(portable::Resource::Type::fuel, carriers);
+  ASSERT_EQ(common::ERR_NONE, expected.add(fuel));
 
   // Invalid JSON keys
   test_file = cache_test_dir;
@@ -259,19 +254,18 @@ TEST(file_handler_test, load_area_test)
       portable::Resource(portable::Resource::Type::goose);
   std::set<player::Color> carriers;
   carriers.insert(player::Color::blue);
-  portable::Resource goose2 =
-      portable::Resource(portable::Resource::Type::goose, carriers);
-  portable::Resource fuel = portable::Resource(portable::Resource::Type::fuel);
-  portable::Resource iron = portable::Resource(portable::Resource::Type::iron);
-  portable::Resource gold =
-      portable::Resource(portable::Resource::Type::gold, carriers);
   ASSERT_EQ(common::ERR_NONE, expected.build(tile::Border::NW_left));
   ASSERT_EQ(common::ERR_NONE, expected.build(tile::Border::E_left));
-  ASSERT_EQ(common::ERR_NONE, expected.add_resource(goose1));
-  ASSERT_EQ(common::ERR_NONE, expected.add_resource(goose2));
-  ASSERT_EQ(common::ERR_NONE, expected.add_resource(fuel));
-  ASSERT_EQ(common::ERR_NONE, expected.add_resource(iron));
-  ASSERT_EQ(common::ERR_NONE, expected.add_resource(gold));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(new portable::Resource(
+                                  portable::Resource::Type::goose)));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(new portable::Resource(
+                                  portable::Resource::Type::goose, carriers)));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(new portable::Resource(
+                                  portable::Resource::Type::fuel)));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(new portable::Resource(
+                                  portable::Resource::Type::iron)));
+  ASSERT_EQ(common::ERR_NONE, expected.add_resource(new portable::Resource(
+                                  portable::Resource::Type::gold, carriers)));
   test_file = area_test_dir;
   test_file /= "area_sample_2.json";
   EXPECT_EQ(common::ERR_NONE, utils::load_json<tile::Area>(test_file, actual));
@@ -437,13 +431,13 @@ TEST(file_handler_test, dump_cache_test)
   portable::Cache test_object;
   std::map<portable::Resource::Type, std::vector<portable::Resource>> cache_map;
   std::set<player::Color> carriers;
+  portable::Resource *bomb_ptr =
+      new portable::Resource(portable::Resource::bomb, carriers);
   carriers.insert(player::Color::blue);
-  ASSERT_EQ(common::ERR_NONE, test_object.add(portable::Resource(
-                                  portable::Resource::Type::bomb)));
-  ASSERT_EQ(common::ERR_NONE, test_object.add(portable::Resource(
-                                  portable::Resource::Type::bomb, carriers)));
-  ASSERT_EQ(common::ERR_NONE, test_object.add(portable::Resource(
-                                  portable::Resource::Type::boards)));
+  ASSERT_EQ(common::ERR_NONE, test_object.add(portable::Resource::Type::bomb));
+  ASSERT_EQ(common::ERR_NONE, test_object.add(bomb_ptr));
+  ASSERT_EQ(common::ERR_NONE,
+            test_object.add(portable::Resource::Type::boards));
   portable::Cache loaded_object;
 
   // Dumping to a file that didn't exist prior should create the file for us.

@@ -17,12 +17,15 @@
 
 namespace tile
 {
+class Tile;
+
 class Area
 {
 public:
-  Area(std::set<Border> borders);
+  Area(std::set<Border> borders, tile::Tile *parent = nullptr);
   Area(std::set<Border> borders, std::set<Border> roads,
-       std::shared_ptr<building::Building> building, portable::Cache resources);
+       std::unique_ptr<building::Building> &building,
+       portable::Cache &resources, tile::Tile *parent = nullptr);
   Area(const Area &other);
   Area();
   virtual ~Area();
@@ -34,12 +37,7 @@ public:
   void reset();
 
   Area operator=(const Area &other);
-  Area operator+(const Area &other) const;
-  Area operator+(const std::set<Border> borders) const;
-  Area operator+(const portable::Cache resources) const;
-  Area
-  operator+(std::map<portable::Resource::Type, std::vector<portable::Resource>>
-                res_list) const;
+  Area operator+(std::vector<portable::Resource *> res_list) const;
 
   bool operator==(std::set<Border> &borders);
   bool operator==(std::set<Border> const &borders) const;
@@ -54,12 +52,9 @@ public:
   bool operator>(Area const &other) const;
   bool operator>(Area &other);
 
-  void operator+=(Area const &other);
-  void operator+=(std::set<Border> const borders);
-  void operator+=(portable::Cache const resources);
-  void
-  operator+=(std::map<portable::Resource::Type, std::vector<portable::Resource>>
-                 res_list);
+  void operator+=(const std::vector<portable::Resource *> &res_list);
+
+  inline void set_parent(tile::Tile *parent) { m_parent = parent; }
 
   inline bool has_border(const Border b) { return m_borders.contains(b); }
   template <typename Iter> bool has_borders(Iter begin, Iter end);
@@ -68,20 +63,12 @@ public:
   inline std::set<Border> get_borders() const { return m_borders; }
   inline std::set<Border> get_roads() { return m_roads; }
   inline std::set<Border> get_roads() const { return m_roads; }
-  inline std::shared_ptr<building::Building> get_building()
-  {
-    return m_building;
-  };
-  inline std::shared_ptr<building::Building> get_building() const
-  {
-    return m_building;
-  };
-  inline std::map<portable::Resource::Type, std::vector<portable::Resource>>
-  get_resources()
+  inline building::Building *get_building() const { return m_building.get(); };
+  inline std::vector<portable::Resource *> get_resources()
   {
     return m_resources.all();
   }
-  inline std::map<portable::Resource::Type, std::vector<portable::Resource>>
+  inline std::vector<portable::Resource *>
   get_moveable_resources(const player::Color player)
   {
     return m_resources.all_moveable(player);
@@ -107,9 +94,18 @@ public:
   /// @return boolean for whether the area does include the input direction
   bool does_share_direction(const Direction dir);
 
+  /// Checks to see if building can be built with the given resources on the
+  /// input tile.
+  /// @return
+  ///   - common::ERR_NONE on succes
+  ///   - common::ERR_INVALID if area's tile is null
+  ///   - common::ERR_FAIL otherwise
+  template <class B> bool can_build()
+  {
+    return B::can_build(m_resources, m_parent);
+  }
+
   bool can_build_road(const Border b);
-  bool can_merge(Area &other);
-  bool can_merge(Area const &other) const;
 
   /// Adds building to this area
   /// @param[in] bldg Desired building to add to the area.
@@ -117,7 +113,20 @@ public:
   ///   - common::ERR_NONE on success
   ///   - common::ERR_INVALID if bldg is null
   ///   - common::ERR_FAIL otherwise
-  common::Error build(std::shared_ptr<building::Building> bldg);
+  template <class B> common::Error build()
+  {
+    if (!can_build<B>())
+    {
+      return common::ERR_FAIL;
+    }
+
+    common::Error err = B::remove_construction_resources(m_resources);
+    if (!err)
+    {
+      m_building = std::make_unique<B>();
+    }
+    return err;
+  }
 
   /// Adds road to the input border
   /// @param[in] border Desired border to build a road
@@ -127,21 +136,12 @@ public:
   ///   - common::ERR_FAIL if unable to build road on this border
   common::Error build(const Border border);
 
-  /// Adds new resources of the specified type to the area
-  /// @param[in] res_type  Type of resource to add
-  /// @param[in] amount  Amount to add to the area
-  /// @return
-  ///   - common::ERR_NONE on success
-  ///   - common::ERR_INVALID if the input is invalid
-  common::Error add_resource(const portable::Resource::Type res_type,
-                             const uint16_t amount = 1);
-
   /// Adds resource to the area
   /// @param[in] res Resource to add
   /// @return
   ///   - common::ERR_NONE on success
   ///   - common::ERR_INVALID if the input is invalid
-  common::Error add_resource(const portable::Resource res)
+  common::Error add_resource(portable::Resource *res)
   {
     return m_resources.add(res);
   }
@@ -151,9 +151,7 @@ public:
   /// @return
   ///   - common::ERR_NONE on success
   ///   - common::ERR_INVALID if the input is invalid
-  common::Error add_resource(
-      std::map<portable::Resource::Type, std::vector<portable::Resource>>
-          &res_list)
+  common::Error add_resource(std::vector<portable::Resource *> &res_list)
   {
     return m_resources.add(res_list);
   }
@@ -179,9 +177,10 @@ public:
   ///   - common::ERR_NONE on success
   ///   - common::ERR_FAIL if insufficient resource amount to remove
   ///   - common::ERR_INVALID on invalid resource specified
-  common::Error get_resource(const portable::Resource::Type res_type,
-                             std::vector<portable::Resource> &result,
-                             const uint16_t amount = 1)
+  common::Error
+  get_resource(const portable::Resource::Type res_type,
+               std::vector<std::unique_ptr<portable::Resource>> &result,
+               const uint16_t amount = 1)
   {
     return m_resources.get(res_type, result, amount);
   }
@@ -195,21 +194,13 @@ public:
   ///   - common::ERR_NONE on success
   ///   - common::ERR_FAIL on insufficient resources in cache
   ///   - common::ERR_INVALID on invalid resource type requested
-  common::Error get_resource(const portable::Resource::Type res_type,
-                             const player::Color clr,
-                             std::vector<portable::Resource> &result,
-                             const uint16_t amount = 1)
+  common::Error
+  get_resource(const portable::Resource::Type res_type, const player::Color clr,
+               std::vector<std::unique_ptr<portable::Resource>> &result,
+               const uint16_t amount = 1)
   {
     return m_resources.get(res_type, clr, result, amount);
   }
-
-  /// Combines this area with another to make a single area.
-  /// @param other Area to be merged with
-  /// @return
-  ///   - common::ERR_INVALID on invalid input
-  ///   - common::ERR_FAIL on failure to merge areas
-  ///   - common::ERR_NONE on success. This area will be merged with other
-  common::Error merge(Area &other);
 
   bool can_rotate() const;
 
@@ -223,6 +214,8 @@ public:
   ///   - common::ERR_UNKNOWN otherwise
   common::Error rotate(int rotations);
 
+  common::Error load_building(const nlohmann::json &j);
+
   friend std::ostream &operator<<(std::ostream &os, tile::Area const &a);
   friend void to_json(nlohmann::json &j, const Area &area);
   friend void from_json(const nlohmann::json &j, Area &area);
@@ -231,8 +224,9 @@ protected:
 private:
   std::set<Border> m_borders;
   std::set<Border> m_roads;
-  std::shared_ptr<building::Building> m_building;
+  std::unique_ptr<building::Building> m_building;
   portable::Cache m_resources;
+  tile::Tile *m_parent;
 };
 } // namespace tile
 

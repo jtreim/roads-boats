@@ -7,6 +7,9 @@
 #include <stduuid/include/uuid.h>
 
 #include <buildings/Building.h>
+#include <buildings/producers/Mine.h>
+#include <buildings/producers/Mint.h>
+#include <buildings/producers/Woodcutter.h>
 #include <common/Errors.h>
 #include <players/Player.h>
 #include <portables/resources/Cache.h>
@@ -81,200 +84,46 @@ TEST(area_test, build_road_test)
   ASSERT_TRUE(a.has_road(Border::NE_left));
 }
 
-// TODO Disabled until buildings are implemented
-TEST(DISABLED_area_test, build_building_test)
+TEST(area_test, build_building_test)
 {
-  // Area test_object = Area();
-  // std::shared_ptr<building::Building> bldg;
+  Area *test_object = new Area();
 
-  // // An area defaults to not having a building
-  // ASSERT_EQ(nullptr, test_object.get_building());
+  // An area defaults to not having a building
+  ASSERT_EQ(nullptr, test_object->get_building());
 
-  // // An area will fail when "building" a nullptr
-  // ASSERT_EQ(common::ERR_INVALID, test_object.build(bldg));
-  // ASSERT_EQ(nullptr, test_object.get_building());
+  // Constructing a building requires resources. Without those, the building
+  // should not be added.
+  ASSERT_EQ(common::ERR_FAIL, test_object->build<building::Woodcutter>());
+  ASSERT_EQ(nullptr, test_object->get_building());
 
-  // // An area will add a building when valid
-  // bldg = std::make_shared<building::Building>(
-  //     building::Building::Type::woodcutter);
-  // ASSERT_EQ(common::ERR_NONE, test_object.build(bldg));
-  // ASSERT_EQ(bldg, test_object.get_building());
+  // Some buildings can only be built on specific terrains. A woodcutter can
+  // only be built on a forest tile.
+  Tile tile = Tile(Terrain::plains);
+  // The tile only has one area, so first border should retrieve it.
+  test_object = tile.get_area(Border::E_left).get();
+  // Add resources so we only test that the terrain matters
+  test_object->add_resource(
+      new portable::Resource(portable::Resource::Type::boards));
+  ASSERT_EQ(common::ERR_FAIL, test_object->build<building::Woodcutter>());
+  ASSERT_EQ(nullptr, test_object->get_building());
 
-  // // Areas can only have one building on it
-  // std::shared_ptr<building::Building> other =
-  //     std::make_shared<building::Building>(building::Building::mint);
-  // ASSERT_EQ(common::ERR_FAIL, test_object.build(other));
-  // ASSERT_EQ(bldg, test_object.get_building());
-}
+  tile = Tile(Terrain::forest);
+  test_object = tile.get_area(Border::E_left).get();
+  ASSERT_EQ(common::ERR_FAIL, test_object->build<building::Woodcutter>());
+  ASSERT_EQ(nullptr, test_object->get_building());
 
-TEST(area_test, area_addition_test)
-{
-  std::set<Border> a_borders;
-  a_borders.insert(Border::NW_right);
-  a_borders.insert(Border::NE_left);
-  a_borders.insert(Border::NE_right);
-  a_borders.insert(Border::E_left);
-  Area a = Area(a_borders);
-  a.build(Border::NW_right);
-  // std::shared_ptr<building::Building> bldg =
-  //     std::make_shared<building::Building>(building::Building::mine);
-  // a.build(bldg);
-  a.add_resource(portable::Resource::Type::trunks);
+  // An area will add a building when valid
+  test_object->add_resource(
+      new portable::Resource(portable::Resource::Type::boards));
+  ASSERT_EQ(common::ERR_NONE, test_object->build<building::Woodcutter>());
+  ASSERT_NE(nullptr, test_object->get_building());
+  ASSERT_EQ(building::Building::Type::woodcutter,
+            test_object->get_building()->get_type());
 
-  std::set<Border> b_borders;
-  b_borders.insert(Border::E_right);
-  b_borders.insert(Border::SE_left);
-  b_borders.insert(Border::SE_right);
-  b_borders.insert(Border::SW_left);
-  Area b = Area(b_borders);
-  b.build(Border::E_right);
-  b.build(Border::SE_left);
-  b.add_resource(portable::Resource::Type::trunks);
-  b.add_resource(portable::Resource::Type::goose);
-
-  // When merging two areas that can be combined, the result should contain all
-  // borders, roads, resources, transporters, and whether the merged area
-  // includes a building.
-  Area c = a + b;
-
-  ASSERT_EQ(8, c.get_borders().size());
-  for (auto border : a.get_borders())
-  {
-    ASSERT_TRUE(c.has_border(border));
-  }
-  for (auto road : a.get_roads())
-  {
-    ASSERT_TRUE(c.has_road(road));
-  }
-  for (auto border : b.get_borders())
-  {
-    ASSERT_TRUE(c.has_border(border));
-  }
-  for (auto road : b.get_roads())
-  {
-    ASSERT_TRUE(c.has_road(road));
-  }
-  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
-  {
-    portable::Resource::Type r = static_cast<portable::Resource::Type>(r);
-    uint16_t amount = a.get_resource_amount(r) + b.get_resource_amount(r);
-    ASSERT_EQ(amount, c.get_resource_amount(r));
-  }
-  // ASSERT_EQ(bldg, c.get_building());
-
-  // The += operator should work too
-  c = Area();
-  c += a;
-  c += b;
-  ASSERT_EQ(8, c.get_borders().size());
-  for (auto border : a.get_borders())
-  {
-    ASSERT_TRUE(c.has_border(border));
-  }
-  for (auto road : a.get_roads())
-  {
-    ASSERT_TRUE(c.has_road(road));
-  }
-  for (auto border : b.get_borders())
-  {
-    ASSERT_TRUE(c.has_border(border));
-  }
-  for (auto road : b.get_roads())
-  {
-    ASSERT_TRUE(c.has_road(road));
-  }
-  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
-  {
-    portable::Resource::Type r = static_cast<portable::Resource::Type>(r);
-    uint16_t amount = a.get_resource_amount(r) + b.get_resource_amount(r);
-    ASSERT_EQ(amount, c.get_resource_amount(r));
-  }
-  // ASSERT_EQ(bldg, c.get_building());
-
-  // These operators should also allow adding borders/resources directly.
-  // This should merge in b's borders, but not anything else.
-  c = a + b.get_borders();
-  ASSERT_EQ(8, c.get_borders().size());
-  for (auto border : a.get_borders())
-  {
-    ASSERT_TRUE(c.has_border(border));
-  }
-  ASSERT_EQ(a.get_roads(), c.get_roads());
-  for (auto border : b.get_borders())
-  {
-    ASSERT_TRUE(c.has_border(border));
-  }
-  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
-  {
-    portable::Resource::Type r = static_cast<portable::Resource::Type>(r);
-    ASSERT_EQ(a.get_resource_amount(r), c.get_resource_amount(r));
-  }
-  // ASSERT_EQ(bldg, c.get_building());
-
-  c = Area(a);
-  c += b.get_borders();
-  ASSERT_EQ(8, c.get_borders().size());
-  for (auto border : a.get_borders())
-  {
-    ASSERT_TRUE(c.has_border(border));
-  }
-  ASSERT_EQ(a.get_roads(), c.get_roads());
-  for (auto border : b.get_borders())
-  {
-    ASSERT_TRUE(c.has_border(border));
-  }
-  for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
-  {
-    portable::Resource::Type r = static_cast<portable::Resource::Type>(r);
-    ASSERT_EQ(a.get_resource_amount(r), c.get_resource_amount(r));
-    // }
-    // ASSERT_EQ(bldg, c.get_building());
-
-    // Adding a list of resources should only merge in those to the area.
-    c = a + b.get_resources();
-    ASSERT_EQ(a.get_borders(), c.get_borders());
-    ASSERT_EQ(a.get_roads(), c.get_roads());
-    for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
-    {
-      portable::Resource::Type r = static_cast<portable::Resource::Type>(r);
-      ASSERT_EQ(a.get_resource_amount(r) + b.get_resource_amount(r),
-                c.get_resource_amount(r));
-    }
-    // ASSERT_EQ(bldg, c.get_building());
-
-    c = a;
-    c += b.get_resources();
-    ASSERT_EQ(a.get_borders(), c.get_borders());
-    ASSERT_EQ(a.get_roads(), c.get_roads());
-    for (size_t i = 0; i < portable::RESOURCE_TYPES; i++)
-    {
-      portable::Resource::Type r = static_cast<portable::Resource::Type>(r);
-      ASSERT_EQ(a.get_resource_amount(r) + b.get_resource_amount(r),
-                c.get_resource_amount(r));
-    }
-    // ASSERT_EQ(bldg, c.get_building());
-
-    // the merge function should act like the += operator
-    c = a;
-    c += b;
-    Area d = a;
-    ASSERT_EQ(common::ERR_NONE, d.merge(b));
-    ASSERT_EQ(c, d);
-
-    // if the both areas that are being combined have buildings, don't merge
-    // them Report error for merge
-    // b.build(bldg);
-    // d = a + b;
-    // ASSERT_EQ(a, d);
-
-    // d = Area(a);
-    // d += b;
-    // ASSERT_EQ(a + b, d);
-
-    // d = Area(a);
-    // ASSERT_EQ(common::ERR_FAIL, d.merge(b));
-    // ASSERT_EQ(a, d);
-  }
+  // Areas can only have one building on it
+  ASSERT_EQ(common::ERR_FAIL, test_object->build<building::Mint>());
+  ASSERT_EQ(building::Building::Type::woodcutter,
+            test_object->get_building()->get_type());
 }
 
 TEST(area_test, rotate_area_test)

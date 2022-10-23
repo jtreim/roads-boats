@@ -22,7 +22,16 @@ Cache::Cache(const Cache &other)
     Resource::Type key = static_cast<Resource::Type>(r);
     if (other.m_resources.find(key) != other.m_resources.end())
     {
-      m_resources.insert({key, other.m_resources.at(key)});
+      std::vector<std::unique_ptr<Resource>> res_list;
+      m_resources.insert({key, std::move(res_list)});
+      for (size_t i = 0; i < other.m_resources.at(key).size(); i++)
+      {
+        if (nullptr != other.m_resources.at(key).at(i))
+        {
+          m_resources.at(key).push_back(std::make_unique<Resource>(
+              *(other.m_resources.at(key).at(i).get())));
+        }
+      }
     }
   }
 }
@@ -40,7 +49,7 @@ bool Cache::operator==(Cache &other)
       return false;
     }
     if ((m_resources.find(key) != m_resources.end()) &&
-        (m_resources.at(key) != other.m_resources.at(key)))
+        (m_resources.at(key).size() != other.m_resources.at(key).size()))
     {
       return false;
     }
@@ -60,7 +69,7 @@ bool Cache::operator==(Cache const &other) const
       return false;
     }
     if ((m_resources.find(key) != m_resources.end()) &&
-        (m_resources.at(key) != other.m_resources.at(key)))
+        (m_resources.at(key).size() != other.m_resources.at(key).size()))
     {
       return false;
     }
@@ -80,7 +89,13 @@ Cache Cache::operator=(const Cache &other)
     Resource::Type key = static_cast<Resource::Type>(r);
     if (other.m_resources.find(key) != other.m_resources.end())
     {
-      m_resources.insert({key, other.m_resources.at(key)});
+      std::vector<std::unique_ptr<Resource>> res_list;
+      for (size_t i = 0; i < other.m_resources.at(key).size(); i++)
+      {
+        Resource *r_ptr = other.m_resources.at(key).at(i).get();
+        res_list.push_back(std::make_unique<Resource>(*r_ptr));
+      }
+      m_resources.insert({key, std::move(res_list)});
     }
   }
   return (*this);
@@ -88,77 +103,159 @@ Cache Cache::operator=(const Cache &other)
 
 Cache Cache::operator+(const Cache &other)
 {
-  return (*this + other.m_resources);
+  Cache retval;
+  for (size_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  {
+    portable::Resource::Type key = static_cast<portable::Resource::Type>(i);
+    std::vector<std::unique_ptr<portable::Resource>> r_list;
+    if (other.m_resources.find(key) != other.m_resources.end())
+    {
+      for (const auto &res : other.m_resources.at(key))
+      {
+        if (nullptr != res)
+        {
+          r_list.push_back(std::make_unique<portable::Resource>(*res.get()));
+        }
+      }
+    }
+    if (m_resources.find(key) != other.m_resources.end())
+    {
+      for (const auto &res : m_resources.at(key))
+      {
+        if (nullptr != res)
+        {
+          r_list.push_back(std::make_unique<portable::Resource>(*res.get()));
+        }
+      }
+    }
+
+    if (!r_list.empty())
+    {
+      retval.m_resources.insert({key, std::move(r_list)});
+    }
+  }
+
+  return retval;
 }
 
 Cache Cache::operator+(const Cache &other) const
 {
-  return (*this + other.m_resources);
+  Cache retval;
+  for (size_t i = 0; i < portable::RESOURCE_NAMES_SIZE; i++)
+  {
+    portable::Resource::Type key = static_cast<portable::Resource::Type>(i);
+    std::vector<std::unique_ptr<portable::Resource>> r_list;
+    if (other.m_resources.find(key) != other.m_resources.end())
+    {
+      for (const auto &res : other.m_resources.at(key))
+      {
+        if (nullptr != res)
+        {
+          r_list.push_back(std::make_unique<portable::Resource>(*res.get()));
+        }
+      }
+    }
+    if (m_resources.find(key) != other.m_resources.end())
+    {
+      for (const auto &res : m_resources.at(key))
+      {
+        if (nullptr != res)
+        {
+          r_list.push_back(std::make_unique<portable::Resource>(*res.get()));
+        }
+      }
+    }
+
+    if (!r_list.empty())
+    {
+      retval.m_resources.insert({key, std::move(r_list)});
+    }
+  }
+
+  return retval;
 }
 
-Cache Cache::
-operator+(const std::map<Resource::Type, std::vector<Resource>> &res_list)
+Cache Cache::operator+(const std::vector<Resource *> &res_list)
 {
   Cache merged = Cache(*this);
-  for (uint8_t r = 0; r < RESOURCE_NAMES_SIZE; r++)
+  for (auto r_ptr : res_list)
   {
-    Resource::Type key = static_cast<Resource::Type>(r);
-    if ((m_resources.find(key) != m_resources.end()) &&
-        (res_list.find(key) != res_list.end()))
+    if (nullptr == r_ptr)
     {
-      merged.m_resources.at(key).insert(merged.m_resources.at(key).end(),
-                                        res_list.at(key).begin(),
-                                        res_list.at(key).end());
+      continue;
     }
-    else if (res_list.find(key) != res_list.end())
+    Resource::Type key = r_ptr->get_type();
+    if (merged.m_resources.find(key) == m_resources.end())
     {
-      merged.m_resources.insert({key, res_list.at(key)});
+      std::vector<std::unique_ptr<portable::Resource>> r_list;
+      merged.m_resources.insert({key, std::move(r_list)});
     }
+    merged.m_resources.at(key).push_back(
+        std::make_unique<portable::Resource>(*r_ptr));
   }
   return merged;
 }
 
-Cache Cache::
-operator+(const std::map<Resource::Type, std::vector<Resource>> &res_list) const
+Cache Cache::operator+(const std::vector<Resource *> &res_list) const
 {
   Cache merged = Cache(*this);
-  for (uint8_t r = 0; r < RESOURCE_NAMES_SIZE; r++)
+  for (auto r_ptr : res_list)
   {
-    Resource::Type key = static_cast<Resource::Type>(r);
-    if ((m_resources.find(key) != m_resources.end()) &&
-        (res_list.find(key) != res_list.end()))
+    if (nullptr == r_ptr)
     {
-      merged.m_resources.at(key).insert(merged.m_resources.at(key).end(),
-                                        res_list.at(key).begin(),
-                                        res_list.at(key).end());
+      continue;
     }
-    else if (res_list.find(key) != res_list.end())
+    Resource::Type key = r_ptr->get_type();
+    if (merged.m_resources.find(key) == m_resources.end())
     {
-      merged.m_resources.insert({key, res_list.at(key)});
+      std::vector<std::unique_ptr<Resource>> r_list;
+      merged.m_resources.insert({key, std::move(r_list)});
     }
+    merged.m_resources.at(key).push_back(std::make_unique<Resource>(*r_ptr));
   }
   return merged;
 }
 
-void Cache::operator+=(Cache const &other) { *this += other.m_resources; }
-
-void Cache::
-operator+=(std::map<Resource::Type, std::vector<Resource>> const &res_list)
+void Cache::operator+=(Cache const &other)
 {
-  for (uint8_t r = 0; r < RESOURCE_NAMES_SIZE; r++)
+  for (size_t i = 0; i < RESOURCE_NAMES_SIZE; i++)
   {
-    Resource::Type key = static_cast<Resource::Type>(r);
-    if ((res_list.find(key) != res_list.end()) &&
-        (m_resources.find(key) != m_resources.end()))
+    Resource::Type key = static_cast<Resource::Type>(i);
+    if (other.m_resources.find(key) == other.m_resources.end())
     {
-      m_resources.at(key).insert(m_resources.at(key).end(),
-                                 res_list.at(key).begin(),
-                                 res_list.at(key).end());
+      continue;
     }
-    else if (res_list.find(key) != res_list.end())
+    if (m_resources.find(key) == m_resources.end())
     {
-      m_resources.insert({key, res_list.at(key)});
+      std::vector<std::unique_ptr<Resource>> r_list;
+      m_resources.insert({key, std::move(r_list)});
     }
+
+    for (const auto &r_ptr : other.m_resources.at(key))
+    {
+      if (nullptr != r_ptr)
+      {
+        m_resources.at(key).push_back(std::make_unique<Resource>(*r_ptr));
+      }
+    }
+  }
+}
+
+void Cache::operator+=(std::vector<Resource *> const &res_list)
+{
+  for (auto r_ptr : res_list)
+  {
+    if (nullptr == r_ptr)
+    {
+      continue;
+    }
+    Resource::Type key = r_ptr->get_type();
+    if (m_resources.find(key) == m_resources.end())
+    {
+      std::vector<std::unique_ptr<Resource>> r_list;
+      m_resources.insert({key, std::move(r_list)});
+    }
+    m_resources.at(key).push_back(std::make_unique<Resource>(*r_ptr));
   }
 }
 
@@ -173,8 +270,40 @@ void Cache::reset()
     {
       for (size_t i = 0; i < m_resources.at(key).size(); i++)
       {
-        m_resources.at(key).at(i).reset();
+        if (nullptr == m_resources.at(key).at(i))
+        {
+          continue;
+        }
+        m_resources.at(key).at(i)->reset();
       }
+    }
+  }
+
+  clean();
+}
+
+void Cache::clean()
+{
+  for (uint8_t r = 0; r < RESOURCE_NAMES_SIZE; r++)
+  {
+    Resource::Type key = static_cast<Resource::Type>(r);
+    if (m_resources.find(key) == m_resources.end())
+    {
+      continue;
+    }
+
+    for (auto i = m_resources.at(key).end() - 1;
+         i >= m_resources.at(key).begin(); --i)
+    {
+      if (nullptr == *i)
+      {
+        m_resources.at(key).erase(i);
+      }
+    }
+
+    if (m_resources.at(key).empty())
+    {
+      m_resources.erase(key);
     }
   }
 }
@@ -202,19 +331,37 @@ uint16_t Cache::count_moveable(const Resource::Type res,
     }
     else
     {
-      for (auto r : m_resources.at(res))
+      for (size_t i = 0; i < m_resources.at(res).size(); i++)
       {
-        total += (!r.was_carried_by(player) ? 1 : 0);
+        total +=
+            (!m_resources.at(res).at(i).get()->was_carried_by(player) ? 1 : 0);
       }
     }
   }
   return total;
 }
 
-std::map<Resource::Type, std::vector<Resource>>
-Cache::all_moveable(const player::Color p) const
+std::vector<Resource *> Cache::all() const
 {
-  std::map<Resource::Type, std::vector<Resource>> result;
+  std::vector<Resource *> result;
+  for (uint8_t r = 0; r < portable::RESOURCE_NAMES_SIZE; r++)
+  {
+    portable::Resource::Type res_type =
+        static_cast<portable::Resource::Type>(r);
+    if (m_resources.find(res_type) != m_resources.end())
+    {
+      for (uint8_t i = 0; i < m_resources.at(res_type).size(); i++)
+      {
+        result.push_back(m_resources.at(res_type).at(i).get());
+      }
+    }
+  }
+  return result;
+}
+
+std::vector<Resource *> Cache::all_moveable(const player::Color p) const
+{
+  std::vector<Resource *> result;
   for (uint8_t r = 0; r < RESOURCE_NAMES_SIZE; r++)
   {
     Resource::Type key = static_cast<Resource::Type>(r);
@@ -222,59 +369,105 @@ Cache::all_moveable(const player::Color p) const
     {
       continue;
     }
-    std::vector<Resource> moveable;
-    for (auto res : m_resources.at(key))
+    for (uint8_t i = 0; i < m_resources.at(key).size(); i++)
     {
-      if (!res.was_carried_by(p))
+      if (!m_resources.at(key).at(i)->was_carried_by(p))
       {
-        moveable.push_back(res);
+        result.push_back(m_resources.at(key).at(i).get());
       }
     }
-    result.insert({key, moveable});
   }
+  return result;
 }
 
-common::Error Cache::add(Resource res)
+common::Error Cache::add(Resource *&res)
 {
-  if (!Resource::is_valid(res.get_type()))
+  if ((nullptr == res) || (!Resource::is_valid(res->get_type())))
   {
     return common::ERR_INVALID;
   }
 
-  if (m_resources.find(res.get_type()) != m_resources.end())
+  if (m_resources.find(res->get_type()) != m_resources.end())
   {
-    m_resources.at(res.get_type()).push_back(res);
+    m_resources.at(res->get_type()).push_back(std::make_unique<Resource>(*res));
   }
   else
   {
-    std::vector<Resource> r_list;
-    r_list.push_back(res);
-    m_resources.insert({res.get_type(), r_list});
+    std::vector<std::unique_ptr<Resource>> r_list;
+    r_list.push_back(std::make_unique<Resource>(*res));
+    m_resources.insert({res->get_type(), std::move(r_list)});
   }
   return common::ERR_NONE;
 }
 
-common::Error
-Cache::add(std::map<Resource::Type, std::vector<Resource>> &res_list)
+common::Error Cache::add(const Resource::Type res)
 {
-  for (std::map<Resource::Type, std::vector<Resource>>::iterator it =
-           res_list.begin();
-       it != res_list.end(); ++it)
+  if (!Resource::is_valid(res))
   {
-    if (!Resource::is_valid(it->first))
+    return common::ERR_INVALID;
+  }
+
+  if (m_resources.find(res) != m_resources.end())
+  {
+    m_resources.at(res).push_back(std::make_unique<Resource>(res));
+  }
+  else
+  {
+    std::vector<std::unique_ptr<Resource>> r_list;
+    r_list.push_back(std::make_unique<Resource>(res));
+    m_resources.insert({res, std::move(r_list)});
+  }
+  return common::ERR_NONE;
+}
+
+common::Error Cache::add(std::vector<Resource *> &res_list)
+{
+  // Validate resources list before we add any
+  for (size_t i = 0; i < res_list.size(); i++)
+  {
+    if ((nullptr == res_list.at(i)) ||
+        (!Resource::is_valid(res_list.at(i)->get_type())))
     {
       return common::ERR_INVALID;
     }
-    for (auto res : res_list.at(it->first))
+  }
+
+  for (size_t i = 0; i < res_list.size(); i++)
+  {
+    Resource::Type res_type = res_list.at(i)->get_type();
+    if (m_resources.find(res_type) != m_resources.end())
     {
-      if (it->first != res.get_type())
-      {
-        return common::ERR_INVALID;
-      }
+      m_resources.at(res_type).push_back(
+          std::make_unique<Resource>(*(res_list.at(i))));
+    }
+    else
+    {
+      std::vector<std::unique_ptr<Resource>> new_list;
+      new_list.push_back(std::make_unique<Resource>(*(res_list.at(i))));
+      m_resources.insert({res_type, std::move(new_list)});
     }
   }
-  (*this += res_list);
   return common::ERR_NONE;
+}
+
+common::Error Cache::add(std::vector<Portable *> &res_list)
+{
+  std::vector<Resource *> res_to_add;
+  common::Error err = common::ERR_FAIL;
+  // Convert all resource pointers from input to something usable.
+  for (size_t i = 0; i < res_list.size(); i++)
+  {
+    if (res_list.at(i)->get_object() == Portable::Object::resource)
+    {
+      res_to_add.push_back(static_cast<Resource *>(res_list.at(i)));
+    }
+  }
+
+  if (res_to_add.size() > 0)
+  {
+    err = add(res_to_add);
+  }
+  return err;
 }
 
 common::Error Cache::remove(const Resource::Type res, const uint16_t amount)
@@ -295,7 +488,8 @@ common::Error Cache::remove(const Resource::Type res, const uint16_t amount)
 }
 
 common::Error Cache::get(const Resource::Type res,
-                         std::vector<Resource> &result, const uint16_t amount)
+                         std::vector<std::unique_ptr<Resource>> &result,
+                         const uint16_t amount)
 {
   common::Error err = common::ERR_NONE;
   if (!Resource::is_valid(res))
@@ -309,9 +503,11 @@ common::Error Cache::get(const Resource::Type res,
 
   if ((common::ERR_NONE == err) && (0 != amount))
   {
-    std::copy(m_resources.at(res).end() - amount, m_resources.at(res).end(),
-              std::back_inserter(result));
-
+    for (uint16_t i = 0; i < amount; i++)
+    {
+      size_t idx = m_resources.at(res).size() - i;
+      result.push_back(std::move(m_resources.at(res).at(idx)));
+    }
     m_resources.at(res).erase(m_resources.at(res).end() - amount,
                               m_resources.at(res).end());
   }
@@ -320,7 +516,8 @@ common::Error Cache::get(const Resource::Type res,
 }
 
 common::Error Cache::get(const Resource::Type res, const player::Color clr,
-                         std::vector<Resource> &result, const uint16_t amount)
+                         std::vector<std::unique_ptr<Resource>> &result,
+                         const uint16_t amount)
 {
   common::Error err = common::ERR_NONE;
   if ((!Resource::is_valid(res)) || (!player::is_valid(clr)))
@@ -334,39 +531,38 @@ common::Error Cache::get(const Resource::Type res, const player::Color clr,
 
   if ((common::ERR_NONE == err) && (0 != amount))
   {
-    std::vector<Resource> unmoved;
-    std::vector<Resource> to_remove;
+    std::vector<std::unique_ptr<Resource>> unmoved;
+    std::vector<std::unique_ptr<Resource>> to_remove;
     size_t pre_move = m_resources.at(res).size();
     size_t idx = 0;
     while ((idx != m_resources.at(res).size()) && (to_remove.size() < amount))
     {
-      if (m_resources.at(res).at(idx).was_carried_by(clr))
+      if (m_resources.at(res).at(idx)->was_carried_by(clr))
       {
-        unmoved.push_back(m_resources.at(res).at(idx));
+        unmoved.push_back(std::move(m_resources.at(res).at(idx)));
       }
       else
       {
-        common::Error add_carrier_err =
-            m_resources.at(res).at(idx).add_carrier(clr);
-        if (add_carrier_err)
-        {
-          err = add_carrier_err;
-          break;
-        }
-        to_remove.push_back(m_resources.at(res).at(idx));
+        to_remove.push_back(std::move(m_resources.at(res).at(idx)));
       }
       idx++;
     }
 
-    if ((common::ERR_NONE == err) && (to_remove.size() != amount))
+    if ((!err) && (to_remove.size() != amount))
     {
       // We somehow didn't remove enough resources, despite checking first.
       err = common::ERR_FAIL;
     }
-    else if (common::ERR_NONE == err)
+    else if (!err)
     {
-      m_resources.at(res) = unmoved;
-      result.insert(to_remove.begin(), to_remove.end(), result.end());
+      m_resources.at(res) = std::move(unmoved);
+      // m_resources.erase(res);
+      // m_resources.insert({res, std::move(unmoved)});
+      // for (size_t i = 0; i < to_remove.size(); i++)
+      // {
+      //   result.push_back(std::move(to_remove.at(i)));
+      // }
+      result = std::move(to_remove);
     }
   }
 
@@ -400,7 +596,17 @@ void to_json(nlohmann::json &j, const Cache &res_cache)
     Resource::Type key = static_cast<Resource::Type>(r);
     if (res_cache.m_resources.find(key) != res_cache.m_resources.end())
     {
-      j[Resource::to_string(key)] = res_cache.m_resources.at(key);
+      std::string res_key = Resource::to_string(key);
+      for (size_t i = 0; i < res_cache.m_resources.at(key).size(); i++)
+      {
+        if (nullptr != res_cache.m_resources.at(key).at(i))
+        {
+          Resource res = *(res_cache.m_resources.at(key).at(i));
+          nlohmann::json res_json;
+          to_json(res_json, res);
+          j[res_key].push_back(res_json);
+        }
+      }
     }
   }
 }
@@ -417,8 +623,9 @@ void from_json(const nlohmann::json &j, Cache &res_cache)
       throw nlohmann::json::type_error::create(501, msg.str(), j);
     }
 
-    std::vector<Resource> res_list = value.get<std::vector<Resource>>();
-    for (auto resource : res_list)
+    std::vector<Resource> res_json_list = value.get<std::vector<Resource>>();
+    std::vector<std::unique_ptr<Resource>> res_list;
+    for (auto resource : res_json_list)
     {
       if (t != resource.get_type())
       {
@@ -427,8 +634,9 @@ void from_json(const nlohmann::json &j, Cache &res_cache)
             << " list: " << Resource::to_string(resource.get_type());
         throw nlohmann::json::type_error::create(501, msg.str(), j);
       }
+      res_list.push_back(std::make_unique<Resource>(resource));
     }
-    res_cache.m_resources.insert({t, res_list});
+    res_cache.m_resources.insert({t, std::move(res_list)});
   }
 }
 } // namespace portable

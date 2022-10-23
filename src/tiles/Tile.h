@@ -133,24 +133,23 @@ public:
   std::shared_ptr<Tile> get_neighbor(const Direction direction);
   std::shared_ptr<Tile> *get_neighbors();
 
-  inline std::pair<player::Color, uint8_t> get_wall(const Direction d) const
+  inline building::Wall get_wall(const Direction d) const
   {
     if (is_valid(d))
     {
       return m_walls[d];
     }
-    return std::make_pair<player::Color, uint8_t>(player::Color::invalid, 0);
+    return building::Wall();
   }
 
-  std::map<Direction, std::pair<player::Color, uint8_t>>
-  get_built_walls() const;
+  std::map<Direction, building::Wall> get_built_walls() const;
 
   /// Gets the building (if any) currently on this tile
   /// @return
   ///   - pointer to the structure built on this tile
   ///   - nullptr if no structure has been built here
-  std::shared_ptr<building::Building> get_building() const;
-  std::map<std::string, std::pair<portable::Resource, uint8_t>>
+  building::Building *get_building() const;
+  std::map<portable::Resource::Type, std::vector<portable::Resource *>>
   get_all_resources() const;
 
   bool has_river_point(const Direction direction);
@@ -226,16 +225,45 @@ public:
   ///   - common::ERR_FAIL if unable to build road on this border
   common::Error build_road(const Border border);
 
-  /// Builds a building on the input area if possible.
+  /// Template of a check to see if the building can be built on this tile.
+  /// @param[in] area  Area to construct the building in
+  template <class B>
+  bool can_build_building(const std::shared_ptr<Area> &area) const
+  {
+    return ((nullptr == get_building()) && (nullptr != area) &&
+            (area->can_build<B>()));
+  }
+
+  /// Constructs a building on the input area if possible.
   /// @param[in] area Pointer to the area to construct a building on.
-  /// @param[in] bldg Pointer to the building to construct.
   /// @return
   ///   - common::ERR_NONE on success
   ///   - commmon::ERR_INVALID if area is invalid value, or bldg type is
   ///   invalid.
   ///   - common::ERR_FAIL otherwise
-  common::Error build_building(const std::shared_ptr<Area> &area,
-                               const std::shared_ptr<building::Building> &bldg);
+  template <class Bldg>
+  common::Error build_building(const std::shared_ptr<Area> &area)
+  {
+    common::Error err = common::ERR_FAIL;
+    // Don't allow buildings before having a hex point, all the neighbors'
+    // data, or if the building cannot be built on this tile with the input
+    // resources.
+    if ((!m_hex_set) || (!m_neighbors_are_current) ||
+        (!can_build_building<Bldg>(area)))
+    {
+      return err;
+    }
+    Border b = (*area->get_borders().begin());
+    if ((area == get_area(b)) && (nullptr == get_building()))
+    {
+      err = get_area(b)->build<Bldg>();
+    }
+    if (!err)
+    {
+      m_rot_locked = true;
+    }
+    return err;
+  }
 
   /// Builds a bridge at input river point if possible.
   /// @param[in] point  Point to build a bridge.
@@ -293,7 +321,7 @@ private:
   std::shared_ptr<Tile> m_neighbors[MAX_DIRECTIONS];
   std::vector<std::shared_ptr<River>> m_rivers;
   std::vector<std::shared_ptr<Area>> m_areas;
-  std::pair<player::Color, uint8_t> m_walls[MAX_DIRECTIONS];
+  building::Wall m_walls[MAX_DIRECTIONS];
   // Flag to prevent tile from rotating after placed in a map.
   bool m_rot_locked;
   // Flag indicating whether the hex point has been set. If not, tile is not

@@ -45,19 +45,19 @@ public:
   Cache operator=(const Cache &other);
   Cache operator+(const Cache &other);
   Cache operator+(const Cache &other) const;
-  Cache
-  operator+(const std::map<Resource::Type, std::vector<Resource>> &res_list);
-  Cache operator+(
-      const std::map<Resource::Type, std::vector<Resource>> &res_list) const;
-  void operator+=(Cache const &other);
-  void
-  operator+=(std::map<Resource::Type, std::vector<Resource>> const &res_list);
+  Cache operator+(const std::vector<Resource *> &res_list);
+  Cache operator+(const std::vector<Resource *> &res_list) const;
+  void operator+=(const Cache &other);
+  void operator+=(const std::vector<Resource *> &res_list);
 
   /// Removes all resources from the cache
   void clear();
 
   /// Resets all resources for a new round. Maintains resource amounts.
   void reset();
+
+  /// Clears out any empty pointers or empty lists from cache.
+  void clean();
 
   /// Returns the total resource amount
   /// @param[in] res Resource to check
@@ -72,30 +72,44 @@ public:
                           const player::Color player) const;
 
   /// Returns a list of all the resources in the cache
-  inline std::map<Resource::Type, std::vector<Resource>> all() const
-  {
-    return m_resources;
-  }
+  // TODO: does it make more sense to use a vector or a map for viewing all
+  // resources in a cache? std::map<Resource::Type, std::vector<Resource *>>
+  // all() const;
+
+  std::vector<Resource *> all() const;
 
   /// Returns a list of all moveable resources in the cache
   /// @param[in] p  Player color requesting list of resources
   /// @return  A list of all resources that can be moved by the input player
-  std::map<Resource::Type, std::vector<Resource>>
-  all_moveable(const player::Color p) const;
+  std::vector<Resource *> all_moveable(const player::Color p) const;
 
   /// Adds resource to the cache
   /// @param[in] res  Resource to add
   /// @return
   ///   - common::ERR_NONE on success
   ///   - common::ERR_INVALID on invalid resource
-  common::Error add(Resource res);
+  common::Error add(Resource *&res);
 
-  /// Adds resources to the cache
-  /// @param[in] res  Resources to add
+  /// Adds resource to the cache
+  /// @param[in] res  Resource to add
   /// @return
   ///   - common::ERR_NONE on success
   ///   - common::ERR_INVALID on invalid resource
-  common::Error add(std::map<Resource::Type, std::vector<Resource>> &res_list);
+  common::Error add(const Resource::Type res);
+
+  /// Adds resources to the cache
+  /// @param[in] res_list  Resources to add
+  /// @return
+  ///   - common::ERR_NONE on success
+  ///   - common::ERR_INVALID on invalid resource
+  common::Error add(std::vector<Resource *> &res_list);
+
+  /// Adds resources to the cache
+  /// @param[in] res_list  Resources to add
+  /// @return
+  ///   - common::ERR_NONE on success
+  ///   - common::ERR_FAIL on failure to add anything
+  common::Error add(std::vector<Portable *> &res_list);
 
   /// Removes resource from the cache
   /// @param[in] res  Resource to remove
@@ -108,6 +122,7 @@ public:
   common::Error remove(const Resource::Type res, const uint16_t amount = 1);
 
   /// Retrieves the specified amount of the input resource from the cache.
+  /// Retrieved resources are removed from the cache.
   /// @param[in] res  The type of resource to remove
   /// @param[out] result  The resulting list of removed resources
   /// @param[in] amount  The amount to remove
@@ -115,10 +130,12 @@ public:
   ///   - common::ERR_NONE on success
   ///   - common::ERR_FAIL on insufficient resources in cache
   ///   - common::ERR_INVALID on invalid resource type requested
-  common::Error get(const Resource::Type res, std::vector<Resource> &result,
+  common::Error get(const Resource::Type res,
+                    std::vector<std::unique_ptr<Resource>> &result,
                     const uint16_t amount);
 
   /// Retrieves the specified amount of the input resource from the cache.
+  /// Retrieved resources are removed from the cache.
   /// @param[in] res  The type of resource to remove
   /// @param[in] clr  The color of player requesting the resources
   /// @param[out] result  The resulting list of removed resources
@@ -128,7 +145,8 @@ public:
   ///   - common::ERR_FAIL on insufficient resources in cache
   ///   - common::ERR_INVALID on invalid resource type requested
   common::Error get(const Resource::Type res, const player::Color clr,
-                    std::vector<Resource> &result, const uint16_t amount);
+                    std::vector<std::unique_ptr<Resource>> &result,
+                    const uint16_t amount);
 
   /// Returns a total count of all resources in the cache
   uint32_t size() const;
@@ -139,7 +157,7 @@ public:
 
 protected:
 private:
-  std::map<Resource::Type, std::vector<Resource>> m_resources;
+  std::map<Resource::Type, std::vector<std::unique_ptr<Resource>>> m_resources;
 };
 }; // namespace portable
 
