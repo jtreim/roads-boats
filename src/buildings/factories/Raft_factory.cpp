@@ -62,7 +62,7 @@ Raft_factory::produce(portable::Cache &input,
                (int)(max - m_production_current)));
 
   common::Error err =
-      input.remove(portable::Resource::Type::boards, to_produce * 2);
+      input.remove(portable::Resource::Type::trunks, to_produce * 2);
 
   if (!err)
   {

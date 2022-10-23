@@ -28,7 +28,7 @@ public:
   };
 
   Mine();
-  Mine(uint8_t gold_amount, uint8_t iron_amount);
+  Mine(const Mine_type type);
   Mine(const Mine &other);
   ~Mine();
 

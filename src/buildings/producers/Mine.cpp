@@ -14,12 +14,29 @@
 
 namespace building
 {
-Mine::Mine() : Primary_producer(false, Building::Type::mine, 1) {}
+Mine::Mine() : Primary_producer(false, Building::Type::mine, 1)
+{
+  add_to_mine(3, 3);
+}
 
-Mine::Mine(uint8_t gold_amount, uint8_t iron_amount)
+Mine::Mine(const Mine_type type)
     : Primary_producer(false, Building::Type::mine, 1)
 {
-  add_to_mine(gold_amount, iron_amount);
+  switch (type)
+  {
+    case Mine_type::big:
+      add_to_mine(5, 5);
+      break;
+    case Mine_type::specialized_gold:
+      add_to_mine(4, 0);
+      break;
+    case Mine_type::specialized_iron:
+      add_to_mine(0, 4);
+      break;
+    default:
+      add_to_mine(3, 3);
+      break;
+  }
 }
 Mine::Mine(const Mine &other)
     : Primary_producer(other.m_is_powered, Building::Type::mine,
@@ -34,6 +51,7 @@ Mine Mine::operator=(const Mine &other)
   m_production_current = other.m_production_current;
   m_is_powered = other.m_is_powered;
   m_production_max = other.m_production_max;
+  m_remaining_resources = other.m_remaining_resources;
   return *this;
 }
 
