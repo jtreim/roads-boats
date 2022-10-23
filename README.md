@@ -19,7 +19,7 @@ See [expansion rules](https://github.com/jtreim/roads-boats/blob/main/misc/etcet
   - [X] Resources can be printed as JSON inside a map's JSON structure.
 - [ ] Buildings can exist on a map.
   - [ ] Buildings are restricted to existing on their respective tile types.
-  - [ ] Buildings can receive valid input goods and produce accurate outputs.
+  - [X] Buildings can receive valid input goods and produce accurate outputs.
   - [ ] Buildings can be printed as JSON inside a map's JSON structure.
 - [ ] Transporters can interact with the map.
   - [ ] Transporters can move from tile to tile.
