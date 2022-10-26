@@ -104,8 +104,15 @@ bool Coal_burner::can_build(const portable::Cache &input,
                             const tile::Tile *tile)
 {
   return ((input.count(portable::Resource::Type::boards) >= 3) &&
-          (nullptr != tile) && (tile::Terrain::sea != tile->get_terrain()) &&
+          (nullptr != tile) &&
+          (tile::is_valid(tile->get_terrain())) &&
+          (tile::Terrain::sea != tile->get_terrain()) &&
           (tile::Terrain::desert != tile->get_terrain()));
+}
+
+common::Error Coal_burner::remove_construction_resources(portable::Cache &input)
+{
+  return input.remove(portable::Resource::Type::boards, 3);
 }
 
 std::string Coal_burner::to_string() const

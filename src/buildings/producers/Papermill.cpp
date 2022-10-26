@@ -102,9 +102,11 @@ Papermill::produce(portable::Cache &input,
 
 bool Papermill::can_build(const portable::Cache &input, const tile::Tile *tile)
 {
-  return ((input.count(portable::Resource::Type::boards) > 0) &&
-          (input.count(portable::Resource::Type::stone) > 0) &&
-          (nullptr != tile) && (tile::Terrain::sea != tile->get_terrain()) &&
+  return ((input.count(portable::Resource::Type::boards) >= 1) &&
+          (input.count(portable::Resource::Type::stone) >= 1) &&
+          (nullptr != tile) &&
+          (tile::is_valid(tile->get_terrain())) &&
+          (tile::Terrain::sea != tile->get_terrain()) &&
           (tile::Terrain::desert != tile->get_terrain()));
 }
 

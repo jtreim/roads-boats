@@ -95,7 +95,7 @@ Mine::produce(portable::Cache &input,
 bool Mine::can_build(const portable::Cache &input, const tile::Tile *tile)
 {
   return ((input.count(portable::Resource::Type::boards) >= 3) &&
-          (input.count(portable::Resource::Type::stone) > 0) &&
+          (input.count(portable::Resource::Type::stone) >= 1) &&
           (nullptr != tile) &&
           (tile::Terrain::mountain == tile->get_terrain()));
 }

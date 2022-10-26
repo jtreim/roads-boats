@@ -55,7 +55,9 @@ Quarry::produce(portable::Cache &input,
 bool Quarry::can_build(const portable::Cache &input, const tile::Tile *tile)
 {
   return ((input.count(portable::Resource::Type::boards) >= 2) &&
-          (nullptr != tile) && (tile::Terrain::rock == tile->get_terrain()));
+          (nullptr != tile) &&
+          (tile::is_valid(tile->get_terrain())) &&
+          (tile::Terrain::rock == tile->get_terrain()));
 }
 
 common::Error Quarry::remove_construction_resources(portable::Cache &input)

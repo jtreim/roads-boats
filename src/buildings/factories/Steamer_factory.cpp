@@ -91,8 +91,22 @@ bool Steamer_factory::can_build(const portable::Cache &input,
 {
   return ((input.count(portable::Resource::Type::boards) >= 2) &&
           (input.count(portable::Resource::Type::stone) >= 2) &&
-          (nullptr != tile) && (tile::Terrain::sea != tile->get_terrain()) &&
-          (tile::Terrain::desert != tile->get_terrain()) && (tile->is_shore()));
+          (nullptr != tile) &&
+          (tile::is_valid(tile->get_terrain())) &&
+          (tile::Terrain::sea != tile->get_terrain()) &&
+          (tile::Terrain::desert != tile->get_terrain()) &&
+          (tile->is_shore()));
+}
+
+common::Error Steamer_factory::remove_construction_resources(
+  portable::Cache &input)
+{
+  common::Error err = input.remove(portable::Resource::Type::boards, 2);
+  if (!err)
+  {
+    err = input.remove(portable::Resource::Type::stone, 2);
+  }
+  return err;
 }
 
 std::string Steamer_factory::to_string() const

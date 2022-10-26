@@ -35,6 +35,7 @@
 
 #include <tiles/components/Area.h>
 #include <tiles/components/Border.h>
+#include <tiles/components/Hex.h>
 #include <tiles/Tile.h>
 
 using namespace building;
@@ -259,9 +260,297 @@ TEST(building_test, double_output_test)
   EXPECT_TRUE(s.can_add_manager());
 }
 
-TEST(building_test, construct_building_test)
+template<class Bldg>
+void construct_basic_building_test(
+  portable::Cache input)
 {
+  portable::Cache empty_input;
 
+  for (int i = -1; i < tile::MAX_TERRAIN_TYPES; i++)
+  {
+    tile::Terrain terrain = static_cast<tile::Terrain>(i);
+    tile::Tile* t = new tile::Tile(terrain);
+    // Check that the building can't be built without needed resources,
+    // regardless of terrain
+    EXPECT_FALSE(Bldg::can_build(empty_input, t));
+
+    // Check that with the correct input, the building can still only be built on
+    // valid terrain
+    if ((tile::Terrain::invalid == terrain) ||
+        (tile::Terrain::desert == terrain) ||
+        (tile::Terrain::sea == terrain))
+    {
+      EXPECT_FALSE(Bldg::can_build(input, t));
+    }
+    else
+    {
+      EXPECT_TRUE(Bldg::can_build(input, t));
+    }
+
+    // cleanup
+    delete t;
+    t = nullptr;
+  }
+
+  // Check that the required resources are removed when constructing
+  // Extranneous resources shouldn't be touched
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stock);
+  EXPECT_EQ(common::ERR_NONE, Bldg::remove_construction_resources(input));
+  EXPECT_EQ(1, input.count(portable::Resource::Type::boards));
+  EXPECT_EQ(1, input.count(portable::Resource::Type::stock));
+  EXPECT_EQ(2, input.all().size());
+}
+
+template<class Bldg>
+void construct_restricted_building_test(
+  portable::Cache input,
+  const tile::Terrain allowed_terrain)
+{
+  portable::Cache empty_input;
+
+  for (int i = -1; i < tile::MAX_TERRAIN_TYPES; i++)
+  {
+    tile::Terrain terrain = static_cast<tile::Terrain>(i);
+    tile::Tile* t = new tile::Tile(terrain);
+    // Check that the building can't be built without needed resources,
+    // regardless of terrain
+    EXPECT_FALSE(Bldg::can_build(empty_input, t));
+
+    // Check that with the correct input, the building can still only be built on
+    // valid terrain.
+    if (allowed_terrain == terrain)
+    {
+      EXPECT_TRUE(Bldg::can_build(input, t));
+    }
+    else
+    {
+      EXPECT_FALSE(Bldg::can_build(input, t));
+      EXPECT_EQ(common::ERR_FAIL,
+                Bldg::remove_construction_resources(empty_input));
+    }
+
+    // cleanup
+    delete t;
+    t = nullptr;
+  }
+
+  // Check that the required resources are removed when constructing
+  // Extranneous resources shouldn't be touched
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stock);
+  EXPECT_EQ(common::ERR_NONE, Bldg::remove_construction_resources(input));
+  EXPECT_EQ(1, input.count(portable::Resource::Type::boards));
+  EXPECT_EQ(1, input.count(portable::Resource::Type::stock));
+  EXPECT_EQ(2, input.all().size());
+}
+
+template<class Bldg>
+void construct_shore_building_test(
+  portable::Cache input)
+{
+  portable::Cache empty_input;
+
+  std::set<tile::Direction> river_points;
+  river_points.insert(tile::Direction::north_west);
+  tile::Hex hex = tile::Hex(0,0);
+
+  for (int i = -1; i < tile::MAX_TERRAIN_TYPES; i++)
+  {
+    tile::Terrain terrain = static_cast<tile::Terrain>(i);
+    tile::Tile* t = new tile::Tile(hex, terrain);
+
+    // Add a sea tile neighbor to ensure this is a shore tile if not a sea tile
+    std::shared_ptr<tile::Tile> sea_neighbor = std::make_shared<tile::Tile>(
+      tile::Terrain::sea);
+    ASSERT_EQ(common::ERR_NONE,
+              t->add_neighbor(sea_neighbor, tile::Direction::north_west));
+
+    // Check that the building can't be built without needed resources,
+    // regardless of terrain
+    EXPECT_FALSE(Bldg::can_build(empty_input, t));
+
+    // Check that with the correct input, the building can still only be built on
+    // valid terrain
+    if ((tile::Terrain::invalid == terrain) ||
+        (tile::Terrain::desert == terrain) ||
+        (tile::Terrain::sea == terrain))
+    {
+      EXPECT_FALSE(Bldg::can_build(input, t));
+
+      if (tile::Terrain::sea != terrain) // Can't add rivers to sea tiles
+      {
+        // This still shouldn't work for tiles that have a river running
+        // through them
+        sea_neighbor.reset();
+        delete t;
+        t = new tile::Tile(hex, river_points, terrain);
+        EXPECT_FALSE(Bldg::can_build(input, t));
+      }
+    }
+    else
+    {
+      EXPECT_TRUE(Bldg::can_build(input, t));
+      sea_neighbor.reset();
+      delete t;
+      t = new tile::Tile(hex, river_points, terrain);
+      EXPECT_TRUE(Bldg::can_build(input, t));
+    }
+
+    // cleanup
+    delete t;
+    t = nullptr;
+  }
+
+  // Check that the required resources are removed when constructing
+  // Extranneous resources shouldn't be touched
+  // This is independent of the check for terrain type.
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stock);
+  EXPECT_EQ(common::ERR_NONE, Bldg::remove_construction_resources(input));
+  EXPECT_EQ(1, input.count(portable::Resource::Type::boards));
+  EXPECT_EQ(1, input.count(portable::Resource::Type::stock));
+  EXPECT_EQ(2, input.all().size());
+}
+
+TEST(building_test, construct_basic_building_tests)
+{
+  // This tests buildings that aren't at sea, and don't require
+  // a terrain type. Essentially checking that:
+  // 1. Resources are valid
+  // 2. We aren't building at sea
+  // 3. We aren't building in a desert
+  // 4. We aren't building on an invalid terrain type
+  // This tests the vast majority of buildings
+  portable::Cache input;
+
+  // Sawmill: requires 2 boards and 1 stone
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stone);
+  construct_basic_building_test<Sawmill>(input);
+  input.clear();
+
+  // Coal burner: requires 3 boards
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  construct_basic_building_test<Coal_burner>(input);
+  input.clear();
+
+  // Papermill: requires 1 board and 1 stone
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stone);
+  construct_basic_building_test<Papermill>(input);
+  input.clear();
+
+  // Stone factory: requires 2 boards
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  construct_basic_building_test<Stone_factory>(input);
+  input.clear();
+
+  // Mint: requires 2 boards and 1 stone
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stone);
+  construct_basic_building_test<Mint>(input);
+  input.clear();
+
+  // Stock exchange: requires 3 stones
+  input.add(portable::Resource::Type::stone);
+  input.add(portable::Resource::Type::stone);
+  input.add(portable::Resource::Type::stone);
+  construct_basic_building_test<Stock_exchange>(input);
+  input.clear();
+
+  // Wagon factory: requires 2 boards and 1 stone
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stone);
+  construct_basic_building_test<Wagon_factory>(input);
+  input.clear();
+
+  // Truck factory: requires 2 boards and 2 stones
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stone);
+  input.add(portable::Resource::Type::stone);
+  construct_basic_building_test<Truck_factory>(input);
+  input.clear();
+}
+
+TEST(building_test, construct_restricted_building_tests)
+{
+  // This tests buildings that require a specific terrain type and are 
+  // independent of any tile neighbors.
+  // For most primary producers, they follow the same testing procedure.
+  portable::Cache input;
+  
+  // Woodcutter: requires 1 board, can only be built on forest tiles
+  input.add(portable::Resource::Type::boards);
+  construct_restricted_building_test<Woodcutter>(
+    input, tile::Terrain::forest);
+  input.clear();
+
+  // Quarry: requires 2 boards, can only be built on rock tiles
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  construct_restricted_building_test<Quarry>(input, tile::Terrain::rock);
+  input.clear();
+
+  // Mine: requires 3 boards and 1 stone, can only be built on mountain tiles
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stone);
+  construct_restricted_building_test<Mine>(
+    input, tile::Terrain::mountain);
+  input.clear();
+
+  // Oil rig: requires 3 boards and 1 stone, can only be built on sea tiles
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stone);
+  construct_restricted_building_test<Oil_rig>(input, tile::Terrain::sea);
+  input.clear();
+}
+
+TEST(building_test, construct_shore_building_tests)
+{
+  // Some buildings require the tile be adjacent to a sea tile, or to have a
+  // river running through it.
+  // This is for all factories that produce sea transporters, and the clay pit.
+  portable::Cache input;
+
+  // Clay pit: requires 3 boards
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  construct_shore_building_test<Clay_pit>(input);
+  input.clear();
+
+  // Raft factory: requires 1 board and 1 stone
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stone);
+  construct_shore_building_test<Raft_factory>(input);
+  input.clear();
+
+  // Raft factory: requires 2 boards and 1 stone
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stone);
+  construct_shore_building_test<Rowboat_factory>(input);
+  input.clear();
+
+  // Steamer factory: requires 2 boards and 2 stones
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::boards);
+  input.add(portable::Resource::Type::stone);
+  input.add(portable::Resource::Type::stone);
+  construct_shore_building_test<Steamer_factory>(input);
+  input.clear();
 }
 
 template<class Bldg>
@@ -296,8 +585,9 @@ void primary_producer_test(portable::Resource::Type output_res)
   EXPECT_EQ(output_res, static_cast<portable::Resource *>(output.at(0))->get_type());
 }
 
-TEST(building_test, primary_producers)
+TEST(building_test, primary_producer_tests)
 {
+  // Most primary producers should perform the same when producing.
   // Clay pits: produces 1 clay per round
   primary_producer_test<Clay_pit>(portable::Resource::clay);
   // Oil rigs: produces 1 fuel per round
@@ -310,6 +600,8 @@ TEST(building_test, primary_producers)
 
 TEST(building_test, mine_test)
 {
+  // Mine production is weird; we have to make a special test just for it.
+
   // Required for checking whether a building can produce.
   std::vector<portable::Transporter*> transporters;
   portable::Cache cache;
@@ -528,7 +820,7 @@ void secondary_producer_test(
   }
 }
 
-TEST(building_test, secondary_producers)
+TEST(building_test, secondary_producer_tests)
 {
   std::vector<portable::Resource::Type> input_res;
   
@@ -582,8 +874,12 @@ TEST(building_test, secondary_producers)
     input_res, portable::Resource::stock, 1, 6);
 }
 
+
 /// ------- Full Factory testing waiting on Transporter implementation -------
-TEST(building_test, raft_factory_test)
+template<class Sea_factory>
+void sea_factory_test(
+  std::vector<portable::Resource::Type> input,
+  portable::Transporter expected_output)
 {
   // Required for checking whether a building can produce.
   std::vector<portable::Transporter*> transporters;
@@ -592,125 +888,82 @@ TEST(building_test, raft_factory_test)
   // Add extranneous resource not used in production
   cache.add(portable::Resource::stock);
 
-  Raft_factory rf = Raft_factory();
-  // Raft factories require 2 trunks as input to produce
-  EXPECT_EQ(1, rf.count_remaining_production());
-  EXPECT_FALSE(rf.can_produce(cache, transporters));
-  EXPECT_EQ(common::ERR_FAIL, rf.produce(cache, transporters, output));
+  Sea_factory factory = Sea_factory();
+  // Check that factory can't produce without required resources
+  EXPECT_EQ(1, factory.count_remaining_production());
+  EXPECT_FALSE(factory.can_produce(cache, transporters));
+  EXPECT_EQ(common::ERR_FAIL, factory.produce(cache, transporters, output));
   EXPECT_EQ(0, output.size());
-  EXPECT_EQ(1, rf.count_remaining_production());
-  // Add requisite resources, plus some extra for testing
-  for (uint8_t i = 0; i < 4; i++)
-  {
-    cache.add(portable::Resource::trunks);
-  }
-
-  // With required resources, should be able to produce
-  EXPECT_TRUE(rf.can_produce(cache, transporters));
-  EXPECT_EQ(common::ERR_NONE, rf.produce(cache, transporters, output));
-  // Should only produce up to max per round.
-  // TODO: Determine color of transporter based on players using the building
-  // EXPECT_EQ(1, output.size());
-  // Extra trunks should be untouched.
-  EXPECT_EQ(2, cache.count(portable::Resource::trunks));
-  // All other resources should be untouched.
-  EXPECT_EQ(1, cache.count(portable::Resource::stock));
-  
-  // Shouldn't keep producing beyond max per round.
-  // Even if there are enough resources to do so.
-  EXPECT_EQ(0, rf.count_remaining_production());
-  EXPECT_EQ(common::ERR_FAIL, rf.produce(cache, transporters, output));
-  EXPECT_EQ(0, rf.count_remaining_production());
-  EXPECT_EQ(2, cache.count(portable::Resource::trunks));
-  EXPECT_EQ(1, cache.count(portable::Resource::stock));
-}
-
-TEST(building_test, rowboat_factory_test)
-{
-  // Required for checking whether a building can produce.
-  std::vector<portable::Transporter*> transporters;
-  portable::Cache cache;
-  std::vector<portable::Portable *> output;
-  // Add extranneous resource not used in production
-  cache.add(portable::Resource::stock);
-
-  Rowboat_factory rf = Rowboat_factory();
-  // Rowboat factories require 5 boards as input to produce
-  EXPECT_EQ(1, rf.count_remaining_production());
-  EXPECT_FALSE(rf.can_produce(cache, transporters));
-  EXPECT_EQ(common::ERR_FAIL, rf.produce(cache, transporters, output));
-  EXPECT_EQ(0, output.size());
-  EXPECT_EQ(1, rf.count_remaining_production());
-  // Add requisite resources, plus extra for testing
-  for (uint8_t i = 0; i < 10; i++)
-  {
-    cache.add(portable::Resource::boards);
-  }
-
-  // With required resources, should be able to produce
-  EXPECT_TRUE(rf.can_produce(cache, transporters));
-  EXPECT_EQ(common::ERR_NONE, rf.produce(cache, transporters, output));
-  // Should only produce up to max per round.
-  // TODO: Determine color of transporter based on players using the factory
-  // EXPECT_EQ(1, output.size());
-  // Extra boards should be untouched.
-  EXPECT_EQ(5, cache.count(portable::Resource::boards));
-  // All other resources should be untouched.
-  EXPECT_EQ(1, cache.count(portable::Resource::stock));
-  
-  // Shouldn't keep producing beyond max per round.
-  // Even if there are enough resources to do so.
-  EXPECT_EQ(0, rf.count_remaining_production());
-  EXPECT_EQ(common::ERR_FAIL, rf.produce(cache, transporters, output));
-  EXPECT_EQ(0, rf.count_remaining_production());
-  EXPECT_EQ(5, cache.count(portable::Resource::boards));
-  EXPECT_EQ(1, cache.count(portable::Resource::stock));
-}
-
-TEST(building_test, steamer_factory_test)
-{
-  // Required for checking whether a building can produce.
-  std::vector<portable::Transporter*> transporters;
-  portable::Cache cache;
-  std::vector<portable::Portable *> output;
-  // Add extranneous resource not used in production
-  cache.add(portable::Resource::stock);
-
-  Steamer_factory sf = Steamer_factory();
-  // Steamer factories require 2 fuel and an iron as input to produce
-  EXPECT_EQ(1, sf.count_remaining_production());
-  EXPECT_FALSE(sf.can_produce(cache, transporters));
-  EXPECT_EQ(common::ERR_FAIL, sf.produce(cache, transporters, output));
-  EXPECT_EQ(0, output.size());
-  EXPECT_EQ(1, sf.count_remaining_production());
+  EXPECT_EQ(1, factory.count_remaining_production());
   // Add requisite resources, plus some extra for testing
   for (uint8_t i = 0; i < 2; i++)
   {
-    cache.add(portable::Resource::fuel);
-    cache.add(portable::Resource::fuel);
-    cache.add(portable::Resource::iron);
+    for (size_t j = 0; j < input.size(); j++)
+    {
+      cache.add(input.at(j));
+    }
   }
 
   // With required resources, should be able to produce
-  EXPECT_TRUE(sf.can_produce(cache, transporters));
-  EXPECT_EQ(common::ERR_NONE, sf.produce(cache, transporters, output));
+  EXPECT_TRUE(factory.can_produce(cache, transporters));
+  EXPECT_EQ(common::ERR_NONE, factory.produce(cache, transporters, output));
   // Should only produce up to max per round.
-  // TODO: Determine transporter color by user of factory
   // EXPECT_EQ(1, output.size());
-  // Extra fuel and iron should be untouched.
-  EXPECT_EQ(2, cache.count(portable::Resource::fuel));
-  EXPECT_EQ(1, cache.count(portable::Resource::iron));
+
+  // TODO: The transporter must be produced to the same side/river as the
+  //       building
+  // TODO: If there aren't any other transporters there, the produced
+  //       transporter should be immediately removed from the game.
+  // TODO: If there are other player transporters there, determine who used the
+  //       building and the produced transporter should be created for them.
+
+  // Extra resources should be untouched.
+  for (size_t i = 0; i < input.size(); i++)
+  {
+    EXPECT_TRUE(cache.count(input.at(i)) >= 1);
+  }
   // All other resources should be untouched.
   EXPECT_EQ(1, cache.count(portable::Resource::stock));
   
   // Shouldn't keep producing beyond max per round.
   // Even if there are enough resources to do so.
-  EXPECT_EQ(0, sf.count_remaining_production());
-  EXPECT_EQ(common::ERR_FAIL, sf.produce(cache, transporters, output));
-  EXPECT_EQ(0, sf.count_remaining_production());
-  EXPECT_EQ(2, cache.count(portable::Resource::fuel));
-  EXPECT_EQ(1, cache.count(portable::Resource::iron));
+  EXPECT_EQ(0, factory.count_remaining_production());
+  EXPECT_EQ(common::ERR_FAIL, factory.produce(cache, transporters, output));
+  EXPECT_EQ(0, factory.count_remaining_production());
+  for (size_t i = 0; i < input.size(); i++)
+  {
+    EXPECT_TRUE(cache.count(input.at(i)) >= 1);
+  }
   EXPECT_EQ(1, cache.count(portable::Resource::stock));
+}
+
+TEST(building_test, sea_factory_tests)
+{
+  std::vector<portable::Resource::Type> input;
+  
+  // Rafts require 2 trunks to produce
+  input.push_back(portable::Resource::Type::trunks);
+  input.push_back(portable::Resource::Type::trunks);
+  // Commented out until Raft class is implemented
+  // sea_factory_test<Raft_factory>(input, portable::Transporter::Raft);
+  input.clear();
+
+  // Rowboats require 5 boards to produce
+  for (uint8_t i = 0; i < 5; i++)
+  {
+    input.push_back(portable::Resource::Type::boards);
+  }
+  // Commented out until Rowboat class is implemented
+  // sea_factory_test<Rowboat_factory>(input, portable::Transporter::Rowboat);
+  input.clear();
+
+  // Steamers require 1 iron & 2 fuel to produce
+  input.push_back(portable::Resource::Type::iron);
+  input.push_back(portable::Resource::Type::fuel);
+  input.push_back(portable::Resource::Type::fuel);
+  // Commented out until Steamer class is implemented
+  // sea_factory_test<Steamer_factory>(input, portable::Transporter::Steamer);
+  input.clear();
 }
 
 TEST(building_test, truck_factory_test)
