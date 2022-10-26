@@ -42,6 +42,8 @@ public:
   /// @param[in] tile  tile to be placing the building
   static bool can_build(const portable::Cache &input, const tile::Tile *tile);
 
+  static common::Error remove_construction_resources(portable::Cache &input);
+
   // helpers
   std::string to_string() const;
   nlohmann::json to_json() const;

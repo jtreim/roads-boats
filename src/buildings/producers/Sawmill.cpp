@@ -79,8 +79,10 @@ Sawmill::produce(portable::Cache &input,
 bool Sawmill::can_build(const portable::Cache &input, const tile::Tile *tile)
 {
   return ((input.count(portable::Resource::Type::boards) >= 2) &&
-          (input.count(portable::Resource::Type::stone) > 0) &&
-          (nullptr != tile) && (tile::Terrain::sea != tile->get_terrain()) &&
+          (input.count(portable::Resource::Type::stone) >= 1) &&
+          (nullptr != tile) &&
+          (tile::is_valid(tile->get_terrain())) &&
+          (tile::Terrain::sea != tile->get_terrain()) &&
           (tile::Terrain::desert != tile->get_terrain()));
 }
 

@@ -94,7 +94,9 @@ bool Stock_exchange::can_build(const portable::Cache &input,
                                const tile::Tile *tile)
 {
   return ((input.count(portable::Resource::Type::stone) >= 3) &&
-          (nullptr != tile) && (tile::Terrain::sea != tile->get_terrain()) &&
+          (nullptr != tile) &&
+          (tile::is_valid(tile->get_terrain())) &&
+          (tile::Terrain::sea != tile->get_terrain()) &&
           (tile::Terrain::desert != tile->get_terrain()));
 }
 

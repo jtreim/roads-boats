@@ -56,8 +56,9 @@ Woodcutter::produce(portable::Cache &input,
 
 bool Woodcutter::can_build(const portable::Cache &input, const tile::Tile *tile)
 {
-  return ((input.count(portable::Resource::Type::boards) > 0) &&
-          (nullptr != tile) && (tile::Terrain::forest == tile->get_terrain()));
+  return ((input.count(portable::Resource::Type::boards) >= 1) &&
+          (nullptr != tile) &&
+          (tile::Terrain::forest == tile->get_terrain()));
 }
 
 common::Error Woodcutter::remove_construction_resources(portable::Cache &input)

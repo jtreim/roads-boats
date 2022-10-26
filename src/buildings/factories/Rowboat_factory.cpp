@@ -84,9 +84,23 @@ bool Rowboat_factory::can_build(const portable::Cache &input,
                                 const tile::Tile *tile)
 {
   return ((input.count(portable::Resource::Type::boards) >= 2) &&
-          (input.count(portable::Resource::Type::stone) > 0) &&
-          (nullptr != tile) && (tile::Terrain::sea != tile->get_terrain()) &&
-          (tile::Terrain::desert != tile->get_terrain()) && (tile->is_shore()));
+          (input.count(portable::Resource::Type::stone) >= 1) &&
+          (nullptr != tile) &&
+          (tile::is_valid(tile->get_terrain())) &&
+          (tile::Terrain::sea != tile->get_terrain()) &&
+          (tile::Terrain::desert != tile->get_terrain()) &&
+          (tile->is_shore()));
+}
+
+common::Error Rowboat_factory::remove_construction_resources(
+  portable::Cache &input)
+{
+  common::Error err = input.remove(portable::Resource::Type::boards, 2);
+  if (!err)
+  {
+    err = input.remove(portable::Resource::Type::stone, 1);
+  }
+  return err;
 }
 
 std::string Rowboat_factory::to_string() const

@@ -75,7 +75,6 @@ public:
   // TODO: does it make more sense to use a vector or a map for viewing all
   // resources in a cache? std::map<Resource::Type, std::vector<Resource *>>
   // all() const;
-
   std::vector<Resource *> all() const;
 
   /// Returns a list of all moveable resources in the cache
