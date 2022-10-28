@@ -80,7 +80,7 @@ Coal_burner::produce(portable::Cache &input,
   // If we can still produce with available trunks, use those next
   uint8_t trunk_production = static_cast<uint8_t>(
       std::min((int)(input.count(portable::Resource::Type::trunks) / 2),
-               (int)(m_production_max - m_production_current)));
+               (int)(max - m_production_current)));
 
   if ((!err) && (trunk_production > 0))
   {
