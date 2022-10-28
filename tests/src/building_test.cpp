@@ -173,91 +173,210 @@ TEST(building_test, produce_test)
   }
 }
 
-TEST(building_test, double_output_test)
+template<class Bldg>
+void double_primary_output_test(portable::Resource::Type output_type)
 {
-  // Required for checking whether a building can produce.
+  // Required for checking whether a building can produce
   std::vector<portable::Transporter *> transporters;
   portable::Cache cache;
   std::vector<portable::Portable *> output;
 
-  Woodcutter w = Woodcutter();
-  Sawmill s = Sawmill();
+  Bldg bldg = Bldg();
 
-  // A woodcutter is a primary producer. They can be powered, but not managed.
-  EXPECT_TRUE(w.can_add_electricity());
-  EXPECT_FALSE(w.can_add_manager());
-  EXPECT_EQ(common::ERR_FAIL, w.add_manager());
-  // When powered, the woodcutter should double its max output
-  EXPECT_EQ(1, w.count_remaining_production());
-  EXPECT_EQ(common::ERR_NONE, w.add_electricity());
-  EXPECT_EQ(2, w.count_remaining_production());
-  EXPECT_EQ(common::ERR_NONE, w.produce(cache, transporters, output));
+  // Primary producers can be powered, not managed.
+  EXPECT_TRUE(bldg.can_add_electricity());
+  EXPECT_FALSE(bldg.can_add_manager());
+  EXPECT_EQ(common::ERR_FAIL, bldg.add_manager());
+  // When powered, primary producers should double their max output
+  // (default max output is 1 per round)
+  EXPECT_EQ(1, bldg.count_remaining_production());
+  EXPECT_EQ(common::ERR_NONE, bldg.add_electricity());
+  EXPECT_EQ(2, bldg.count_remaining_production());
+  EXPECT_EQ(common::ERR_NONE, bldg.produce(cache, transporters, output));
   EXPECT_EQ(2, output.size());
   for (size_t i = 0; i < output.size(); i++)
   {
     ASSERT_EQ(portable::Portable::Object::resource, output.at(i)->get_object());
-    EXPECT_EQ(portable::Resource::Type::trunks,
+    EXPECT_EQ(output_type,
               static_cast<portable::Resource *>(output.at(i))->get_type());
   }
-  EXPECT_EQ(0, w.count_remaining_production());
-  
-  // Clear output list for testing sawmill
-  output.clear();
-  
-  // A managed sawmill can produce up to 12 boards. It requires 6 trunks as
-  // input.
-  // Add the requisite trunks, plus a couple extra for testing purposes.
-  for (uint8_t i = 0; i < 8; i++)
-  {
-    cache.add(portable::Resource::trunks);
-  }
-
-  // A Sawmill is a secondary producer. They can be managed, not powered.
-  EXPECT_TRUE(s.can_add_manager());
-  EXPECT_FALSE(s.can_add_electricity());
-  EXPECT_EQ(common::ERR_FAIL, s.add_electricity());
-
-  // Run a standard production without a manager
-  EXPECT_EQ(6, s.count_remaining_production());
-  EXPECT_EQ(common::ERR_NONE, s.produce(cache, transporters, output));
-  EXPECT_EQ(0, s.count_remaining_production());
-  EXPECT_EQ(6, output.size());
-  EXPECT_EQ(5, cache.count(portable::Resource::trunks));
-  for (size_t i = 0; i < output.size(); i++)
-  {
-    ASSERT_EQ(portable::Portable::Object::resource, output.at(i)->get_object());
-    EXPECT_EQ(portable::Resource::Type::boards,
-              static_cast<portable::Resource *>(output.at(i))->get_type());
-  }
-
-  // When managed, the sawmill should double its max output
-  EXPECT_EQ(common::ERR_NONE, s.add_manager());
-  // Max production: 12. Remaining production: 12 - 6 = 6.
-  EXPECT_EQ(6, s.count_remaining_production());
-  EXPECT_EQ(common::ERR_NONE, s.produce(cache, transporters, output));
-  EXPECT_EQ(12, output.size());
-  for (size_t i = 0; i < output.size(); i++)
-  {
-    ASSERT_EQ(portable::Portable::Object::resource, output.at(i)->get_object());
-    EXPECT_EQ(portable::Resource::Type::boards,
-              static_cast<portable::Resource *>(output.at(i))->get_type());
-  }
-  EXPECT_EQ(0, s.count_remaining_production());
-  // 6 of the 8 trunks should have been used for production
-  EXPECT_EQ(2, cache.count(portable::Resource::trunks));
+  EXPECT_EQ(0, bldg.count_remaining_production());
 
   // After adding electricity, a primary producer shouldn't be able to add it
   // again until the building is reset.
-  EXPECT_FALSE(w.can_add_electricity());
-  EXPECT_EQ(common::ERR_FAIL, w.add_electricity());
-  w.reset();
-  EXPECT_TRUE(w.can_add_electricity());
+  EXPECT_FALSE(bldg.can_add_electricity());
+  EXPECT_EQ(common::ERR_FAIL, bldg.add_electricity());
+  bldg.reset();
+  EXPECT_TRUE(bldg.can_add_electricity());
+  // After resetting, the building should be no longer powered, and its max
+  // output should return to the default
+  EXPECT_EQ(1, bldg.count_remaining_production());
+  EXPECT_EQ(common::ERR_NONE, bldg.add_electricity());
+  EXPECT_EQ(2, bldg.count_remaining_production());
+}
+
+template<class Bldg>
+void double_secondary_output_test(
+    portable::Resource::Type output_type,
+    std::vector<portable::Resource::Type> inputs,
+    uint8_t default_max_output)
+{
+  // Required for checking whether a building can produce
+  std::vector<portable::Transporter *> transporters;
+  portable::Cache cache;
+  std::vector<portable::Portable *> output;
+
+  // Add enough of input resources for full default production
+  for (size_t i = 0; i < inputs.size(); i++)
+  {
+    cache.add(inputs.at(i));
+  }
+
+  Bldg bldg = Bldg();
+
+  // Secondary producers can be managed, not powered.
+  EXPECT_TRUE(bldg.can_add_manager());
+  EXPECT_FALSE(bldg.can_add_electricity());
+  EXPECT_EQ(common::ERR_FAIL, bldg.add_electricity());
+  // When managed, primary producers should double their max output
+  EXPECT_EQ(default_max_output, bldg.count_remaining_production());
+  EXPECT_EQ(common::ERR_NONE, bldg.add_manager());
+  EXPECT_EQ(default_max_output * 2, bldg.count_remaining_production());
+  // They still require inputs for each output; so double the production
+  // requires double the input.
+  EXPECT_EQ(common::ERR_NONE, bldg.produce(cache, transporters, output));
+  // Only added enough resources for a default max output; should still be able
+  // to produce another set of that if the building were to get the resources
+  EXPECT_EQ(default_max_output, bldg.count_remaining_production());
+  EXPECT_EQ(default_max_output, output.size());
+  for (size_t i = 0; i < output.size(); i++)
+  {
+    ASSERT_EQ(portable::Portable::Object::resource, output.at(i)->get_object());
+    EXPECT_EQ(output_type,
+              static_cast<portable::Resource *>(output.at(i))->get_type());
+  }
+  // Add enough of input resources for another full production
+  for (size_t i = 0; i < inputs.size(); i++)
+  {
+    cache.add(inputs.at(i));
+  }
+
+  EXPECT_EQ(common::ERR_NONE, bldg.produce(cache, transporters, output));
+  EXPECT_EQ(0, bldg.count_remaining_production());
+  EXPECT_EQ(default_max_output * 2, output.size());
+  for (size_t i = 0; i < output.size(); i++)
+  {
+    ASSERT_EQ(portable::Portable::Object::resource, output.at(i)->get_object());
+    EXPECT_EQ(output_type,
+              static_cast<portable::Resource *>(output.at(i))->get_type());
+  }
+
+
   // After adding a manager, a secondary producer shouldn't be able to add it
   // again until the building is reset.
-  EXPECT_FALSE(s.can_add_manager());
-  EXPECT_EQ(common::ERR_FAIL, s.add_manager());
-  s.reset();
-  EXPECT_TRUE(s.can_add_manager());
+  EXPECT_FALSE(bldg.can_add_manager());
+  EXPECT_EQ(common::ERR_FAIL, bldg.add_manager());
+  bldg.reset();
+  EXPECT_TRUE(bldg.can_add_manager());
+  // After resetting, the building should be no longer managed, and its max
+  // output should return to the default
+  EXPECT_EQ(default_max_output, bldg.count_remaining_production());
+  EXPECT_EQ(common::ERR_NONE, bldg.add_manager());
+  EXPECT_EQ(default_max_output * 2, bldg.count_remaining_production());
+}
+
+template<class Bldg, class Vehicle>
+void double_factory_output_test(std::vector<portable::Resource::Type> inputs)
+{
+  // ----- TODO: Implementation of Transporters needed for full testing -----
+}
+
+TEST(building_test, double_output_tests)
+{
+  // Primary producers
+  // Clay pit: produces 1 clay per round by default
+  double_primary_output_test<Clay_pit>(portable::Resource::clay);
+  // Oil rig: produces 1 fuel per round by default
+  double_primary_output_test<Oil_rig>(portable::Resource::fuel);
+  // Quarry: produces 1 stone per round by default
+  double_primary_output_test<Quarry>(portable::Resource::stone);
+  // Woodcutter: produces 1 trunk per round by default
+  double_primary_output_test<Woodcutter>(portable::Resource::trunks);
+  // Mines produce either gold or iron; they can't use the template for testing
+  // Tested on their own elsewhere
+
+  // Secondary producers
+  std::vector<portable::Resource::Type> input;
+  
+  // Coal burner: produces 6 fuel per 12 boards/trunks per round by default
+  for (uint8_t i = 0; i < 12; i++)
+  {
+    input.push_back(portable::Resource::Type::boards);
+  }
+  double_secondary_output_test<Coal_burner>(portable::Resource::fuel, input, 6);
+  input.clear();
+
+  // Mint: produces 1 coin per 2 gold & 1 fuel per round by default
+  input.push_back(portable::Resource::Type::gold);
+  input.push_back(portable::Resource::Type::gold);
+  input.push_back(portable::Resource::Type::fuel);
+  double_secondary_output_test<Mint>(portable::Resource::coins, input, 1);
+  input.clear();
+
+  // Papermill: produces 1 paper per 2 boards/trunks per round by default
+  input.push_back(portable::Resource::Type::boards);
+  input.push_back(portable::Resource::Type::boards);
+  double_secondary_output_test<Papermill>(portable::Resource::paper, input, 1);
+  input.clear();
+
+  // Sawmill: produces 6 boards per 3 trunks per round by default
+  for (uint8_t i = 0; i < 3; i++)
+  {
+    input.push_back(portable::Resource::Type::trunks);
+  }
+  double_secondary_output_test<Sawmill>(portable::Resource::boards, input, 6);
+  input.clear();
+
+  // Stone factory: produces 6 stone per 3 clay per round by default
+  for (uint8_t i = 0; i < 3; i++)
+  {
+    input.push_back(portable::Resource::Type::clay);
+  }
+  double_secondary_output_test<Stone_factory>(portable::Resource::stone, input, 6);
+  input.clear();
+
+
+  // ----- Full Factory testing waiting on Transporter implementation -----
+  // Raft factory: produces 1 raft per 2 trunks per round by default
+  input.push_back(portable::Resource::Type::trunks);
+  input.push_back(portable::Resource::Type::trunks);
+  // double_factory_output_test<Raft_factory, portable::Transporter::Raft>(input);
+  input.clear();
+
+  // Rowboat factory: produces 1 rowboat per 5 boards per round by default
+  for (uint8_t i = 0; i < 5; i++)
+  {
+    input.push_back(portable::Resource::Type::boards);
+  }
+  // double_factory_output_test<Rowboat_factory, portable::Transporter::Rowboat>(input);
+  input.clear();
+
+  // Steamer factory: produces 1 steamer per 1 iron & 2 fuel per round by default
+  input.push_back(portable::Resource::Type::iron);
+  input.push_back(portable::Resource::Type::fuel);
+  input.push_back(portable::Resource::Type::fuel);
+  // double_factory_output_test<Steamer_factory, portable::Transporter::Steamer>(input);
+  input.clear();
+
+  // Truck factory: produces 1 truck per 1 iron & 1 fule per round by default
+  input.push_back(portable::Resource::Type::iron);
+  input.push_back(portable::Resource::Type::fuel);
+  // double_factory_output_test<Truck_factory, portable::Transporter::Truck>(input);
+  input.clear();
+
+  // Wagon factory: produces 1 wagon per 2 boards & 1 donkey per round by default
+  // Because wagons also require a donkey, they can't use this template.
+  // Tested on their own elsewhere
 }
 
 template<class Bldg>
