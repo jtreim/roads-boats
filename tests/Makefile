@@ -19,15 +19,6 @@
 # Remember to tweak this if you move this file.
 GTEST_DIR=googletest/googletest
 
-# Where to find user code.
-TEST_DIR        := ./src
-TEST_BUILD_DIR  := ./build
-SRC_DIR         := ../src
-BUILD_DIR       := ../build
-
-INCLUDES        := $(addprefix -I,../src)
-LIBS            := $(addprefix -I,../libs)
-
 # Flags passed to the preprocessor.
 # Set Google Test's header directory as a system directory, such that
 # the compiler doesn't generate warnings in Google Test headers.
@@ -36,17 +27,33 @@ CPPFLAGS += -isystem $(GTEST_DIR)/include
 # Flags passed to the C++ compiler.
 CXXFLAGS += -g -Wall -Wextra -pthread -std=c++20
 
-# All tests produced by this Makefile.  Remember to add new tests you
-# created to the list.
-TESTS = base_test \
-				resource_test \
-				building_test \
-				hex_test \
-				river_test \
-				area_test \
-				tile_test \
-				tile_map_test \
-				file_handler_test
+# Test files' make constants
+T_PATH          := src
+T_BUILD_PATH    := build
+TESTS           := $(wildcard $(T_PATH)/*.cpp)
+TEST_OBJ        := $(patsubst $(T_PATH)/%.cpp,$(T_BUILD_PATH)/%.o,$(TESTS))
+TEST_INCLUDES   := $(addprefix -I,$(T_PATH))
+
+# All source code modules 
+MODULES   := buildings \
+						 buildings/factories \
+						 buildings/producers \
+						 common \
+						 players \
+						 portables \
+						 portables/resources \
+						 portables/transporters \
+						 tiles \
+						 tiles/components \
+						 utils
+S_PATH       := ../src
+S_BUILD_PATH := ../build
+SRC_DIR      := $(addprefix $(S_PATH)/,$(MODULES))   # Searches src/* for .h/.cpp files
+BUILD_DIR    := $(addprefix $(S_BUILD_PATH)/,$(MODULES)) # Recreates build dir to match src
+SRC          := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
+OBJ          := $(patsubst $(S_PATH)/%.cpp,$(S_BUILD_PATH)/%.o,$(SRC))
+INCLUDES     := $(addprefix -I,$(S_PATH))
+LIBS         := $(addprefix -I,../libs)
 
 # All Google Test headers.  Usually you shouldn't change this
 # definition.
@@ -54,11 +61,18 @@ GTEST_HEADERS = $(wildcard $(GTEST_DIR)/include/gtest/*.h) \
                 $(wildcard $(GTEST_DIR)/include/gtest/internal/*.h)
 
 # House-keeping build targets.
-all : $(TESTS)
+.PHONY : all checkdirs clean src
+
+all : checkdirs test_runner
+
+checkdirs:
+	@mkdir -p $@
 
 clean :
-	@rm -f $(TEST_BUILD_DIR)/*.o $(TEST_BUILD_DIR)/*.a $(TEST_BUILD_DIR)/*.exe
-	@mkdir -p $(TEST_BUILD_DIR)
+	@rm -f $(T_BUILD_PATH)/*.o $(T_BUILD_PATH)/*.a $(T_BUILD_PATH)/*.exe
+
+src :
+	$(MAKE) -C ../
 
 # Builds gtest.a and gtest_main.a.
 
@@ -70,187 +84,36 @@ GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 # implementation details, the dependencies specified below are
 # conservative and not optimized.  This is fine as Google Test
 # compiles fast and for ordinary users its source rarely changes.
-$(TEST_BUILD_DIR)/gtest-all.o : $(GTEST_SRCS_)
-	@mkdir -p $(TEST_BUILD_DIR)
+$(T_BUILD_PATH)/gtest-all.o : $(GTEST_SRCS_)
+	@mkdir -p $(T_BUILD_PATH)
 	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
             $(GTEST_DIR)/src/gtest-all.cc -o $@
 
-$(TEST_BUILD_DIR)/gtest_main.o : $(GTEST_SRCS_)
-	@mkdir -p $(TEST_BUILD_DIR)
+$(T_BUILD_PATH)/gtest_main.o : $(GTEST_SRCS_)
+	@mkdir -p $(T_BUILD_PATH)
 	$(CXX) $(CPPFLAGS) -I$(GTEST_DIR) $(CXXFLAGS) -c \
             $(GTEST_DIR)/src/gtest_main.cc -o $@
 
-$(TEST_BUILD_DIR)/gtest.a : $(TEST_BUILD_DIR)/gtest-all.o
-	@mkdir -p $(TEST_BUILD_DIR)
+$(T_BUILD_PATH)/gtest.a : $(T_BUILD_PATH)/gtest-all.o
+	@mkdir -p $(T_BUILD_PATH)
 	$(AR) $(ARFLAGS) $@ $^
 
-$(TEST_BUILD_DIR)/gtest_main.a : $(TEST_BUILD_DIR)/gtest-all.o $(TEST_BUILD_DIR)/gtest_main.o
-	@mkdir -p $(TEST_BUILD_DIR)
+$(T_BUILD_PATH)/gtest_main.a : $(T_BUILD_PATH)/gtest-all.o $(T_BUILD_PATH)/gtest_main.o
+	@mkdir -p $(TEST_BUILD_PATH)
 	$(AR) $(ARFLAGS) $@ $^
 
-# Building test objects
-$(TEST_BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp
-	@mkdir -p $(TEST_BUILD_DIR)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(INCLUDES) $(LIBS) -o $@ $<
+test_runner : checkdirs src $(T_BUILD_PATH)/gtest-all.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDES) $(LIBS) \
+	$(TEST_INCLUDES) \
+	$(OBJ) \
+	$(T_BUILD_PATH)/gtest-all.o \
+	$(TESTS) \
+	test_runner.cpp	-o $(T_BUILD_PATH)/$@
+	./$(T_BUILD_PATH)/$@.exe
 
-# --------------------- BUILDING TESTS ---------------------------------------- 
+# --------------------- BUILDING INDIVIDUAL TESTS -----------------------------
+# Make commands to build a single test can be added here.
 # A test should link with either gtest.a or gtest_main.a, depending on whether
 # it defines its own main() function.
-
-base_test : $(TEST_BUILD_DIR)/base_test.o $(TEST_BUILD_DIR)/gtest_main.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $(TEST_BUILD_DIR)/$@
-	$(TEST_BUILD_DIR)/$@.exe
-
-resource_test : $(TEST_BUILD_DIR)/resource_test.o $(TEST_BUILD_DIR)/gtest_main.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $^ -o $(TEST_BUILD_DIR)/$@
-	$(TEST_BUILD_DIR)/$@.exe
-
-building_test : $(TEST_BUILD_DIR)/building_test.o $(TEST_BUILD_DIR)/gtest_main.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
-	$(BUILD_DIR)/portables/resources/Cache.o \
-	$(BUILD_DIR)/buildings/factories/Raft_factory.o \
-	$(BUILD_DIR)/buildings/factories/Rowboat_factory.o \
-	$(BUILD_DIR)/buildings/factories/Steamer_factory.o \
-	$(BUILD_DIR)/buildings/factories/Truck_factory.o \
-	$(BUILD_DIR)/buildings/factories/Wagon_factory.o \
-	$(BUILD_DIR)/buildings/producers/Clay_pit.o \
-	$(BUILD_DIR)/buildings/producers/Coal_burner.o \
-	$(BUILD_DIR)/buildings/producers/Mine.o \
-	$(BUILD_DIR)/buildings/producers/Mint.o \
-	$(BUILD_DIR)/buildings/producers/Oil_rig.o \
-	$(BUILD_DIR)/buildings/producers/Papermill.o \
-	$(BUILD_DIR)/buildings/producers/Quarry.o \
-	$(BUILD_DIR)/buildings/producers/Sawmill.o \
-	$(BUILD_DIR)/buildings/producers/Stock_exchange.o \
-	$(BUILD_DIR)/buildings/producers/Stone_factory.o \
-	$(BUILD_DIR)/buildings/producers/Woodcutter.o \
-	$(BUILD_DIR)/portables/transporters/Transporter.o \
-	$(BUILD_DIR)/tiles/components/Hex.o \
-	$(BUILD_DIR)/tiles/components/Area.o \
-	$(BUILD_DIR)/tiles/components/River.o \
-	$(BUILD_DIR)/tiles/Tile.o \
-	$^ -o $(TEST_BUILD_DIR)/$@
-	$(TEST_BUILD_DIR)/$@.exe
-
-hex_test : $(TEST_BUILD_DIR)/hex_test.o $(TEST_BUILD_DIR)/gtest_main.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread $(BUILD_DIR)/tiles/components/Hex.o $^ -o $(TEST_BUILD_DIR)/$@
-	$(TEST_BUILD_DIR)/$@.exe
-
-river_test : $(TEST_BUILD_DIR)/river_test.o $(TEST_BUILD_DIR)/gtest_main.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
-			$(BUILD_DIR)/portables/transporters/Transporter.o \
-			$(BUILD_DIR)/tiles/components/River.o \
-			$^ -o $(TEST_BUILD_DIR)/$@
-	$(TEST_BUILD_DIR)/$@.exe
-
-area_test : $(TEST_BUILD_DIR)/area_test.o $(TEST_BUILD_DIR)/gtest_main.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
-			$(BUILD_DIR)/buildings/factories/Raft_factory.o \
-			$(BUILD_DIR)/buildings/factories/Rowboat_factory.o \
-			$(BUILD_DIR)/buildings/factories/Steamer_factory.o \
-			$(BUILD_DIR)/buildings/factories/Truck_factory.o \
-			$(BUILD_DIR)/buildings/factories/Wagon_factory.o \
-			$(BUILD_DIR)/buildings/producers/Clay_pit.o \
-			$(BUILD_DIR)/buildings/producers/Coal_burner.o \
-			$(BUILD_DIR)/buildings/producers/Mine.o \
-			$(BUILD_DIR)/buildings/producers/Mint.o \
-			$(BUILD_DIR)/buildings/producers/Oil_rig.o \
-			$(BUILD_DIR)/buildings/producers/Papermill.o \
-			$(BUILD_DIR)/buildings/producers/Quarry.o \
-			$(BUILD_DIR)/buildings/producers/Sawmill.o \
-			$(BUILD_DIR)/buildings/producers/Stock_exchange.o \
-			$(BUILD_DIR)/buildings/producers/Stone_factory.o \
-			$(BUILD_DIR)/buildings/producers/Woodcutter.o \
-			$(BUILD_DIR)/players/Player.o \
-			$(BUILD_DIR)/portables/transporters/Transporter.o \
-			$(BUILD_DIR)/portables/resources/Cache.o \
-			$(BUILD_DIR)/tiles/components/Hex.o \
-			$(BUILD_DIR)/tiles/components/River.o \
-			$(BUILD_DIR)/tiles/components/Area.o \
-			$(BUILD_DIR)/tiles/Tile.o \
-			$^ -o $(TEST_BUILD_DIR)/$@
-	$(TEST_BUILD_DIR)/$@.exe
-
-tile_test : $(TEST_BUILD_DIR)/tile_test.o $(TEST_BUILD_DIR)/gtest_main.a
-	$(MAKE) -C ../
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
-			$(BUILD_DIR)/buildings/factories/Raft_factory.o \
-			$(BUILD_DIR)/buildings/factories/Rowboat_factory.o \
-			$(BUILD_DIR)/buildings/factories/Steamer_factory.o \
-			$(BUILD_DIR)/buildings/factories/Truck_factory.o \
-			$(BUILD_DIR)/buildings/factories/Wagon_factory.o \
-			$(BUILD_DIR)/buildings/producers/Clay_pit.o \
-			$(BUILD_DIR)/buildings/producers/Coal_burner.o \
-			$(BUILD_DIR)/buildings/producers/Mine.o \
-			$(BUILD_DIR)/buildings/producers/Mint.o \
-			$(BUILD_DIR)/buildings/producers/Oil_rig.o \
-			$(BUILD_DIR)/buildings/producers/Papermill.o \
-			$(BUILD_DIR)/buildings/producers/Quarry.o \
-			$(BUILD_DIR)/buildings/producers/Sawmill.o \
-			$(BUILD_DIR)/buildings/producers/Stock_exchange.o \
-			$(BUILD_DIR)/buildings/producers/Stone_factory.o \
-			$(BUILD_DIR)/buildings/producers/Woodcutter.o \
-			$(BUILD_DIR)/portables/transporters/Transporter.o \
-			$(BUILD_DIR)/portables/resources/Cache.o \
-			$(BUILD_DIR)/tiles/components/Hex.o \
-			$(BUILD_DIR)/tiles/components/Area.o \
-			$(BUILD_DIR)/tiles/components/River.o \
-			$(BUILD_DIR)/tiles/Tile.o \
-			$^ -o $(TEST_BUILD_DIR)/$@
-	$(TEST_BUILD_DIR)/$@.exe
-
-tile_map_test : $(TEST_BUILD_DIR)/tile_map_test.o $(TEST_BUILD_DIR)/gtest_main.a
-	$(MAKE) -C ../
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
-			$(BUILD_DIR)/buildings/factories/Raft_factory.o \
-			$(BUILD_DIR)/buildings/factories/Rowboat_factory.o \
-			$(BUILD_DIR)/buildings/factories/Steamer_factory.o \
-			$(BUILD_DIR)/buildings/factories/Truck_factory.o \
-			$(BUILD_DIR)/buildings/factories/Wagon_factory.o \
-			$(BUILD_DIR)/buildings/producers/Clay_pit.o \
-			$(BUILD_DIR)/buildings/producers/Coal_burner.o \
-			$(BUILD_DIR)/buildings/producers/Mine.o \
-			$(BUILD_DIR)/buildings/producers/Mint.o \
-			$(BUILD_DIR)/buildings/producers/Oil_rig.o \
-			$(BUILD_DIR)/buildings/producers/Papermill.o \
-			$(BUILD_DIR)/buildings/producers/Quarry.o \
-			$(BUILD_DIR)/buildings/producers/Sawmill.o \
-			$(BUILD_DIR)/buildings/producers/Stock_exchange.o \
-			$(BUILD_DIR)/buildings/producers/Stone_factory.o \
-			$(BUILD_DIR)/buildings/producers/Woodcutter.o \
-			$(BUILD_DIR)/portables/transporters/Transporter.o \
-			$(BUILD_DIR)/portables/resources/Cache.o \
-			$(BUILD_DIR)/tiles/components/Hex.o \
-			$(BUILD_DIR)/tiles/components/Area.o \
-			$(BUILD_DIR)/tiles/components/River.o \
-			$(BUILD_DIR)/tiles/Tile.o \
-			$(BUILD_DIR)/tiles/Tile_map.o \
-			$^ -o $(TEST_BUILD_DIR)/$@
-	$(TEST_BUILD_DIR)/$@.exe
-
-file_handler_test : $(TEST_BUILD_DIR)/file_handler_test.o $(TEST_BUILD_DIR)/gtest_main.a
-	$(MAKE) -C ../
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -lpthread \
-			$(BUILD_DIR)/buildings/factories/Raft_factory.o \
-			$(BUILD_DIR)/buildings/factories/Rowboat_factory.o \
-			$(BUILD_DIR)/buildings/factories/Steamer_factory.o \
-			$(BUILD_DIR)/buildings/factories/Truck_factory.o \
-			$(BUILD_DIR)/buildings/factories/Wagon_factory.o \
-			$(BUILD_DIR)/buildings/producers/Clay_pit.o \
-			$(BUILD_DIR)/buildings/producers/Coal_burner.o \
-			$(BUILD_DIR)/buildings/producers/Mine.o \
-			$(BUILD_DIR)/buildings/producers/Mint.o \
-			$(BUILD_DIR)/buildings/producers/Oil_rig.o \
-			$(BUILD_DIR)/buildings/producers/Papermill.o \
-			$(BUILD_DIR)/buildings/producers/Quarry.o \
-			$(BUILD_DIR)/buildings/producers/Sawmill.o \
-			$(BUILD_DIR)/buildings/producers/Stock_exchange.o \
-			$(BUILD_DIR)/buildings/producers/Stone_factory.o \
-			$(BUILD_DIR)/buildings/producers/Woodcutter.o \
-			$(BUILD_DIR)/portables/resources/Cache.o \
-			$(BUILD_DIR)/tiles/components/Hex.o \
-			$(BUILD_DIR)/tiles/components/River.o \
-			$(BUILD_DIR)/tiles/components/Area.o \
-			$(BUILD_DIR)/tiles/Tile.o \
-			$^ -o $(TEST_BUILD_DIR)/$@
-	$(TEST_BUILD_DIR)/$@.exe
+# Alternatively, running the test_runner executable with
+# --gtest_filter='<Regex to filter by test name>' runs only the selected tests.
