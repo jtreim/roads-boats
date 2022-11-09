@@ -125,6 +125,20 @@ public:
   /// @return areas associated with the input side.
   std::vector<std::shared_ptr<Area>> get_areas(const Direction d);
 
+  /// Returns a list of areas accessible from the input border
+  /// Used by transporters to determine what buildings/resources they have
+  /// access to. Bridges essentially enable access across rivers.
+  /// @param[in] b border of the area a transporter is in
+  /// @return List of all accessible areas
+  std::vector<std::shared_ptr<Area>> get_accessible_areas(const Border b);
+
+  /// Returns a list of areas accessible from the input direction.
+  /// Used by sea transporters to determine what buildings/resources they have
+  /// access to. Bridges essentially enable access across rivers.
+  /// @param d side of the area(s) that a transporter is associated with.
+  /// @return List of all accessible areas
+  std::vector<std::shared_ptr<Area>> get_accessible_areas(const Direction d);
+
   /// Gets the first adjacent tile in the input direction
   /// @param direction Side of the tile to check for a neighbor
   /// @return

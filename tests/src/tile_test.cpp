@@ -407,6 +407,325 @@ TEST(tile_test, build_bridge_test)
                    ->has_bridge(Direction::west));
 }
 
+TEST(tile_test, accessible_areas_test)
+{
+  // Building a bridge effectively merges the two areas on either side of the
+  // river. Since transporters need to know if they have access to
+  // resources/buildings in areas due to bridges on a tile, the tile needs to
+  // list out all areas available from a given side of the tile.
+  std::set<Direction> rp;
+  std::shared_ptr<Tile> test_object = std::make_shared<Tile>();
+  test_object->set_hex(Hex(0, 0));
+
+  // A tile with no rivers and no bridges should have just 1 area, and
+  // therefore list that as accessible from any side of the tile.
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    Direction d = static_cast<Direction>(i);
+    auto actual = test_object->get_accessible_areas(d);
+    EXPECT_EQ(1, actual.size());
+    if (actual.size() > 0)
+    {
+      auto expected = test_object->get_area(Border::NW_left);
+      EXPECT_EQ(expected, actual.at(0));
+    }
+  }
+  for (uint8_t i = 0; i < MAX_BORDERS; i++)
+  {
+    Border b = static_cast<Border>(i);
+    auto actual = test_object->get_accessible_areas(b);
+    EXPECT_EQ(1, actual.size());
+    if (actual.size() > 0)
+    {
+      auto expected = test_object->get_area(Border::NW_left);
+      EXPECT_EQ(expected, actual.at(0));
+    }
+  }
+
+  // A tile with an unbridged river should start to limit accessible areas
+  // from either side.
+  rp.insert(Direction::east);
+  rp.insert(Direction::west);
+  test_object = std::make_shared<Tile>(rp);
+  test_object->set_hex(Hex(0, 0));
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    Direction d = static_cast<Direction>(i);
+    auto actual = test_object->get_accessible_areas(d);
+    if (test_object->has_river_point(d))
+    {
+      // If the transporter is a sea transporter on the river, it should still
+      // have access to both sides.
+      auto expected = test_object->get_areas();
+      EXPECT_EQ(2, actual.size());
+      EXPECT_EQ(expected, actual);
+    }
+    else
+    {
+      // Otherwise, it should only have access to the area the transporter is
+      // docked at.
+      auto expected = test_object->get_areas(d);
+      EXPECT_EQ(1, actual.size());
+      EXPECT_EQ(expected, actual);
+    }
+  }
+  // A land transporter on a given side of the river should only have access to
+  // the area they are currently in.
+  for (uint8_t i = 0; i < MAX_BORDERS; i++)
+  {
+    Border b = static_cast<Border>(i);
+    auto actual = test_object->get_accessible_areas(b);
+    EXPECT_EQ(1, actual.size());
+    if (actual.size() > 0)
+    {
+      auto expected = test_object->get_area(b);
+      EXPECT_EQ(expected, actual.at(0));
+    }
+  }
+  // Bridging the river should only affect land transporters and docked sea
+  // transporters in this case.
+  ASSERT_EQ(common::ERR_NONE, test_object->build_bridge(Direction::east));
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    Direction d = static_cast<Direction>(i);
+    auto actual = test_object->get_accessible_areas(d);
+    auto expected = test_object->get_areas();
+    EXPECT_EQ(2, actual.size());
+    EXPECT_EQ(expected, actual);
+  }
+  // With the bridge, all areas should be accessible from all sides
+  for (uint8_t i = 0; i < MAX_BORDERS; i++)
+  {
+    Border b = static_cast<Border>(i);
+    auto actual = test_object->get_accessible_areas(b);
+    auto expected = test_object->get_areas();
+    EXPECT_EQ(2, actual.size());
+    EXPECT_EQ(expected, actual);
+  }
+
+  // A tile with a river that splits should provide more interesting tests.
+  rp.clear();
+  rp.insert(Direction::north_west);
+  rp.insert(Direction::east);
+  rp.insert(Direction::south_west);
+  test_object = std::make_shared<Tile>(rp);
+  test_object->set_hex(Hex(0, 0));
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    Direction d = static_cast<Direction>(i);
+    auto actual = test_object->get_accessible_areas(d);
+    if (test_object->has_river_point(d))
+    {
+      // Sea transporters on the river. Should have access to everything
+      auto expected = test_object->get_areas();
+      EXPECT_EQ(3, actual.size());
+      EXPECT_EQ(expected, actual);
+    }
+    else
+    {
+      // Sea transporter docked on the side of the tile. Should have access
+      // matching land transporters in the area it's docked at.
+      auto expected = test_object->get_areas(d);
+      EXPECT_EQ(1, actual.size());
+      EXPECT_EQ(expected, actual);
+    }
+  }
+  // Land transporters should only have access to the area they are currently
+  // in.
+  for (uint8_t i = 0; i < MAX_BORDERS; i++)
+  {
+    Border b = static_cast<Border>(i);
+    auto actual = test_object->get_accessible_areas(b);
+    auto expected = test_object->get_area(b);
+    EXPECT_EQ(1, actual.size());
+    if (actual.size() > 0)
+    {
+      EXPECT_EQ(expected, actual.at(0));
+    }
+  }
+  // Bridging one of the two river points should give some access to land
+  // transporters.
+  ASSERT_EQ(common::ERR_NONE, test_object->build_bridge(Direction::east));
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    Direction d = static_cast<Direction>(i);
+    auto actual = test_object->get_accessible_areas(d);
+    if (test_object->has_river_point(d))
+    {
+      // Sea transporters on the river are unchanged
+      auto expected = test_object->get_areas();
+      EXPECT_EQ(3, actual.size());
+      EXPECT_EQ(expected, actual);
+    }
+    else if ((Direction::north_east == d) || (Direction::south_east == d))
+    {
+      auto expected = test_object->get_areas(Direction::east);
+      EXPECT_EQ(2, actual.size());
+      EXPECT_EQ(expected, actual);
+    }
+    else
+    {
+      auto expected = test_object->get_area(Border::W_left);
+      EXPECT_EQ(1, actual.size());
+      if (actual.size() > 0)
+      {
+        EXPECT_EQ(expected, actual.at(0));
+      }
+    }
+  }
+  // Land transporters in areas touching the bridge should have access to
+  // both bridged areas.
+  for (uint8_t i = 0; i < MAX_BORDERS; i++)
+  {
+    Border b = static_cast<Border>(i);
+    // one of the areas touching the bridge
+    auto actual = test_object->get_accessible_areas(b);
+    if ((b >= Border::NW_right) && (b <= Border::SW_left))
+    {
+      auto expected = test_object->get_areas(Direction::east);
+      EXPECT_EQ(2, actual.size());
+      EXPECT_EQ(expected, actual);
+    }
+    else
+    {
+      auto expected = test_object->get_areas(Direction::west);
+      EXPECT_EQ(1, actual.size());
+      if (actual.size() > 0)
+      {
+        EXPECT_EQ(expected, actual);
+      }
+    }
+  }
+  // Adding a second bridge should grant access to all areas to both sea and
+  // land transporters
+  ASSERT_EQ(common::ERR_NONE, test_object->build_bridge(Direction::south_west));
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    Direction d = static_cast<Direction>(i);
+    auto actual = test_object->get_accessible_areas(d);
+    auto expected = test_object->get_areas();
+    EXPECT_EQ(3, actual.size());
+    EXPECT_EQ(expected, actual);
+  }
+  for (uint8_t i = 0; i < MAX_BORDERS; i++)
+  {
+    Border b = static_cast<Border>(i);
+    auto actual = test_object->get_accessible_areas(b);
+    auto expected = test_object->get_areas();
+    EXPECT_EQ(3, actual.size());
+    EXPECT_EQ(expected, actual);
+  }
+
+  // A tile with two rivers should affect access for sea transporters
+  rp.clear();
+  std::vector<std::set<Direction>> rivers;
+  rp.insert(Direction::north_west);
+  rp.insert(Direction::south_west);
+  rivers.push_back(rp);
+  rp.clear();
+  rp.insert(Direction::north_east);
+  rp.insert(Direction::east);
+  rivers.push_back(rp);
+  test_object = std::make_shared<Tile>(rivers);
+  test_object->set_hex(Hex(0, 0));
+
+  // A sea transporter should have access to at most 2 of the 3 areas without
+  // bridges
+  // Without bridges, it should just be the areas the input direction touches.
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    Direction d = static_cast<Direction>(i);
+    auto actual = test_object->get_accessible_areas(d);
+    auto expected = test_object->get_areas(d);
+    EXPECT_EQ(expected.size(), actual.size());
+    EXPECT_EQ(expected, actual);
+  }
+  // Land transporters should be restricted to their current area
+  for (uint8_t i = 0; i < MAX_BORDERS; i++)
+  {
+    Border b = static_cast<Border>(i);
+    auto actual = test_object->get_accessible_areas(b);
+    auto expected = test_object->get_area(b);
+    EXPECT_EQ(1, actual.size());
+    if (actual.size() > 0)
+    {
+      EXPECT_EQ(expected, actual.at(0));
+    }
+  }
+
+  ASSERT_EQ(common::ERR_NONE, test_object->build_bridge(Direction::north_west));
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    Direction d = static_cast<Direction>(i);
+    auto actual = test_object->get_accessible_areas(d);
+    switch (d)
+    {
+    case Direction::north_west:
+    case Direction::south_east:
+    case Direction::south_west:
+    case Direction::west:
+    {
+      // Sea transporters on the NW->SW river should have restricted access.
+      // A transporter on the W or SE sides should coincidentally have the same
+      // access.
+      auto expected = test_object->get_areas(Direction::north_west);
+      EXPECT_EQ(2, actual.size());
+      EXPECT_EQ(expected, actual);
+      break;
+    }
+    case Direction::north_east:
+    case Direction::east:
+    {
+      // Sea transporters on the NE->E river should have access to
+      // everything.
+      auto expected = test_object->get_areas();
+      EXPECT_EQ(3, actual.size());
+      EXPECT_EQ(expected, actual);
+      break;
+    }
+    }
+  }
+  for (uint8_t i = 0; i < MAX_BORDERS; i++)
+  {
+    Border b = static_cast<Border>(i);
+    auto actual = test_object->get_accessible_areas(b);
+    if ((b <= Border::NE_left) || (b >= Border::E_right))
+    {
+      auto expected = test_object->get_areas(Direction::north_west);
+      EXPECT_EQ(2, actual.size());
+      EXPECT_EQ(expected, actual);
+    }
+    else
+    {
+      auto expected = test_object->get_area(Border::E_left);
+      EXPECT_EQ(1, actual.size());
+      if (actual.size() > 0)
+      {
+        EXPECT_EQ(expected, actual.at(0));
+      }
+    }
+  }
+
+  // Adding another bridge should give full access for all transporters
+  ASSERT_EQ(common::ERR_NONE, test_object->build_bridge(Direction::east));
+  for (uint8_t i = 0; i < MAX_DIRECTIONS; i++)
+  {
+    Direction d = static_cast<Direction>(i);
+    auto actual = test_object->get_accessible_areas(d);
+    auto expected = test_object->get_areas();
+    EXPECT_EQ(3, actual.size());
+    EXPECT_EQ(expected, actual);
+  }
+  for (uint8_t i = 0; i < MAX_BORDERS; i++)
+  {
+    Border b = static_cast<Border>(i);
+    auto actual = test_object->get_accessible_areas(b);
+    auto expected = test_object->get_areas();
+    EXPECT_EQ(3, actual.size());
+    EXPECT_EQ(expected, actual);
+  }
+}
+
 TEST(tile_test, rotate_test)
 {
   // Rotating a tile should be clockwise. If the input value is negative, then

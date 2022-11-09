@@ -25,7 +25,7 @@ GTEST_DIR=googletest/googletest
 CPPFLAGS += -isystem $(GTEST_DIR)/include
 
 # Flags passed to the C++ compiler.
-CXXFLAGS += -g -Wall -Wextra -pthread -std=c++20
+CXXFLAGS += -g -Wextra -pthread -std=c++20
 
 # Test files' make constants
 T_PATH          := src
@@ -66,7 +66,7 @@ GTEST_HEADERS = $(wildcard $(GTEST_DIR)/include/gtest/*.h) \
 all : checkdirs test_runner
 
 checkdirs:
-	@mkdir -p $@
+	@mkdir -p $(T_BUILD_PATH)
 
 clean :
 	@rm -f $(T_BUILD_PATH)/*.o $(T_BUILD_PATH)/*.a $(T_BUILD_PATH)/*.exe
@@ -108,8 +108,8 @@ test_runner : checkdirs src $(T_BUILD_PATH)/gtest-all.o
 	$(OBJ) \
 	$(T_BUILD_PATH)/gtest-all.o \
 	$(TESTS) \
-	test_runner.cpp	-o $(T_BUILD_PATH)/$@
-	./$(T_BUILD_PATH)/$@.exe
+	test_runner.cpp	-o $(T_BUILD_PATH)/rb_test
+	./$(T_BUILD_PATH)/rb_test.exe
 
 # --------------------- BUILDING INDIVIDUAL TESTS -----------------------------
 # Make commands to build a single test can be added here.

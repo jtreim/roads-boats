@@ -312,6 +312,171 @@ std::shared_ptr<Area> Tile::get_area(const Border b)
   return retval;
 }
 
+std::vector<std::shared_ptr<Area>> Tile::get_areas(const Direction d)
+{
+  std::vector<std::shared_ptr<Area>> result;
+  auto borders = borders_from_direction(d);
+  for (Border border : borders)
+  {
+    auto area = get_area(border);
+    if (std::find(result.begin(), result.end(), area) == result.end())
+    {
+      result.push_back(area);
+    }
+  }
+
+  std::sort(result.begin(), result.end());
+  return result;
+}
+
+std::vector<std::shared_ptr<Area>> Tile::get_accessible_areas(const Border b)
+{
+  std::vector<std::shared_ptr<Area>> result;
+  result.push_back(get_area(b));
+  if (m_rivers.size() == 0)
+  {
+    // no need to continue: there's only 1 area
+    return result;
+  }
+
+  auto bridges = get_bridges();
+  bool updated_list = true;
+
+  while (updated_list)
+  {
+    updated_list = false;
+    for (auto bridge : bridges)
+    {
+      std::shared_ptr<Area> to_add = nullptr;
+      auto bridge_borders = borders_from_direction(bridge);
+
+      // We're trying to add to the list of accessible areas.
+      // The potential addition should:
+      // 1. Not already be in our list
+      // 2. Should be on the other side of a river to an area in
+      // our list.
+      // 3. The river should have a bridge combining the two.
+      auto potential_area = get_area(bridge_borders.at(0));
+      Border other_border = bridge_borders.at(1);
+      // Check that potential_area isn't already in the list of accessible areas
+      if ((std::find(result.begin(), result.end(), potential_area) !=
+           result.end()))
+      {
+        // Try the opposite side of the bridge...
+        potential_area = get_area(bridge_borders.at(1));
+        other_border = bridge_borders.at(0);
+        if ((std::find(result.begin(), result.end(), potential_area) !=
+             result.end()))
+        {
+          // Already have both areas on either side of the bridge.
+          // Move on to the next bridge
+          continue;
+        }
+      }
+      // Make sure the potential area is bridged with an area in our list.
+      for (auto a : result)
+      {
+        if (a->has_border(other_border))
+        {
+          // The bridge connects between this area and the potential area!
+          // Add it to the list of accessible areas
+          to_add = potential_area;
+          break;
+        }
+      }
+      if (nullptr != to_add)
+      {
+        updated_list = true;
+        result.push_back(std::move(to_add));
+      }
+    }
+
+    if (result.size() == m_areas.size())
+    {
+      // We've added all the areas we can. Just dip out.
+      break;
+    }
+  }
+
+  std::sort(result.begin(), result.end());
+  return result;
+}
+
+std::vector<std::shared_ptr<Area>> Tile::get_accessible_areas(const Direction d)
+{
+  std::vector<std::shared_ptr<Area>> result;
+  result = get_areas(d);
+  if (result.size() != m_areas.size())
+  {
+    auto river = get_river(d);
+    if (nullptr != river)
+    {
+      for (auto rp : river->get_points())
+      {
+        auto adj_borders = borders_from_direction(rp);
+        for (auto border : adj_borders)
+        {
+          auto to_add = get_accessible_areas(border);
+          for (auto a : to_add)
+          {
+            if (std::find(result.begin(), result.end(), a) == result.end())
+            {
+              result.push_back(std::move(a));
+            }
+            if (result.size() == m_areas.size())
+            {
+              // We've added all the areas we can. Just dip out.
+              break;
+            }
+          }
+          if (result.size() == m_areas.size())
+          {
+            // We've added all the areas we can. Just dip out.
+            break;
+          }
+        }
+        if (result.size() == m_areas.size())
+        {
+          // We've added all the areas we can. Just dip out.
+          break;
+        }
+      }
+    }
+    else
+    {
+      // No river at the specified direction.
+      // Just add accessible areas from each border making up the input
+      // direction
+      auto borders = borders_from_direction(d);
+      for (auto border : borders)
+      {
+        auto to_add = get_accessible_areas(border);
+        for (auto a : to_add)
+        {
+          if (std::find(result.begin(), result.end(), a) == result.end())
+          {
+            result.push_back(std::move(a));
+          }
+
+          if (result.size() == m_areas.size())
+          {
+            // We've added all the areas we can. Just dip out.
+            break;
+          }
+        }
+
+        if (result.size() == m_areas.size())
+        {
+          // We've added all the areas we can. Just dip out.
+          break;
+        }
+      }
+    }
+  }
+  std::sort(result.begin(), result.end());
+  return result;
+}
+
 std::shared_ptr<Tile> Tile::get_neighbor(Direction direction)
 {
   return m_neighbors[direction];

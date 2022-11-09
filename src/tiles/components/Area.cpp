@@ -105,19 +105,135 @@ bool Area::operator!=(std::set<Border> const &borders) const
 }
 bool Area::operator<(Area const &other) const
 {
-  return m_borders.size() < other.m_borders.size();
+  bool result = false;
+  if ((m_borders.size() == 0) && (other.m_borders.size() > 0))
+  {
+    result = true;
+  }
+  else if ((other.m_borders.size() == 0) && (m_borders.size() > 0))
+  {
+    result = false;
+  }
+  else if ((other.m_borders.size() > 0) && (m_borders.size() > 0))
+  {
+    // Compare border lists side by side. Area with the most clockwise border is
+    // less.
+    int i_count = 0;
+    int j_count = 0;
+    auto i = m_borders.begin();
+    auto j = other.m_borders.begin();
+    while ((i_count < m_borders.size()) && (j_count < other.m_borders.size()))
+    {
+      if (*i != *j)
+      {
+        result = (*i < *j);
+        break;
+      }
+      ++i;
+      ++j;
+    }
+  }
+
+  return result;
 }
 bool Area::operator<(Area &other)
 {
-  return m_borders.size() < other.m_borders.size();
+  bool result = false;
+  if ((m_borders.size() == 0) && (other.m_borders.size() > 0))
+  {
+    result = true;
+  }
+  else if ((other.m_borders.size() == 0) && (m_borders.size() > 0))
+  {
+    result = false;
+  }
+  else if ((other.m_borders.size() > 0) && (m_borders.size() > 0))
+  {
+    // Compare border lists side by side. Area with the most clockwise border is
+    // less.
+    int i_count = 0;
+    int j_count = 0;
+    auto i = m_borders.begin();
+    auto j = other.m_borders.begin();
+    while ((i_count < m_borders.size()) && (j_count < other.m_borders.size()))
+    {
+      if (*i != *j)
+      {
+        result = (*i < *j);
+        break;
+      }
+      ++i;
+      ++j;
+    }
+  }
+
+  return result;
 }
 bool Area::operator>(Area const &other) const
 {
-  return m_borders.size() > other.m_borders.size();
+  bool result = false;
+  if ((m_borders.size() == 0) && (other.m_borders.size() > 0))
+  {
+    result = false;
+  }
+  else if ((other.m_borders.size() == 0) && (m_borders.size() > 0))
+  {
+    result = true;
+  }
+  else if ((other.m_borders.size() > 0) && (m_borders.size() > 0))
+  {
+    // Compare border lists side by side. Area with the most clockwise border is
+    // less.
+    int i_count = 0;
+    int j_count = 0;
+    auto i = m_borders.begin();
+    auto j = other.m_borders.begin();
+    while ((i_count < m_borders.size()) && (j_count < other.m_borders.size()))
+    {
+      if (*i != *j)
+      {
+        result = (*i > *j);
+        break;
+      }
+      ++i;
+      ++j;
+    }
+  }
+
+  return result;
 }
 bool Area::operator>(Area &other)
 {
-  return m_borders.size() > other.m_borders.size();
+  bool result = false;
+  if ((m_borders.size() == 0) && (other.m_borders.size() > 0))
+  {
+    result = false;
+  }
+  else if ((other.m_borders.size() == 0) && (m_borders.size() > 0))
+  {
+    result = true;
+  }
+  else if ((other.m_borders.size() > 0) && (m_borders.size() > 0))
+  {
+    // Compare border lists side by side. Area with the most clockwise border is
+    // less.
+    int i_count = 0;
+    int j_count = 0;
+    auto i = m_borders.begin();
+    auto j = other.m_borders.begin();
+    while ((i_count < m_borders.size()) && (j_count < other.m_borders.size()))
+    {
+      if (*i != *j)
+      {
+        result = (*i > *j);
+        break;
+      }
+      ++i;
+      ++j;
+    }
+  }
+
+  return result;
 }
 
 void Area::operator+=(const std::vector<portable::Resource *> &res_list)
