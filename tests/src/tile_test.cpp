@@ -6,7 +6,7 @@
 #include <stduuid/include/uuid.h>
 
 #include <common/Errors.h>
-#include <players/Player.h>
+#include <players/Color.h>
 #include <tiles/Tile.h>
 #include <tiles/components/Area.h>
 #include <tiles/components/Border.h>

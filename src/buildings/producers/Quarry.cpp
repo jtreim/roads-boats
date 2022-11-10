@@ -5,10 +5,8 @@
 
 #include <buildings/producers/Quarry.h>
 #include <common/Errors.h>
-#include <players/Player.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
 
 namespace building
@@ -55,8 +53,7 @@ Quarry::produce(portable::Cache &input,
 bool Quarry::can_build(const portable::Cache &input, const tile::Tile *tile)
 {
   return ((input.count(portable::Resource::Type::boards) >= 2) &&
-          (nullptr != tile) &&
-          (tile::is_valid(tile->get_terrain())) &&
+          (nullptr != tile) && (tile::is_valid(tile->get_terrain())) &&
           (tile::Terrain::rock == tile->get_terrain()));
 }
 

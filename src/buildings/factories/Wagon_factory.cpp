@@ -5,10 +5,9 @@
 
 #include <buildings/factories/Wagon_factory.h>
 #include <common/Errors.h>
-#include <players/Player.h>
+#include <players/Color.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
 
 namespace building
@@ -47,14 +46,15 @@ bool Wagon_factory::can_produce(
     return false;
   }
 
-  for (auto t : nearby_transporters)
-  {
-    if ((nullptr != t) &&
-        (portable::Transporter::Type::donkey == t->get_type()))
-    {
-      return true;
-    }
-  }
+  // TODO Check nearby transporters for donkeys
+  // for (auto t : nearby_transporters)
+  // {
+  //   if ((nullptr != t) &&
+  //       (portable::Transporter::Type::donkey == t->get_type()))
+  //   {
+  //     return true;
+  //   }
+  // }
 
   return false;
 }
@@ -79,11 +79,12 @@ common::Error Wagon_factory::produce(
   uint8_t donkey_count = 0;
   for (auto t : nearby_transporters)
   {
-    if ((nullptr != t) &&
-        (portable::Transporter::Type::donkey == t->get_type()))
-    {
-      donkey_count++;
-    }
+    // TODO: count nearby donkey transporters
+    // if ((nullptr != t) &&
+    //     (portable::Transporter::Type::donkey == t->get_type()))
+    // {
+    //   donkey_count++;
+    // }
   }
 
   to_produce =
@@ -118,14 +119,13 @@ bool Wagon_factory::can_build(const portable::Cache &input,
 {
   return ((input.count(portable::Resource::Type::boards) >= 2) &&
           (input.count(portable::Resource::Type::stone) >= 1) &&
-          (nullptr != tile) &&
-          (tile::is_valid(tile->get_terrain())) &&
+          (nullptr != tile) && (tile::is_valid(tile->get_terrain())) &&
           (tile::Terrain::sea != tile->get_terrain()) &&
           (tile::Terrain::desert != tile->get_terrain()));
 }
 
-common::Error Wagon_factory::remove_construction_resources(
-  portable::Cache &input)
+common::Error
+Wagon_factory::remove_construction_resources(portable::Cache &input)
 {
   common::Error err = input.remove(portable::Resource::Type::boards, 2);
   if (!err)

@@ -6,7 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include <players/Player.h>
+#include <players/Color.h>
 #include <portables/Portable.h>
 
 namespace portable
@@ -82,11 +82,12 @@ public:
   Resource() : Portable(Portable::Object::resource), m_type(Type::invalid) {}
 
   Resource(const Type res_type)
-      : Portable(Portable::Object::resource), m_type(res_type)
+      : Portable(Portable::Object::resource), m_type(res_type), m_is_held(false)
   {
   }
   Resource(const Type res_type, const std::set<player::Color> carriers)
-      : Portable(carriers, Portable::Object::resource), m_type(res_type)
+      : Portable(carriers, Portable::Object::resource), m_type(res_type),
+        m_is_held(false)
   {
   }
   ~Resource(){};
@@ -101,10 +102,23 @@ public:
   Resource operator=(const Resource &other)
   {
     m_type = other.m_type;
+    m_is_held = other.m_is_held;
     m_object = other.m_object;
     m_carriers = other.m_carriers;
     return (*this);
   }
+
+  void drop() { m_is_held = false; }
+  common::Error pickup(const player::Color color)
+  {
+    if (can_add_carrier(color))
+    {
+      m_is_held = true;
+      return add_carrier(color);
+    }
+    return common::ERR_FAIL;
+  }
+  bool is_held() { return m_is_held; }
 
   inline Type get_type() { return m_type; }
 
@@ -146,6 +160,7 @@ public:
 
 protected:
 private:
+  bool m_is_held;
   Type m_type;
 
 }; // namespace portable

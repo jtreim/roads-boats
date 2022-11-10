@@ -4,10 +4,8 @@
 
 #include <buildings/producers/Woodcutter.h>
 #include <common/Errors.h>
-#include <players/Player.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
 
 namespace building
@@ -57,8 +55,7 @@ Woodcutter::produce(portable::Cache &input,
 bool Woodcutter::can_build(const portable::Cache &input, const tile::Tile *tile)
 {
   return ((input.count(portable::Resource::Type::boards) >= 1) &&
-          (nullptr != tile) &&
-          (tile::Terrain::forest == tile->get_terrain()));
+          (nullptr != tile) && (tile::Terrain::forest == tile->get_terrain()));
 }
 
 common::Error Woodcutter::remove_construction_resources(portable::Cache &input)

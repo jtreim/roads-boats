@@ -7,7 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include <common/Errors.h>
-#include <players/Player.h>
+#include <players/Color.h>
 #include <portables/resources/Resource.h>
 
 namespace portable

@@ -5,9 +5,7 @@
 
 #include <buildings/producers/Stone_factory.h>
 #include <common/Errors.h>
-#include <players/Player.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
 
 namespace building
@@ -68,8 +66,7 @@ common::Error Stone_factory::produce(
   {
     for (uint8_t i = 0; i < to_produce; i++)
     {
-      output.push_back(new portable::Resource(
-          portable::Resource::Type::stone));
+      output.push_back(new portable::Resource(portable::Resource::Type::stone));
     }
     m_production_current += to_produce;
   }
@@ -83,8 +80,7 @@ bool Stone_factory::can_build(const portable::Cache &input,
                               const tile::Tile *tile)
 {
   return ((input.count(portable::Resource::Type::boards) >= 2) &&
-          (nullptr != tile) &&
-          (tile::is_valid(tile->get_terrain())) &&
+          (nullptr != tile) && (tile::is_valid(tile->get_terrain())) &&
           (tile::Terrain::sea != tile->get_terrain()) &&
           (tile::Terrain::desert != tile->get_terrain()));
 }

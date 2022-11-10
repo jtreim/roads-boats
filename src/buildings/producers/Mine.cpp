@@ -6,10 +6,8 @@
 
 #include <buildings/producers/Mine.h>
 #include <common/Errors.h>
-#include <players/Player.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
 
 namespace building
@@ -24,18 +22,18 @@ Mine::Mine(const Mine_type type)
 {
   switch (type)
   {
-    case Mine_type::big:
-      add_to_mine(5, 5);
-      break;
-    case Mine_type::specialized_gold:
-      add_to_mine(4, 0);
-      break;
-    case Mine_type::specialized_iron:
-      add_to_mine(0, 4);
-      break;
-    default:
-      add_to_mine(3, 3);
-      break;
+  case Mine_type::big:
+    add_to_mine(5, 5);
+    break;
+  case Mine_type::specialized_gold:
+    add_to_mine(4, 0);
+    break;
+  case Mine_type::specialized_iron:
+    add_to_mine(0, 4);
+    break;
+  default:
+    add_to_mine(3, 3);
+    break;
   }
 }
 Mine::Mine(const Mine &other)
@@ -60,8 +58,7 @@ bool Mine::can_produce(
     const std::vector<portable::Transporter *> nearby_transporters)
 {
   uint8_t max = (m_is_powered ? m_production_max * 2 : m_production_max);
-  return ((m_remaining_resources.size() > 0) &&
-          (max > m_production_current));
+  return ((m_remaining_resources.size() > 0) && (max > m_production_current));
 }
 
 common::Error

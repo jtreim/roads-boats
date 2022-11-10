@@ -7,8 +7,13 @@
 #include <nlohmann/json.hpp>
 #include <stduuid/include/uuid.h>
 
-#include <portables/transporters/Transporter.h>
 #include <tiles/components/Border.h>
+
+// Forward declarations of transporters
+namespace portable
+{
+class Transporter;
+} // namespace portable
 
 namespace tile
 {

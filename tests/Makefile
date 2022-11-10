@@ -43,6 +43,8 @@ MODULES   := buildings \
 						 portables \
 						 portables/resources \
 						 portables/transporters \
+						 portables/transporters/land \
+						 portables/transporters/sea \
 						 tiles \
 						 tiles/components \
 						 utils

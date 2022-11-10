@@ -11,7 +11,6 @@
 #include <buildings/producers/Mint.h>
 #include <buildings/producers/Woodcutter.h>
 #include <common/Errors.h>
-#include <players/Player.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
 #include <portables/transporters/Transporter.h>

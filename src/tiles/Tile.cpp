@@ -8,9 +8,8 @@
 #include <stduuid/include/uuid.h>
 
 #include <buildings/Building.h>
-#include <players/Player.h>
+#include <players/Color.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
 #include <tiles/components/Area.h>
 #include <tiles/components/Border.h>

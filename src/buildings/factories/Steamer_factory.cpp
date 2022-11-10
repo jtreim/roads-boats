@@ -5,10 +5,9 @@
 
 #include <buildings/factories/Steamer_factory.h>
 #include <common/Errors.h>
-#include <players/Player.h>
+#include <players/Color.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
 
 namespace building
@@ -91,15 +90,13 @@ bool Steamer_factory::can_build(const portable::Cache &input,
 {
   return ((input.count(portable::Resource::Type::boards) >= 2) &&
           (input.count(portable::Resource::Type::stone) >= 2) &&
-          (nullptr != tile) &&
-          (tile::is_valid(tile->get_terrain())) &&
+          (nullptr != tile) && (tile::is_valid(tile->get_terrain())) &&
           (tile::Terrain::sea != tile->get_terrain()) &&
-          (tile::Terrain::desert != tile->get_terrain()) &&
-          (tile->is_shore()));
+          (tile::Terrain::desert != tile->get_terrain()) && (tile->is_shore()));
 }
 
-common::Error Steamer_factory::remove_construction_resources(
-  portable::Cache &input)
+common::Error
+Steamer_factory::remove_construction_resources(portable::Cache &input)
 {
   common::Error err = input.remove(portable::Resource::Type::boards, 2);
   if (!err)

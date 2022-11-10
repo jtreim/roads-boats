@@ -10,7 +10,11 @@
 #include <common/Errors.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
+
+namespace portable
+{
+class Transporter;
+}
 
 namespace building
 {
@@ -26,7 +30,8 @@ public:
   }
 
   /// Resets the building for the next production phase.
-  void reset() {
+  void reset()
+  {
     m_production_current = 0;
     m_is_powered = false;
   }

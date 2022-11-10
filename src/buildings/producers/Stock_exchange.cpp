@@ -5,10 +5,8 @@
 
 #include <buildings/producers/Stock_exchange.h>
 #include <common/Errors.h>
-#include <players/Player.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
 
 namespace building
@@ -79,8 +77,7 @@ common::Error Stock_exchange::produce(
   {
     for (uint8_t i = 0; i < to_produce; i++)
     {
-      output.push_back(new portable::Resource(
-          portable::Resource::Type::stock));
+      output.push_back(new portable::Resource(portable::Resource::Type::stock));
     }
     m_production_current += to_produce;
   }
@@ -94,8 +91,7 @@ bool Stock_exchange::can_build(const portable::Cache &input,
                                const tile::Tile *tile)
 {
   return ((input.count(portable::Resource::Type::stone) >= 3) &&
-          (nullptr != tile) &&
-          (tile::is_valid(tile->get_terrain())) &&
+          (nullptr != tile) && (tile::is_valid(tile->get_terrain())) &&
           (tile::Terrain::sea != tile->get_terrain()) &&
           (tile::Terrain::desert != tile->get_terrain()));
 }

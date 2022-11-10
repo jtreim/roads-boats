@@ -13,10 +13,9 @@
 #include <buildings/utils.h>
 
 #include <common/Errors.h>
-#include <players/Player.h>
+#include <players/Color.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
 #include <tiles/components/Area.h>
 #include <tiles/components/Border.h>

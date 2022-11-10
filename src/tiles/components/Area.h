@@ -1,5 +1,5 @@
-#ifndef SECTION_H
-#define SECTION_H
+#ifndef AREA_H
+#define AREA_H
 
 #include <set>
 #include <vector>
@@ -9,11 +9,16 @@
 
 #include <buildings/Building.h>
 #include <common/Errors.h>
-#include <players/Player.h>
+#include <players/Color.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/components/Border.h>
+
+// Forward declarations of transporters
+namespace portable
+{
+class Transporter;
+} // namespace portable
 
 namespace tile
 {

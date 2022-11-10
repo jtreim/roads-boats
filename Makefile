@@ -11,16 +11,18 @@ MODULES   := buildings \
 						 portables \
 						 portables/resources \
 						 portables/transporters \
+						 portables/transporters/land \
+						 portables/transporters/sea \
 						 tiles \
 						 tiles/components \
 						 utils \
 						 windows
 SRC_DIR   := $(addprefix src/,$(MODULES))   # Searches src/* for .h/.cpp files
-BUILD_DIR := $(addprefix build/,$(MODULES)) # Recreates build dir to match src
+BUILD_DIR := $(addprefix build/src/,$(MODULES)) # Recreates build dir to match src
 TEST_DIR  := tests
 
 SRC       := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
-OBJ       := $(patsubst src/%.cpp,build/%.o,$(SRC))
+OBJ       := $(patsubst src/%.cpp,build/src/%.o,$(SRC))
 INCLUDES  := $(addprefix -I,src)
 LIBS      := $(addprefix -I,libs)
 

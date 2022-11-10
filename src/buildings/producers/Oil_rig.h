@@ -5,11 +5,15 @@
 
 #include <buildings/Primary.h>
 #include <common/Errors.h>
-#include <players/Player.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
+
+// Forward declarations of transporters
+namespace portable
+{
+class Transporter;
+} // namespace portable
 
 namespace building
 {

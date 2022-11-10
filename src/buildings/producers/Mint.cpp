@@ -5,10 +5,8 @@
 
 #include <buildings/producers/Mint.h>
 #include <common/Errors.h>
-#include <players/Player.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
 
 namespace building
@@ -61,9 +59,8 @@ Mint::produce(portable::Cache &input,
       std::min((int)input.count(portable::Resource::Type::fuel),
                (int)(max - m_production_current)));
   // 1 coin requires 2 gold
-  to_produce = static_cast<uint8_t>(
-      std::min((int)(input.count(portable::Resource::Type::gold) / 2),
-               (int)to_produce));
+  to_produce = static_cast<uint8_t>(std::min(
+      (int)(input.count(portable::Resource::Type::gold) / 2), (int)to_produce));
 
   common::Error err = input.remove(portable::Resource::Type::fuel, to_produce);
   if (!err)
@@ -75,8 +72,7 @@ Mint::produce(portable::Cache &input,
   {
     for (uint8_t i = 0; i < to_produce; i++)
     {
-      output.push_back(new portable::Resource(
-          portable::Resource::Type::coins));
+      output.push_back(new portable::Resource(portable::Resource::Type::coins));
     }
 
     m_production_current += to_produce;
@@ -91,8 +87,7 @@ bool Mint::can_build(const portable::Cache &input, const tile::Tile *tile)
 {
   return ((input.count(portable::Resource::Type::boards) >= 2) &&
           (input.count(portable::Resource::Type::stone) >= 1) &&
-          (nullptr != tile) &&
-          (tile::is_valid(tile->get_terrain())) &&
+          (nullptr != tile) && (tile::is_valid(tile->get_terrain())) &&
           (tile::Terrain::sea != tile->get_terrain()) &&
           (tile::Terrain::desert != tile->get_terrain()));
 }

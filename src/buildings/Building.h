@@ -5,10 +5,15 @@
 
 #include <common/Errors.h>
 #include <nlohmann/json.hpp>
+#include <players/Color.h>
 #include <portables/Portable.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
+
+namespace portable
+{
+class Transporter;
+}
 
 namespace building
 {

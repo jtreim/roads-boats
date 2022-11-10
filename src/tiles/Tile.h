@@ -13,13 +13,18 @@
 
 #include <buildings/Building.h>
 #include <common/Errors.h>
-#include <players/Player.h>
+#include <players/Color.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/components/Area.h>
 #include <tiles/components/Border.h>
 #include <tiles/components/Hex.h>
 #include <tiles/components/River.h>
+
+// Forward declarations of transporters
+namespace portable
+{
+class Transporter;
+} // namespace portable
 
 namespace tile
 {

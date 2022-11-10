@@ -6,7 +6,7 @@
 #include <nlohmann/json.hpp>
 
 #include <common/Errors.h>
-#include <players/Player.h>
+#include <players/Color.h>
 
 namespace portable
 {
@@ -51,10 +51,17 @@ public:
       m_carriers.erase(player::Color::invalid);
     }
   }
-  Portable(Object obj) : m_object(obj) {}
+  Portable(Object obj = Object::invalid) : m_object(obj) {}
   virtual ~Portable() {}
 
-  virtual void reset() { m_carriers.clear(); }
+  virtual void reset(player::Color *current_carrier = nullptr)
+  {
+    m_carriers.clear();
+    if ((nullptr != current_carrier) && (player::is_valid(*current_carrier)))
+    {
+      m_carriers.insert(*current_carrier);
+    }
+  }
 
   virtual bool can_add_carrier(const player::Color player) const
   {

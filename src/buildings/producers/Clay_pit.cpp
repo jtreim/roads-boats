@@ -4,10 +4,8 @@
 
 #include <buildings/producers/Clay_pit.h>
 #include <common/Errors.h>
-#include <players/Player.h>
 #include <portables/resources/Cache.h>
 #include <portables/resources/Resource.h>
-#include <portables/transporters/Transporter.h>
 #include <tiles/Tile.h>
 
 namespace building
@@ -55,11 +53,9 @@ Clay_pit::produce(portable::Cache &input,
 bool Clay_pit::can_build(const portable::Cache &input, const tile::Tile *tile)
 {
   return ((input.count(portable::Resource::Type::boards) >= 3) &&
-          (nullptr != tile) &&
-          (tile::is_valid(tile->get_terrain())) &&
+          (nullptr != tile) && (tile::is_valid(tile->get_terrain())) &&
           (tile::Terrain::sea != tile->get_terrain()) &&
-          (tile::Terrain::desert != tile->get_terrain()) &&
-          (tile->is_shore()));
+          (tile::Terrain::desert != tile->get_terrain()) && (tile->is_shore()));
 }
 
 common::Error Clay_pit::remove_construction_resources(portable::Cache &input)
